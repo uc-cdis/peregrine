@@ -1,0 +1,30 @@
+{
+  "data": {
+    "hits": [
+      {
+          "case_id": "757df7b0-4774-4493-98bf-999ded9ac86e",
+          "project": {
+              "program": {
+                  "name": "TCGA",
+                  "program_id": "b80aa962-9650-5110-b3eb-bd087da808db"
+              },
+              "project_id": "TCGA-BRCA",
+              "name": "Breast Invasive Carcinoma",
+              "state": "legacy",
+              "disease_type": "Breast Invasive Carcinoma",
+              "primary_site": "Breast"
+          },
+          "category": "Item flagged DNU",
+          "submitter_id": "16880",
+          "annotation_id": "da44f372-b38c-528b-ae5c-4b72afe2b634",
+          "status": "Approved",
+          "created_datetime": 1374970298,
+          "classification": "CenterNotification",
+          "entity_submitter_id": "TCGA-A2-A0CY-01A-12D-A036-01",
+          "entity_type": "aliquot",
+          "notes": "SDRF in broad.mit.edu_BRCA.Genome_Wide_SNP_6.mage-tab.1.2011.0 flagged aliquot to be excluded for analysis based on file 'BONZE_p_TCGAb56_SNP_1N_GenomeWideSNP_6_B11_666964.tangent.copynumber.data.txt'.",
+          "entity_id": "a4454fab-7a3d-41e4-9253-32222e02563f"
+      }
+    ]
+  }
+}

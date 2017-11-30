@@ -1,0 +1,38 @@
+scipy==0.18.1
+SurvivalPy==1.0.2
+simplejson==3.8.1
+stopit==1.1.1
+functools32==3.2.3-2
+lxml==3.4.1
+python-Levenshtein==0.12.0
+python-keystoneclient==1.6.0
+fuzzywuzzy==0.6.1
+addict==0.2.7
+Flask==0.10.1
+Flask-Cors==1.9.0
+Jinja2==2.7.3
+MarkupSafe==0.23
+PyYAML==3.11
+Werkzeug==0.9.6
+boto==2.36.0
+elasticsearch==1.2.0
+itsdangerous==0.24
+requests==2.5.2
+six==1.8.0
+urllib3==1.10.0
+wsgiref==0.1.2
+dicttoxml==1.5.8
+sqlalchemy==0.9.9
+python-dateutil==2.4.2
+graphql-core==1.1
+graphene==0.10.2
+Flask-SQLAlchemy-Session==1.1
+-e git+https://git@github.com/uc-cdis/indexclient.git@1.0#egg=indexclient
+-e git+https://git@github.com/uc-cdis/cdis_oauth2client.git@0.1.1#egg=cdis_oauth2client
+-e git+https://git@github.com/uc-cdis/datadictionary.git@0.1.1#egg=gdcdictionary
+-e git+https://git@github.com/NCI-GDC/gdcdatamodel.git@568aa07e686fd06d116f67521bb5c8db672cd1cd#egg=gdcdatamodel
+-e git+https://git@github.com/NCI-GDC/psqlgraph.git@4fbeddeb058ad09741c5d2b9aacbd1c63cfc3dd1#egg=psqlgraph
+-e git+https://git@github.com/NCI-GDC/cdisutils.git@8a8e599fdab5ade9bd8c586132d974a102e5d72d#egg=cdisutils
+-e git+https://git@github.com/uc-cdis/userdatamodel.git@1.0.2#egg=userdatamodel
+-e git+https://git@github.com/uc-cdis/cdis-python-utils.git@0.1.5#egg=cdispyutils
+-e git+https://git@github.com/uc-cdis/storage-client.git@0.1.1#egg=storageclient

@@ -1,0 +1,22 @@
+{
+    "data": {
+        "hits": [
+            {
+                "file_name": "BLADE_p_ICPp4_TCGAb23_SNP_N_GenomeWideSNP_6_F08_530150.birdseed.data.txt",
+                "md5sum": "84493da914d0ce7f4aa12ef60f842901",
+                "access": "protected",
+                "state": "live",
+                "file_size": 20851966,
+                "file_id": "034316e7-9950-43fb-8848-867eb6a6c046"
+            },
+            {
+                "file_name": "test_file.maf",
+                "md5sum": "84493da914d0ce7f4aa12ef60f842901",
+                "access": "open",
+                "state": "live",
+                "file_size": 12345,
+                "file_id": "00000000-1111-2222-3333-444444444444"
+            }
+        ]
+    }
+}

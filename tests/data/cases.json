@@ -1,0 +1,89 @@
+{
+  "data": {
+    "hits": [
+      {
+        "diagnoses": [
+          {
+            "days_to_death": 1,
+            "vital_status": "dead"
+          }
+        ],
+        "submitter_id": "TCGA-LB-A9Q5",
+        "project": {
+          "name": "Pancreatic adenocarcinoma",
+          "project_id": "PAAD",
+          "state": "legacy",
+          "program": {
+            "name": "TCGA",
+            "program_id": "b80aa962-9650-5110-b3eb-bd087da808db"
+          },
+          "primary_site": "TBD"
+        },
+        "case_id": "31c23e65-1f18-4f59-8a54-31febedef8a2",
+        "summary": {
+          "data_categories": [
+            {
+              "file_count": 7,
+              "data_category": "Raw microarray data"
+            },
+            {
+              "file_count": 8,
+              "data_category": "Gene expression"
+            },
+            {
+              "file_count": 5,
+              "data_category": "Raw sequencing data"
+            },
+            {
+              "file_count": 1,
+              "data_category": "DNA methylation"
+            },
+            {
+              "file_count": 5,
+              "data_category": "Simple nucleotide variation"
+            },
+            {
+              "file_count": 17,
+              "data_category": "Copy number variation"
+            }
+          ],
+          "file_count": 44,
+          "experimental_strategies": [
+            {
+              "experimental_strategy": "WXS",
+              "file_count": 2
+            },
+            {
+              "experimental_strategy": "DNA-Seq",
+              "file_count": 3
+            },
+            {
+              "experimental_strategy": "Genotyping array",
+              "file_count": 20
+            },
+            {
+              "experimental_strategy": "Methylation array",
+              "file_count": 4
+            },
+            {
+              "experimental_strategy": "RNA-Seq",
+              "file_count": 8
+            },
+            {
+              "experimental_strategy": "miRNA-Seq",
+              "file_count": 3
+            }
+          ],
+          "file_size": 85282904521
+        },
+        "tissue_source_site": {
+          "project": "Pancreatic adenocarcinoma",
+          "bcr_id": "IGC",
+          "code": "LB",
+          "tissue_source_site_id": "3ac66bb1-f2da-5c64-b30f-219303801486",
+          "name": "Candler"
+        }
+      }
+    ]
+  }
+}
