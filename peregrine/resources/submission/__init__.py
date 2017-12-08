@@ -1,5 +1,5 @@
 """
-Construct the blueprint for gdcapi submissions, using the blueprint from
+Construct the blueprint for peregrine submissions, using the blueprint from
 :py:mod:``peregrine``.
 """
 
