@@ -99,14 +99,14 @@ FLASK_SECRET_KEY = 'eCKJOOw3uQBR5pVDz3WIvYk3RsjORYoPRdzSUNJIeUEkm1Uvtq'
 
 HMAC_ENCRYPTION_KEY = os.environ.get('CDIS_HMAC_ENCRYPTION_KEY', '')
 OAUTH2 = {
-    "client_id": os.environ.get('CDIS_GDCAPI_CLIENT_ID'),
-    "client_secret": os.environ.get("CDIS_GDCAPI_CLIENT_SECRET"),
+    "client_id": os.environ.get('CDIS_PEREGRINE_CLIENT_ID'),
+    "client_secret": os.environ.get("CDIS_PEREGRINE_CLIENT_SECRET"),
     "oauth_provider": os.environ.get("CDIS_USER_API_OAUTH", 'http://localhost:8000/oauth2/'),
-    "redirect_uri": os.environ.get("CDIS_GDCAPI_OAUTH_REDIRECT", 'localhost:5000/v0/oauth2/authorize'),
+    "redirect_uri": os.environ.get("CDIS_PEREGRINE_OAUTH_REDIRECT", 'localhost:5000/v0/oauth2/authorize'),
 }
 
 USER_API = "http://localhost:8000/"
-SESSION_COOKIE_NAME = 'gdcapi_session'
+SESSION_COOKIE_NAME = 'peregrine_session'
 
 # verify project existence in dbgap or not
 VERIFY_PROJECT = False
