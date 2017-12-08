@@ -32,15 +32,9 @@ before_install:
   # bust only the the part of the cache that we are frequently changing
   - pip uninstall --yes psqlgraph gdcdictionary gdcdatamodel || true
 
-  # fix for scipy inside SurvivalPy
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - conda update --yes conda
 
 # command to install dependencies
 install:
-  - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then docker login quay.io -u="giangbui" -p="testquay"; fi
   # fix for scipy inside SurvivalPy
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy nose future
 
@@ -58,36 +52,7 @@ script:
 - |
   set -e
   PYTHONPATH=. py.test -vv tests/system_test.py tests/graphql/test_graphql.py
-  export CHANGED_FILES=$(git diff --name-only HEAD~1 HEAD)
-  export TRAVIS_ONLY=$( if [ "$CHANGED_FILES" == ".travis.yml" ]; then echo true; else echo false; fi)
-  # Blood Profiling Atlas
-  export BPA_DIFF=`git diff HEAD~1 HEAD .travis.yml | grep "^\+.*bpadictionary"`
-  export BUILD_BPA=$( if [ "$BPA_DIFF" ] || [ "$TRAVIS_ONLY" == "false" ]; then echo true; else echo false; fi)
-  # Environmental Data Commons
-  export EDC_DIFF=`git diff HEAD~1 HEAD .travis.yml | grep "^\+.*envdictionary"`
-  export BUILD_EDC=$( if [ "$EDC_DIFF" ] || [ "$TRAVIS_ONLY" == "false" ]; then echo true; else echo false; fi)
-  # Brain Health Commons
-  export BHC_DIFF=`git diff HEAD~1 HEAD .travis.yml | grep "^\+.*bhcdictionary"`
-  export BUILD_BHC=$( if [ "$BHC_DIFF" ] || [ "$TRAVIS_ONLY" == "false" ]; then echo true; else echo false; fi)
-  # Kids First DRC
-  export KF_DIFF=`git diff HEAD~1 HEAD .travis.yml | grep "^\+.*kf-dictionary"`
-  export BUILD_KF=$( if [ "$KF_DIFF" ] || [ "$TRAVIS_ONLY" == "false" ]; then echo true; else echo false; fi)
-  echo $TRAVIS_ONLY $BUILD_BPA $BUILD_EDC $BUILD_BHC $BUILD_KF
-  # we have to clean because we did the tests first which pulls in git repos which get loaded into docker
-  # requires both -f's to actually get rid of the repos
-  git clean -f -fxd :/
-  if [ "$BUILD_BPA" == "true" ]; then docker build -t quay.io/cdis/bpa-gdcapi:${TRAVIS_BRANCH/\//_} --build-arg GDCDICT="occ-data/bpadictionary.git@0.2.10" .; fi
-  if [ "$BUILD_EDC" == "true" ]; then docker build -t quay.io/cdis/edc-gdcapi:${TRAVIS_BRANCH/\//_} --build-arg GDCDICT="occ-data/envdictionary.git@0.1.0" .; fi
-  if [ "$BUILD_BHC" == "true" ]; then docker build -t quay.io/cdis/bhc-gdcapi:${TRAVIS_BRANCH/\//_} --build-arg GDCDICT="uc-cdis/bhcdictionary.git@0.1.4" .; fi
-  if [ "$BUILD_KF" == "true" ]; then docker build -t quay.io/cdis/kf-gdcapi:${TRAVIS_BRANCH/\//_} --build-arg GDCDICT="kids-first/kf-dictionary.git@kf-v0.1.1" .; fi
   set +e
-
-after_success:
-  - if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$BUILD_BPA" == "true" ]; then docker push quay.io/cdis/bpa-gdcapi:${TRAVIS_BRANCH/\//_}; fi
-  - if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$BUILD_EDC" == "true" ]; then docker push quay.io/cdis/edc-gdcapi:${TRAVIS_BRANCH/\//_}; fi
-  - if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$BUILD_BHC" == "true" ]; then docker push quay.io/cdis/bhc-gdcapi:${TRAVIS_BRANCH/\//_}; fi
-  - if [ "$TRAVIS_PULL_REQUEST" == "false" ] && [ "$BUILD_KF" == "true" ]; then docker push quay.io/cdis/kf-gdcapi:${TRAVIS_BRANCH/\//_}; fi
-
 env:
   global:
     - GDC_ES_HOST=localhost
