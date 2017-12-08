@@ -1,4 +1,6 @@
 sudo: false
+dist: trusty
+group: deprecated-2017Q2
 language: python
 
 python:
@@ -14,6 +16,7 @@ cache:
 
 addons:
   postgresql: '9.4'
+  # fix for scipy inside SurvivalPy
   apt:
     packages:
     - libatlas-dev
@@ -29,7 +32,18 @@ before_install:
   # bust only the the part of the cache that we are frequently changing
   - pip uninstall --yes psqlgraph gdcdictionary gdcdatamodel || true
 
+  # fix for scipy inside SurvivalPy
+  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
+  - bash miniconda.sh -b -p $HOME/miniconda
+  - export PATH="$HOME/miniconda/bin:$PATH"
+  - conda update --yes conda
+
+# command to install dependencies
 install:
+  - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then docker login quay.io -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"; fi
+  # fix for scipy inside SurvivalPy
+  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy nose future
+
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
 
@@ -45,9 +59,7 @@ script:
   set -e
   PYTHONPATH=. py.test -vv tests/system_test.py tests/graphql/test_graphql.py
   set +e
+
 env:
   global:
     - GDC_ES_HOST=localhost
-
-after_script:
-- python-codacy-coverage -r coverage.xml
