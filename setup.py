@@ -6,12 +6,12 @@ setup(
     license="Apache",
     packages=[
         "peregrine",
+        "peregrine.auth",
+        "peregrine.blueprints",
         "peregrine.utils",
-        "peregrine.services",
-        "peregrine.repositories",
-        "peregrine.models",
-        "peregrine.esutils",
-        "peregrine.download",
+        "peregrine.resources",
+        "peregrine.resources.submission",
+        "peregrine.resources.submission.graphql",
     ],
     entry_points={
         'console_scripts': ['peregrine=peregrine.api:main']
