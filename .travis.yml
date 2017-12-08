@@ -26,7 +26,6 @@ addons:
 
 services:
   - elasticsearch
-  - docker
 
 before_install:
   # bust only the the part of the cache that we are frequently changing
@@ -40,7 +39,6 @@ before_install:
 
 # command to install dependencies
 install:
-  - if [ "$TRAVIS_PULL_REQUEST" == "false" ]; then docker login quay.io -u="$DOCKER_USERNAME" -p="$DOCKER_PASSWORD"; fi
   # fix for scipy inside SurvivalPy
   - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy nose future
 
