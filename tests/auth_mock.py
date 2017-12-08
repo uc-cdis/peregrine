@@ -3,7 +3,7 @@ import re
 import urlparse
 import pytest
 from peregrine.auth import AuthDriver
-from gdcapi import test_settings
+from peregrine import test_settings
 import httmock
 import datetime
 

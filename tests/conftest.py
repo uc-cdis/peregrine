@@ -1,3 +1,4 @@
+
 from cdispyutils.hmac4 import get_auth
 import requests
 from flask.testing import make_test_environ_builder
@@ -13,18 +14,18 @@ from peregrine.auth import AuthDriver
 from psqlgraph import PsqlGraphDriver
 import pytest
 import time
-from peregrine.api import app as _app, app_init
+from tests.api import app as _app, app_init
 from auth_mock import patch_auth, auth
 from mock import patch
 import requests
-from userapi import app as userapi_app
-from userapi import app_init as userapi_app_init
-from userapi import utils
+#from userapi import app as userapi_app
+#from userapi import app_init as userapi_app_init
+#from userapi import utils
 from cdis_oauth2client import OAuth2Client
 from userdatamodel import Base
 from elasticsearch import Elasticsearch
-from gdcapi.test_settings import PSQL_USER_DB_CONNECTION
-from gdcapi.test_settings import Fernet, HMAC_ENCRYPTION_KEY
+from peregrine.test_settings import PSQL_USER_DB_CONNECTION
+from peregrine.test_settings import Fernet, HMAC_ENCRYPTION_KEY
 from userdatamodel import models as usermd
 from userdatamodel import Base as usermd_base
 from userdatamodel.driver import SQLAlchemyDriver
@@ -32,6 +33,10 @@ from cdisutilstest.code.storage_client_mock import get_client
 import os
 import json
 from peregrine.config import LEGACY_MODE
+
+#from sheepdog_api import sheepdog_blueprint
+import gdcdictionary
+import gdcdatamodel
 
 here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, here)
@@ -118,6 +123,12 @@ def run_signpost(port):
 
 @pytest.fixture
 def app(tmpdir, request):
+
+    # import sheepdog
+    # sheepdog_blueprint = sheepdog.blueprint.create_blueprint(
+    #     gdcdictionary.gdcdictionary, gdcdatamodel.models
+    # )
+
     port = 8000
     signpost = Process(target=run_signpost, args=[port])
     signpost.start()
@@ -141,6 +152,7 @@ def app(tmpdir, request):
     request.addfinalizer(teardown)
 
     app_init(_app)
+    #_app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
 
     _app.logger.setLevel(os.environ.get("GDC_LOG_LEVEL", "WARNING"))
 

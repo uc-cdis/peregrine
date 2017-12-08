@@ -1,15 +1,13 @@
 import json
 
-from gdcdatamodel import models
 import pytest
-
-from gdcapi.resources.submission import graphql
-
-from tests.submission import utils
+from gdcdatamodel import models
 from tests.submission.test_endpoints import (
     post_example_entities_together,
 )
 
+from peregrine.resources.submission import graphql
+from tests.graphql import utils
 
 path = '/v0/submission/graphql'
 

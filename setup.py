@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name="peregrine",
-    description="The GDC API.",
+    description="The PEREGRINE API.",
     license="Apache",
     packages=[
         "peregrine",

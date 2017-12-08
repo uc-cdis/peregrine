@@ -1,24 +1,40 @@
 import json
 
 import flask
+import pytest
 from gdcdatamodel import models
 from gdcdatamodel.models.submission import TransactionLog
-import pytest
+from tests.graphql import utils
 
-from tests.submission import utils
-from tests.submission.test_endpoints import (
+from tests.auth_mock import Config as auth_conf
+from tests.graphql.test_graphql import (
     put_cgci,
     post_example_entities_together,
 )
-from tests.auth_mock import Config as auth_conf
-
 
 SUBMITTER_HEADERS = {"X-Auth-Token": auth_conf.SUBMITTER_ADMIN_TOKEN}
 ADMIN_HEADERS = {"X-Auth-Token": auth_conf.ADMIN_TOKEN}
 
-
 path = '/v0/submission/graphql'
 
+# def put_example_entities_together(client, pg_driver, submitter):
+#     path = BLGSP_PATH
+#     data = []
+#     for fname in data_fnames:
+#         with open(os.path.join(DATA_DIR, fname), 'r') as f:
+#             data.append(json.loads(f.read()))
+#     return client.put(path, headers=submitter(path, 'put'), data=json.dumps(data))
+#
+# def put_cgci(client, auth=None, role='admin'):
+#     path = '/v0/submission'
+#     headers = auth(path, 'put', role) if auth else None
+#     data = json.dumps({
+#         'name': 'CGCI', 'type': 'program',
+#         'dbgap_accession_number': 'phs000235'
+#     })
+#     r = client.put(path, headers=headers, data=data)
+#     del g.user
+#     return r
 
 @pytest.fixture
 def graphql_client(client, submitter):

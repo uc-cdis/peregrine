@@ -1,6 +1,6 @@
 from auth_mock import Config as conf
-from gdcapi.errors import AuthError
-from gdcapi.auth import FederatedUser
+from peregrine.errors import AuthError
+from peregrine.auth import FederatedUser
 import pytest
 from gdcdatamodel.models import *
 from uuid import uuid4
