@@ -432,11 +432,11 @@ def lookup_graphql_type(T):
 
 def get_node_class_property_args(cls, not_props_io={}):
     args = {
-        name: lookup_graphql_type(types[0])()
+        name: lookup_graphql_type(types[0])
         for name, types in cls.__pg_properties__.iteritems()
     }
     if cls.label == 'project':
-        args['project_id'] = graphene.List(graphene.String())
+        args['project_id'] = graphene.List(graphene.String)
 
     not_props_io_name = 'NotPropertiesInput_{}'.format(cls.label)
     if not_props_io_name not in not_props_io:
@@ -454,9 +454,9 @@ def get_node_class_property_args(cls, not_props_io={}):
 def get_base_node_args():
     return dict(
         id=graphene.String(),
-        ids=graphene.List(graphene.String()),
+        ids=graphene.List(graphene.String),
         quick_search=graphene.String(),
-        first=graphene.Int(default=10),
+        first=graphene.Int(default_value=10),
         offset=graphene.Int(),
         created_before=graphene.String(),
         created_after=graphene.String(),
@@ -469,7 +469,7 @@ def get_base_node_args():
 
 def get_node_interface_args():
     return dict(get_base_node_args(), **dict(
-        of_type=graphene.List(graphene.String()),
+        of_type=graphene.List(graphene.String),
         project_id=graphene.String(),
     ))
 
@@ -480,9 +480,9 @@ def get_node_class_args(cls, _cache={}):
 
     args = get_base_node_args()
     args.update(dict(
-        with_links=graphene.List(graphene.String()),
-        with_links_any=graphene.List(graphene.String()),
-        without_links=graphene.List(graphene.String()),
+        with_links=graphene.List(graphene.String),
+        with_links_any=graphene.List(graphene.String),
+        without_links=graphene.List(graphene.String),
         with_path_to=graphene.List(WithPathToInput),
         with_path_to_any=graphene.List(WithPathToInput),
         without_path_to=graphene.List(WithPathToInput),
@@ -510,7 +510,7 @@ def get_node_class_property_attrs(cls, _cache={}):
     def resolve_type(self, *args):
         return self.__class__.__name__
     attrs = {
-        name: lookup_graphql_type(types[0])()
+        name: lookup_graphql_type(types[0])
         for name, types in cls.__pg_properties__.iteritems()
     }
     attrs['resolve_type'] = resolve_type
@@ -578,7 +578,7 @@ def get_node_class_link_attrs(cls):
     for link in cls._pg_edges:
         name = COUNT_NAME.format(link)
         attrs[name] = graphene.Field(
-            graphene.Int(), args=get_node_class_args(cls))
+            graphene.Int, args=get_node_class_args(cls))
 
     # transaction logs that affected this node
     def resolve_transaction_logs_count(self, args, info):
@@ -587,7 +587,7 @@ def get_node_class_link_attrs(cls):
 
     attrs['resolve__transaction_logs_count'] = resolve_transaction_logs_count
     attrs['_transaction_logs_count'] = graphene.Field(
-        graphene.Int(),
+        graphene.Int,
         args=transaction.get_transaction_log_args(),
     )
 
@@ -728,7 +728,7 @@ def create_root_fields(fields):
             return q.count()
 
         count_field = graphene.Field(
-            graphene.Int(), args=get_node_class_args(cls))
+            graphene.Int, args=get_node_class_args(cls))
         count_name = COUNT_NAME.format(name)
         count_res_name = 'resolve_{}'.format(count_name)
         count_resolver.__name__ = count_res_name

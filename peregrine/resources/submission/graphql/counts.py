@@ -58,14 +58,14 @@ class NodeCountQuery(base.GraphQLQuery):
             Query.schema(
                 args=ns.NodeSubclassQuery.get_node_query_args(cls),
                 name=NodeCountQuery._query_name(cls),
-                type=Int,
+                type=graphene.Int,
             )
             for cls in Node.get_subclasses()
         ] + [
             Query.schema(
                 args=transaction.TransactionLogQuery._args(),
                 name="_{}_count".format(transaction.TransactionLogQuery.name),
-                type=Int,
+                type=graphene.Int,
             )
         ]
 

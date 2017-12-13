@@ -58,17 +58,17 @@ class GenericEntity(graphene.ObjectType):
     type = graphene.String()
 
     def resolve_type(self, args, info):
-        return self.type
+        return lambda: self.type
 
 
 class TransactionResponseError(graphene.ObjectType):
-    keys = graphene.String().List
+    keys = graphene.List(graphene.String)
     dependents = graphene.List(GenericEntity, description='List of entities that depend on this entity such that the transaction failed.')
     message = graphene.String()
     type = graphene.String()
 
     def resolve_type(self, args, info):
-        return self.type
+        return lambda: self.type
 
     def resolve_dependents(self, args, info):
         try:
@@ -135,7 +135,7 @@ class TransactionResponseEntity(graphene.ObjectType):
             return []
 
     def resolve_type(self, args, info):
-        return self.type
+        return lambda: self.type
 
     def resolve_related_cases(self, args, info):
         if CACHE_CASES:
@@ -275,16 +275,16 @@ def get_transaction_log_args():
         id=graphene.ID(),
         type=graphene.String(),
         quick_search=graphene.ID(),
-        project_id=graphene.List(graphene.String()),
+        project_id=graphene.List(graphene.String),
         project=graphene.String(),
         program=graphene.String(),
         order_by_asc=graphene.String(),
         order_by_desc=graphene.String(),
-        related_cases=graphene.List(graphene.String()),
+        related_cases=graphene.List(graphene.String),
         first=graphene.Int(),
         last=graphene.Int(),
         offset=graphene.Int(),
-        entities=graphene.List(graphene.String()),
+        entities=graphene.List(graphene.String),
         is_dry_run=graphene.Boolean(),
         closed=graphene.Boolean(),
         committable=graphene.Boolean(description='(committable: true) means (is_dry_run: true) AND (closed: false) AND (state: "SUCCEEDED") AND (committed_by is None).  Note: committed_by is None cannot be represented in GraphQL, hence this argument.'),
@@ -397,6 +397,6 @@ TransactionLogField = graphene.List(
 )
 
 TransactionLogCountField = graphene.Field(
-    graphene.Int(),
+    graphene.Int,
     args=get_transaction_log_args(),
 )

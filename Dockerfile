@@ -39,6 +39,8 @@ WORKDIR /peregrine
 
 ARG GDCDICT="uc-cdis/datadictionary.git@0.1.1"
 
+RUN pip install -r dev-requirements.txt
+
 RUN sed -i.bak -e "s#uc-cdis/datadictionary.git@[0-9]\+\.[0-9]\+\.[0-9]\+#$GDCDICT#g" requirements.txt \
     && pip install -r requirements.txt \
     && COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" >peregrine/version_data.py \
@@ -51,8 +53,12 @@ RUN sed -i.bak -e "s#uc-cdis/datadictionary.git@[0-9]\+\.[0-9]\+\.[0-9]\+#$GDCDI
     && ln -sf /dev/stderr /var/log/nginx/error.log \
     && chown www-data /var/www/peregrine
 
+RUN pip freeze >/peregrine/freeze.txt
+#RUN PYTHONPATH=. py.test -vv tests/system_test.py tests/graphql/test_graphql.py
+
 EXPOSE 80
 
 WORKDIR /var/www/peregrine
 
-CMD /peregrine/dockerrun.bash
+#CMD /peregrine/dockerrun.bash
+CMD /bin/bash
