@@ -22,7 +22,8 @@ six==1.10.0
 urllib3==1.10.0
 wsgiref==0.1.2
 dicttoxml==1.5.8
-sqlalchemy==0.9.9
+sqlalchemy==1.0.8
+psycopg2==2.7.3.2
 python-dateutil==2.4.2
 graphene
 Flask-SQLAlchemy-Session==1.1

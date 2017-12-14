@@ -446,7 +446,7 @@ def get_node_class_property_args(cls, not_props_io={}):
             dict(args),
         )
 
-    args['not'] = not_props_io[not_props_io_name]
+    #args['not'] = not_props_io[not_props_io_name]
 
     return args
 
@@ -493,7 +493,7 @@ def get_node_class_args(cls, _cache={}):
         else val
         for name, val in get_node_class_property_args(cls).items()
     }
-    #args.update(property_args)
+    args.update(property_args)
 
     for key in args:
         if isinstance(args[key], graphene.String):
