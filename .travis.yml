@@ -1,6 +1,6 @@
-sudo: false
+group: deprecated-2017Q4
 dist: trusty
-group: deprecated-2017Q2
+sudo: required
 language: python
 
 python:
