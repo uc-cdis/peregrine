@@ -712,7 +712,7 @@ def create_root_fields(fields):
         name = cls.label
 
         # Object resolver
-        def resolver(self, info, args, cls=cls, gql_object=gql_object):
+        def resolver(self, info, *args, cls=cls, gql_object=gql_object):
             q = get_authorized_query(cls)
             q = apply_query_args(q, args, info)
             try:

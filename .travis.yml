@@ -54,7 +54,7 @@ before_script:
 script:
 - |
   set -e
-  PYTHONPATH=. py.test -vv tests/system_test.py tests/graphql/test_graphql.py
+  PYTHONPATH=. py.test -vv -s tests/system_test.py tests/graphql/test_graphql.py
   set +e
 
 env:
