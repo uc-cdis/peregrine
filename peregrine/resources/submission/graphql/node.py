@@ -546,7 +546,7 @@ def get_node_class_special_attrs(cls):
 
 def get_node_class_link_attrs(cls):
     attrs = {name: graphene.List(
-        link['type'].label,
+        __name__ + '.' + link['type'].label,
         args=get_node_class_args(link['type']),
     ) for name, link in cls._pg_edges.iteritems()}
 
@@ -685,13 +685,21 @@ def get_node_class_link_resolver_attrs(cls):
 
 
 def create_node_class_gql_object(cls):
+    def _make_inner_meta_type():
+        return type('Meta', (), {'interfaces': (Node, )})
     attrs = {}
     attrs.update(get_node_class_property_attrs(cls))
     attrs.update(get_node_class_link_attrs(cls))
     attrs.update(get_node_class_link_resolver_attrs(cls))
+    attrs['Meta'] = _make_inner_meta_type()
 
-    gql_object = type(cls.label, (Node,), attrs)
-    return gql_object
+    gql_object = type(cls.label, (graphene.ObjectType,), attrs)
+    
+    # Add this class to the global namespace to graphene can load it
+    globals()[gql_object.__name__] = gql_object
+
+    # Graphene requires lambda's of the classes now so return that here
+    return lambda: gql_object
 
 
 def create_root_fields(fields):
