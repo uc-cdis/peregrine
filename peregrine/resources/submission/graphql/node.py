@@ -493,10 +493,14 @@ def get_node_class_args(cls, _cache={}):
         else val
         for name, val in get_node_class_property_args(cls).items()
     }
-    args.update(property_args)
+    #args.update(property_args)
 
     for key in args:
-        if not isinstance(args[key], graphene.Argument):
+        if isinstance(args[key], graphene.String):
+            args[key] = graphene.Argument(graphene.String, name=key)
+        elif isinstance(args[key], graphene.Int):
+            args[key] = graphene.Argument(graphene.Int, name=key)
+        elif not isinstance(args[key], graphene.Argument):
             args[key] = graphene.Argument(args[key], name=key)
 
     _cache[cls] = args
