@@ -61,6 +61,7 @@ def set_read_access_projects():
         flask.g.read_access_projects = flask.g.user.get_project_ids('read')
         open_project_ids = get_open_project_ids()
         flask.g.read_access_projects.extend(open_project_ids)
+        print('init read access' + str(flask.g.read_access_projects))
 
 
 @peregrine.blueprints.blueprint.route('/graphql', methods=['POST'])
