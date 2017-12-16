@@ -101,8 +101,6 @@ def authorization_filter(q):
         capp.logger.exception(e)
         raise InternalError()
 
-    print('graphql read access' + str(fg.read_access_projects))
-
     cls = q.entity()
     if cls == psqlgraph.Node or hasattr(cls, 'project_id'):
         q = q.filter(cls._props['project_id'].astext.in_(fg.read_access_projects))

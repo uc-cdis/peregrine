@@ -30,7 +30,7 @@ def get_open_project_ids():
             .filter(models.Project.availability_type.astext == "Open")
             .all()
         )
-    return [project['code'] for project in projects]
+    return [project.programs[0].name + '-' + project['code'] for project in projects]
 
 
 def set_read_access_projects():
@@ -61,7 +61,6 @@ def set_read_access_projects():
         flask.g.read_access_projects = flask.g.user.get_project_ids('read')
         open_project_ids = get_open_project_ids()
         flask.g.read_access_projects.extend(open_project_ids)
-        print('init read access' + str(flask.g.read_access_projects))
 
 
 @peregrine.blueprints.blueprint.route('/graphql', methods=['POST'])
