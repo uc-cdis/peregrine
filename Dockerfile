@@ -18,6 +18,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxml2-dev \
     libxslt1-dev \
     nginx \
+    postgresql postgresql-contrib \
     python2.7 \
     python-dev \
     python-pip \

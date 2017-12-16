@@ -374,7 +374,7 @@ class Node(graphene.Interface):
     updated_datetime = graphene.String()
 
 
-def resolve_node(self, info, args):
+def resolve_node(self, info, **args):
     """The root query for the :class:`Node` node interface.
 
     :returns:
@@ -497,9 +497,9 @@ def get_node_class_args(cls, _cache={}):
 
     for key in args:
         if isinstance(args[key], graphene.String):
-            args[key] = graphene.Argument(graphene.String, name=key)
+            continue #args[key] = graphene.Argument(graphene.String, name=key)
         elif isinstance(args[key], graphene.Int):
-            args[key] = graphene.Argument(graphene.Int, name=key)
+            continue #args[key] = graphene.Argument(graphene.Int, name=key)
         elif not isinstance(args[key], graphene.Argument):
             args[key] = graphene.Argument(args[key], name=key)
 
@@ -514,7 +514,7 @@ def get_node_class_property_attrs(cls, _cache={}):
     def resolve_type(self, info, *args):
         return self.__class__.__name__
     attrs = {
-        name: lookup_graphql_type(types[0])
+        name: graphene.Field(lookup_graphql_type(types[0]))
         for name, types in cls.__pg_properties__.iteritems()
     }
     attrs['resolve_type'] = resolve_type
@@ -585,7 +585,7 @@ def get_node_class_link_attrs(cls):
             graphene.Int, args=get_node_class_args(cls))
 
     # transaction logs that affected this node
-    def resolve_transaction_logs_count(self, info, args):
+    def resolve_transaction_logs_count(self, info, **args):
         args = dict(args, **{'entities': [self.id]})
         return transaction.resolve_transaction_log_count(self, info, args)
 
@@ -595,7 +595,7 @@ def get_node_class_link_attrs(cls):
         args=transaction.get_transaction_log_args(),
     )
 
-    def resolve_transaction_logs(self, info, args):
+    def resolve_transaction_logs(self, info, **args):
         args = dict(args, **{'entities': [self.id]})
         return transaction.resolve_transaction_log(self, info, args)
 
@@ -616,7 +616,7 @@ def get_node_class_link_resolver_attrs(cls):
     link_resolver_attrs = {}
     for link_name, link in cls._pg_edges.iteritems():
 
-        def link_query(self, args, info, cls=cls, link=link):
+        def link_query(self, info, cls=cls, link=link, **args):
             try:
                 target, backref = link['type'], link['backref']
                 # Subquery for neighor connected to node
@@ -632,9 +632,9 @@ def get_node_class_link_resolver_attrs(cls):
                 raise
 
         # Nesting links
-        def resolve_link(self, info, args, cls=cls, link=link):
+        def resolve_link(self, info, cls=cls, link=link, **args):
             try:
-                q = link_query(self, args, info, cls=cls, link=link)
+                q = link_query(self, info, cls=cls, link=link, **args)
                 qcls = __gql_object_classes[link['type'].label]
                 return [qcls(**load_node(n)) for n in q.all()]
             except Exception as e:
@@ -645,9 +645,9 @@ def get_node_class_link_resolver_attrs(cls):
         link_resolver_attrs[lr_name] = resolve_link
 
         # Link counts
-        def resolve_link_count(self, info, args, cls=cls, link=link):
+        def resolve_link_count(self, info, cls=cls, link=link, **args):
             try:
-                q = link_query(self, args, info, cls=cls, link=link)
+                q = link_query(self, info, cls=cls, link=link, **args)
                 q = q.with_entities(sa.distinct(link['type'].node_id))
                 q = q.limit(None)
                 return q.count()
@@ -659,7 +659,7 @@ def get_node_class_link_resolver_attrs(cls):
         link_resolver_attrs[lr_count_name] = resolve_link_count
 
         # Arbitrary link
-        def resolve_links(self, info, args, cls=cls):
+        def resolve_links(self, info, cls=cls, **args):
             try:
                 edge_out_sq = capp.db.edges().filter(
                     psqlgraph.Edge.src_id == self.id).subquery()
@@ -697,13 +697,13 @@ def create_node_class_gql_object(cls):
     attrs.update(get_node_class_link_resolver_attrs(cls))
     attrs['Meta'] = _make_inner_meta_type()
 
-    gql_object = type(cls.label, (graphene.ObjectType,), attrs)
-    
+    gql_object = type(cls.label, (graphene.ObjectType, ), attrs)
+
     # Add this class to the global namespace to graphene can load it
     globals()[gql_object.__name__] = gql_object
 
     # Graphene requires lambda's of the classes now so return that here
-    return lambda: gql_object
+    return gql_object
 
 
 def create_root_fields(fields):
@@ -712,12 +712,12 @@ def create_root_fields(fields):
         name = cls.label
 
         # Object resolver
-        def resolver(self, info, cls=cls, gql_object=gql_object, *args):
+        def resolver(self, info, cls=cls, gql_object=gql_object, **args):
             q = get_authorized_query(cls)
             q = apply_query_args(q, args, info)
             try:
                 return [gql_object(**load_node(n)) for n in q.all()]
-            except Exception as e:
+           except Exception as e:
                 capp.logger.exception(e)
                 raise
 
@@ -732,7 +732,7 @@ def create_root_fields(fields):
         attrs[res_name] = resolver
 
         # Count resolver
-        def count_resolver(self, info, args, cls=cls, gql_object=gql_object):
+        def count_resolver(self, info, cls=cls, gql_object=gql_object, **args):
             q = get_authorized_query(cls)
             q = apply_query_args(q, args, info)
             q = q.with_entities(sa.distinct(cls.node_id))
@@ -764,7 +764,6 @@ __fields = {
     cls: create_node_class_gql_object(cls)
     for cls in psqlgraph.Node.get_subclasses()
 }
-
 
 for cls, gql_object in __fields.iteritems():
     __gql_object_classes[cls.label] = gql_object
