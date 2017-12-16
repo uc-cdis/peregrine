@@ -92,7 +92,8 @@ def authorization_filter(q):
     """
 
     try:
-        fg.read_access_projects = fg.get('read_access_projects') or fg.user.get_project_ids('read')
+        if not hasattr(fg, 'read_access_projects'):
+            raise AuthError('no read access projects')
     except (AuthError, UserError) as e:
         capp.logger.exception(e)
         raise GraphQLError(str(e))
