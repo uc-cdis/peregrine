@@ -13,6 +13,7 @@ from gdcdatamodel import models as md  # noqa
 
 import dateutil
 import graphene
+from graphene.types.unmountedtype import UnmountedType
 import logging
 import psqlgraph
 import sqlalchemy as sa
@@ -440,14 +441,16 @@ def get_node_class_property_args(cls, not_props_io={}):
 
     not_props_io_name = 'NotPropertiesInput_{}'.format(cls.label)
     if not_props_io_name not in not_props_io:
+        args_not = {}
+        args_not.update(get_node_class_property_attrs(cls))
         not_props_io[not_props_io_name] = type(
             not_props_io_name,
             (graphene.InputObjectType,),
-            dict(args),
+            args_not,
         )
-
-    #args['not'] = not_props_io[not_props_io_name]
-
+        globals()[not_props_io[not_props_io_name].__name__] = not_props_io[not_props_io_name]
+   
+    args['not'] = graphene.List(__name__ + '.' + not_props_io_name)
     return args
 
 
@@ -497,9 +500,9 @@ def get_node_class_args(cls, _cache={}):
 
     for key in args:
         if isinstance(args[key], graphene.String):
-            continue #args[key] = graphene.Argument(graphene.String, name=key)
+            args[key] = graphene.Argument(graphene.String, name=key)
         elif isinstance(args[key], graphene.Int):
-            continue #args[key] = graphene.Argument(graphene.Int, name=key)
+            args[key] = graphene.Argument(graphene.Int, name=key)
         elif not isinstance(args[key], graphene.Argument):
             args[key] = graphene.Argument(args[key], name=key)
 
@@ -753,12 +756,11 @@ def create_root_fields(fields):
 WithPathToInput = type('WithPathToInput', (graphene.InputObjectType,), dict(
     id=graphene.String(),
     type=graphene.String(required=True),
-    **{k: v for cls_attrs in [
+    **{k: graphene.Field(v) for cls_attrs in [
         get_node_class_property_args(cls)
         for cls in psqlgraph.Node.get_subclasses()
     ] for k, v in cls_attrs.iteritems()}
 ))
-
 
 __fields = {
     cls: create_node_class_gql_object(cls)
