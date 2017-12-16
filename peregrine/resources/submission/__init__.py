@@ -30,7 +30,7 @@ def get_open_project_ids():
             .filter(models.Project.availability_type.astext == "Open")
             .all()
         )
-    return [project.programs[0].name + '-' + project['code'] for project in projects]
+        return [project['programs'][0]['name'] + '-' + project['code'] for project in projects]
 
 
 def set_read_access_projects():
