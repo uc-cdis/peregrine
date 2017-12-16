@@ -717,7 +717,7 @@ def create_root_fields(fields):
             q = apply_query_args(q, args, info)
             try:
                 return [gql_object(**load_node(n)) for n in q.all()]
-           except Exception as e:
+            except Exception as e:
                 capp.logger.exception(e)
                 raise
 
