@@ -53,10 +53,10 @@ before_script:
 
 # command to run tests
 script:
-- |
-  set -e
-  PYTHONPATH=. py.test -vv tests/system_test.py tests/graphql/test_graphql.py
-  set +e
+  - py.test -vv --cov=peregrine --cov-report xml tests/system_test.py tests/graphql/test_graphql.py
+
+after_script:
+  - python-codacy-coverage -r coverage.xml
 
 env:
   global:
