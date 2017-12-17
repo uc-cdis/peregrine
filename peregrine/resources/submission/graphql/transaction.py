@@ -382,7 +382,7 @@ def resolve_transaction_log(self, info, **args):
     def fast_fix_dict(r):
         good_dict = r.__dict__.copy()
         del good_dict['_sa_instance_state']
-        good_dict['snapshots'] = good_dict.pop('entities')
+        good_dict['snapshots'] = r.entities
         return good_dict
     return [TransactionLog(**fast_fix_dict(r)) for r in q.all()]
 
