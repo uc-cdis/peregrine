@@ -379,11 +379,12 @@ def resolve_transaction_log_query(self, info, **args):
 
 def resolve_transaction_log(self, info, **args):
     q = resolve_transaction_log_query(self, info, **args)
-    return [TransactionLog(**dict(
-        documents=r.documents,
-        snapshots=r.entities,
-        **column_dict(r)
-    )) for r in q.all()]
+    def fast_fix_dict(r):
+        good_dict = r.__dict__.copy()
+        del good_dict['_sa_instance_state']
+        good_dict['snapshots'] = good_dict.pop('entities')
+        return good_dict
+    return [TransactionLog(**fast_fix_dict(r)) for r in q.all()]
 
 
 def resolve_transaction_log_count(self, info, **args):
