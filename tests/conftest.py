@@ -120,37 +120,30 @@ def run_signpost(port):
     Signpost({"driver": "inmemory", "layers": ["validator"]}).run(
         host="localhost", port=port, debug=False)
 
+@pytest.fixture(scope="session")
+def start_signpost(request):
+    port = 8000
+    signpost = Process(target=run_signpost, args=[port])
+    signpost.start()
+    wait_for_signpost_alive(port)
 
-@pytest.fixture
-def app(tmpdir, request):
+    def teardown():
+        signpost.terminate()
+        wait_for_signpost_not_alive(port)
+
+    request.addfinalizer(teardown)
+
+
+@pytest.fixture(scope='session')
+def app(request, start_signpost):
 
     # import sheepdog
     # sheepdog_blueprint = sheepdog.blueprint.create_blueprint(
     #     gdcdictionary.gdcdictionary, gdcdatamodel.models
     # )
 
-    port = 8000
-    signpost = Process(target=run_signpost, args=[port])
-    signpost.start()
-    wait_for_signpost_alive(port)
-
-    gencode_json = tmpdir.mkdir("slicing").join("test_gencode.json")
-    gencode_json.write(json.dumps({
-        'a_gene': ['chr1', None, 200],
-        'b_gene': ['chr1', 150,  300],
-        'c_gene': ['chr1', 200,  None],
-        'd_gene': ['chr1', None, None],
-    }))
-
-    def teardown():
-        signpost.terminate()
-        wait_for_signpost_not_alive(port)
 
     _app.config.from_object("peregrine.test_settings")
-    _app.config['SLICING']['gencode'] = str(gencode_json.realpath())
-
-    request.addfinalizer(teardown)
-
     app_init(_app)
     #_app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
 
@@ -191,8 +184,7 @@ def userapi_client(app, request):
 
 
 @pytest.fixture
-def pg_driver(request, client):
-    pg_driver = PsqlGraphDriver(**pg_config())
+def pg_driver_clean(request, pg_driver):
 
     def tearDown():
         with pg_driver.engine.begin() as conn:
@@ -210,11 +202,20 @@ def pg_driver(request, client):
             conn.execute('delete from transaction_logs')
             user_teardown()
 
-    tearDown()
-    user_setup()
+    tearDown() #cleanup potential last test data
+    user_setup() 
     request.addfinalizer(tearDown)
     return pg_driver
 
+@pytest.fixture(scope="session")
+def pg_driver(request):
+    pg_driver = PsqlGraphDriver(**pg_config())
+
+    def closeConnection():
+        pg_driver.engine.dispose()
+
+    request.addfinalizer(closeConnection)
+    return pg_driver
 
 def user_setup():
     key = Fernet(HMAC_ENCRYPTION_KEY)
