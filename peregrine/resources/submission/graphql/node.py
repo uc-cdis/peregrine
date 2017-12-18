@@ -13,7 +13,6 @@ from gdcdatamodel import models as md  # noqa
 
 import dateutil
 import graphene
-from graphene.types.unmountedtype import UnmountedType
 import logging
 import psqlgraph
 import sqlalchemy as sa
@@ -449,7 +448,6 @@ def get_node_class_property_args(cls, not_props_io={}):
             args_not,
         )
         globals()[not_props_io[not_props_io_name].__name__] = not_props_io[not_props_io_name]
- 
     args['not'] = graphene.List(__name__ + '.' + not_props_io_name)
     return args
 
