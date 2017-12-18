@@ -449,7 +449,7 @@ def get_node_class_property_args(cls, not_props_io={}):
             args_not,
         )
         globals()[not_props_io[not_props_io_name].__name__] = not_props_io[not_props_io_name]
-   
+ 
     args['not'] = graphene.List(__name__ + '.' + not_props_io_name)
     return args
 
@@ -590,7 +590,7 @@ def get_node_class_link_attrs(cls):
     # transaction logs that affected this node
     def resolve_transaction_logs_count(self, info, **args):
         args = dict(args, **{'entities': [self.id]})
-        return transaction.resolve_transaction_log_count(self, info, args)
+        return transaction.resolve_transaction_log_count(self, info, **args)
 
     attrs['resolve__transaction_logs_count'] = resolve_transaction_logs_count
     attrs['_transaction_logs_count'] = graphene.Field(
@@ -600,7 +600,7 @@ def get_node_class_link_attrs(cls):
 
     def resolve_transaction_logs(self, info, **args):
         args = dict(args, **{'entities': [self.id]})
-        return transaction.resolve_transaction_log(self, info, args)
+        return transaction.resolve_transaction_log(self, info, **args)
 
     attrs['resolve__transaction_logs'] = resolve_transaction_logs
     attrs['_transaction_logs'] = graphene.List(

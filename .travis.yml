@@ -6,11 +6,7 @@ python:
   - "2.7"
 
 cache:
-  # pip: true  # We have overridden the default install step, caching manually
-  # ref: <https://docs.travis-ci.com/user/caching/#Arbitrary-directories>
-  - directories:
-      - /home/travis/virtualenv/python2.7.9/lib/python2.7/site-packages
-      - $HOME/.pip-cache
+  - pip
   - apt
 
 addons:
@@ -36,10 +32,10 @@ before_script:
 
 # command to run tests
 script:
-- |
-  set -e
-  PYTHONPATH=. py.test -vv tests/system_test.py tests/graphql/test_graphql.py
-  set +e
+  - py.test -vv --cov=peregrine --cov-report xml tests/system_test.py tests/graphql/test_graphql.py
+
+after_script:
+  - python-codacy-coverage -r coverage.xml
 
 env:
   global:

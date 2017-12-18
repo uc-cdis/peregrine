@@ -203,7 +203,7 @@ def pg_driver_clean(request, pg_driver):
             user_teardown()
 
     tearDown() #cleanup potential last test data
-    user_setup() 
+    user_setup()
     request.addfinalizer(tearDown)
     return pg_driver
 
