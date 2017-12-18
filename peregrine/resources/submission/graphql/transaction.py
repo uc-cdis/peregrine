@@ -297,9 +297,6 @@ def resolve_transaction_log_query(self, info, **args):
     sortable = ['id', 'submitter', 'role', 'program', 'project',
                 'created_datetime', 'canonical_json', 'project_id']
 
-    # TODO: understand why this is here
-    if not hasattr(flask.g, 'read_access_projects'):
-        flask.g.read_access_projects = flask.g.user.get_project_ids('read')
     q = flask.current_app.db.nodes(sub.TransactionLog).filter(
         sub.TransactionLog.project_id.in_(flask.g.read_access_projects)
     )
