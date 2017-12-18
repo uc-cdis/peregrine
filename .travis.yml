@@ -15,32 +15,16 @@ cache:
 
 addons:
   postgresql: '9.4'
-  # fix for scipy inside SurvivalPy
-  apt:
-    packages:
-    - libatlas-dev
-    - libatlas-base-dev
-    - liblapack-dev
-    - gfortran
 
 services:
   - elasticsearch
 
 before_install:
   # bust only the the part of the cache that we are frequently changing
-  - pip uninstall --yes psqlgraph gdcdictionary gdcdatamodel || true
-
-  # fix for scipy inside SurvivalPy
-  - wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
-  - conda update --yes conda
+  - pip uninstall --yes gdcdictionary gdcdatamodel || true
 
 # command to install dependencies
 install:
-  # fix for scipy inside SurvivalPy
-  - conda install --yes python=$TRAVIS_PYTHON_VERSION pip numpy scipy nose future
-
   - pip install -r requirements.txt
   - pip install -r dev-requirements.txt
 
