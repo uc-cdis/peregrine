@@ -69,8 +69,6 @@ class AuthDriver(object):
             .all()
         )
         return_res = {}
-        if not results:
-            raise AuthError("No project access")
         for item in results:
             dbgap_no, user_access = item
             return_res[dbgap_no] = user_access.privilege

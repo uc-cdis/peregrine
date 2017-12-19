@@ -90,16 +90,7 @@ def authorization_filter(q):
         ``project_id`` while maintaining filter correctness.
 
     """
-
-    try:
-        fg.read_access_projects = fg.get('read_access_projects') or fg.user.get_project_ids('read')
-    except (AuthError, UserError) as e:
-        capp.logger.exception(e)
-        raise GraphQLError(str(e))
-    except Exception as e:
-        capp.logger.exception(e)
-        raise InternalError()
-
+ 
     cls = q.entity()
     if cls == psqlgraph.Node or hasattr(cls, 'project_id'):
         q = q.filter(cls._props['project_id'].astext.in_(fg.read_access_projects))

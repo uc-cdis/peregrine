@@ -57,20 +57,20 @@ class GenericEntity(graphene.ObjectType):
     id = graphene.String()
     type = graphene.String()
 
-    def resolve_type(self, args, info):
-        return self.type
+    def resolve_type(self, info, **args):
+        return lambda: self.type
 
 
 class TransactionResponseError(graphene.ObjectType):
-    keys = graphene.String().List
+    keys = graphene.List(graphene.String)
     dependents = graphene.List(GenericEntity, description='List of entities that depend on this entity such that the transaction failed.')
     message = graphene.String()
     type = graphene.String()
 
-    def resolve_type(self, args, info):
+    def resolve_type(self, info, **args):
         return self.type
 
-    def resolve_dependents(self, args, info):
+    def resolve_dependents(self, info, **args):
         try:
             return [
                 GenericEntity(**dependent)
@@ -106,13 +106,13 @@ class TransactionResponseEntity(graphene.ObjectType):
     errors = graphene.List(TransactionResponseError)
     warnings = graphene.String()
 
-    def resolve_errors(self, args, info):
+    def resolve_errors(self, info, **args):
         return [
             TransactionResponseError(**error)
             for error in self.errors
         ]
 
-    def resolve_unique_keys(self, args, info):
+    def resolve_unique_keys(self, info, **args):
         """Return a string dump of the unique keys. This is a string because
         we don't have a polymorphic GraphQL representation of why
         might be defined as a unique key and it is therefore easier to
@@ -134,10 +134,10 @@ class TransactionResponseEntity(graphene.ObjectType):
             logger.exception(exception)
             return []
 
-    def resolve_type(self, args, info):
-        return self.type
+    def resolve_type(self, info, **args):
+        return lambda: self.type
 
-    def resolve_related_cases(self, args, info):
+    def resolve_related_cases(self, info, **args):
         if CACHE_CASES:
             return [
                 instantiate_safely(TransactionResponseEntityRelatedCases, case)
@@ -163,7 +163,7 @@ class TransactionResponse(graphene.ObjectType):
     entities = graphene.List(TransactionResponseEntity)
 
     @classmethod
-    def resolve_entities(cls, response, *args):
+    def resolve_entities(cls, response, **args):
         try:
             return [
                 instantiate_safely(TransactionResponseEntity, entity)
@@ -173,7 +173,7 @@ class TransactionResponse(graphene.ObjectType):
             logger.exception(exc)
 
     @classmethod
-    def resolve_response_json(cls, response, *args):
+    def resolve_response_json(cls, response, **args):
         return json.dumps(response.response_json)
 
 
@@ -188,11 +188,11 @@ class TransactionDocument(graphene.ObjectType):
     response = graphene.Field(TransactionResponse)
 
     @classmethod
-    def resolve_doc_size(cls, document, *args):
+    def resolve_doc_size(cls, document, **args):
         return len(document.doc)
 
     @classmethod
-    def resolve_response(cls, document, *args):
+    def resolve_response(cls, document, **args):
         try:
             response_json = json.loads(document.response_json)
             return instantiate_safely(TransactionResponse, response_json)
@@ -200,7 +200,7 @@ class TransactionDocument(graphene.ObjectType):
             logger.exception(exc)
 
     @classmethod
-    def resolve_response_json(cls, document, *args):
+    def resolve_response_json(cls, document, **args):
         try:
             return document.response_json
         except Exception as exc:
@@ -232,26 +232,26 @@ class TransactionLog(graphene.ObjectType):
         # f(x) -> x for all others
     }
 
-    def resolve_project_id(self, args, info):
+    def resolve_project_id(self, info, **args):
         return '{}-{}'.format(self.program, self.project)
 
-    def resolve_documents(self, args, info):
+    def resolve_documents(self, info, **args):
         return [TransactionDocument(**dict(
             column_dict(r),
             **{'response_json': json.dumps(r.response_json)}
         )) for r in self.documents]
 
-    def resolve_snapshots(self, args, info):
+    def resolve_snapshots(self, info, **args):
         return [
             TransactionSnapshot(**column_dict(r))
             for r in self.snapshots
         ]
 
-    def resolve_type(self, args, info):
+    def resolve_type(self, info, **args):
         """Classify the type of transaction by the transaction.roll"""
         return self.TYPE_MAP.get(self.role.lower(), self.role.lower())
 
-    def resolve_related_cases(self, args, info):
+    def resolve_related_cases(self, info, **args):
 	if not CACHE_CASES:
             return []
         related_cases = {}
@@ -275,16 +275,16 @@ def get_transaction_log_args():
         id=graphene.ID(),
         type=graphene.String(),
         quick_search=graphene.ID(),
-        project_id=graphene.List(graphene.String()),
+        project_id=graphene.List(graphene.String),
         project=graphene.String(),
         program=graphene.String(),
         order_by_asc=graphene.String(),
         order_by_desc=graphene.String(),
-        related_cases=graphene.List(graphene.String()),
+        related_cases=graphene.List(graphene.String),
         first=graphene.Int(),
         last=graphene.Int(),
         offset=graphene.Int(),
-        entities=graphene.List(graphene.String()),
+        entities=graphene.List(graphene.String),
         is_dry_run=graphene.Boolean(),
         closed=graphene.Boolean(),
         committable=graphene.Boolean(description='(committable: true) means (is_dry_run: true) AND (closed: false) AND (state: "SUCCEEDED") AND (committed_by is None).  Note: committed_by is None cannot be represented in GraphQL, hence this argument.'),
@@ -293,12 +293,10 @@ def get_transaction_log_args():
     )
 
 
-def resolve_transaction_log_query(self, args, info):
+def resolve_transaction_log_query(self, info, **args):
     sortable = ['id', 'submitter', 'role', 'program', 'project',
                 'created_datetime', 'canonical_json', 'project_id']
 
-    if not hasattr(flask.g, 'read_access_projects'):
-        flask.g.read_access_projects = flask.g.user.get_project_ids('read')
     q = flask.current_app.db.nodes(sub.TransactionLog).filter(
         sub.TransactionLog.project_id.in_(flask.g.read_access_projects)
     )
@@ -376,17 +374,18 @@ def resolve_transaction_log_query(self, args, info):
     return q
 
 
-def resolve_transaction_log(self, args, info):
-    q = resolve_transaction_log_query(self, args, info)
-    return [TransactionLog(**dict(
-        documents=r.documents,
-        snapshots=r.entities,
-        **column_dict(r)
-    )) for r in q.all()]
+def resolve_transaction_log(self, info, **args):
+    q = resolve_transaction_log_query(self, info, **args)
+    def fast_fix_dict(r):
+        good_dict = r.__dict__.copy()
+        del good_dict['_sa_instance_state']
+        good_dict['snapshots'] = r.entities
+        return good_dict
+    return [TransactionLog(**fast_fix_dict(r)) for r in q.all()]
 
 
-def resolve_transaction_log_count(self, args, info):
-    q = resolve_transaction_log_query(self, args, info)
+def resolve_transaction_log_count(self, info, **args):
+    q = resolve_transaction_log_query(self, info, **args)
     q = q.limit(args.get('first', None))
     return q.count()
 
@@ -397,6 +396,6 @@ TransactionLogField = graphene.List(
 )
 
 TransactionLogCountField = graphene.Field(
-    graphene.Int(),
+    graphene.Int,
     args=get_transaction_log_args(),
 )
