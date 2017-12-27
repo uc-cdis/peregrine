@@ -13,6 +13,9 @@ from peregrine.errors import InternalError, AuthError, UserError
 from gdcdatamodel.models import Project
 from graphql import GraphQLError
 
+from graphql.utils.ast_to_dict import ast_to_dict
+from sqlalchemy.orm import subqueryload, load_only
+
 import psqlgraph
 
 DEFAULT_LIMIT = 10
@@ -24,12 +27,31 @@ def set_session_timeout(session, timeout):
         .format(int(float(timeout)*1000))
     )
 
+def get_column_names(entity):
+    """Returns an iterable of column names the entity has"""
+    return (c.name for c in entity.__table__.columns)
 
-def column_dict(row):
+
+def column_dict(row, skip=set()):
+    """Returns a dict with all columns except those in :param:`skip`"""
+
     return {
-        c.name: getattr(row, c.name)
-        for c in row.__table__.columns
+        column: getattr(row, column)
+        for column in get_column_names(row)
+        if column not in skip
     }
+
+
+def filtered_column_dict(row, info, fields_depend_on_columns=None):
+    """Returns a dict with only columns required for query"""
+
+    columns = get_loaded_columns(row, info, fields_depend_on_columns)
+
+    return {
+        column: getattr(row, column)
+        for column in columns
+    }
+
 
 
 def get_active_project_ids():
@@ -115,3 +137,80 @@ def apply_arg_offset(q, args, info):
     if offset > 0:
         q = q.offset(offset)
     return q
+
+def get_loaded_columns(entity, info, fields_depend_on_columns=None):
+    """Returns a set of columns loaded from database
+    because some fields depend on columns of a different name,
+    :param:`depends_on` is there to map to the so we know to load them
+    """
+
+    fields = set(get_fields(info))
+
+    if fields_depend_on_columns:
+        fields.update({
+            column
+            for field in fields
+            for column in fields_depend_on_columns.get(field, {})
+        })
+
+    all_columns = set(get_column_names(entity))
+    used_columns = fields.intersection(all_columns)
+
+    return used_columns
+
+
+def apply_load_only(query, info, fields_depend_on_columns=None):
+    """Returns optimized q by selecting only the necessary columns"""
+
+    columns = get_loaded_columns(query.entity(), info, fields_depend_on_columns)
+
+    return query.options(load_only(*columns))
+
+
+# The below is lifted from
+# https://gist.github.com/mixxorz/dc36e180d1888629cf33
+
+def collect_fields(node, fragments):
+    """Recursively collects fields from the AST
+    Args:
+        node (dict): A node in the AST
+        fragments (dict): Fragment definitions
+    Returns:
+        A dict mapping each field found, along with their sub fields.
+        {'name': {},
+         'sentimentsPerLanguage': {'id': {},
+                                   'name': {},
+                                   'totalSentiments': {}},
+         'slug': {}}
+    """
+
+    field = {}
+
+    if node.get('selection_set'):
+        for leaf in node['selection_set']['selections']:
+            if leaf['kind'] == 'Field':
+                field.update({
+                    leaf['name']['value']: collect_fields(leaf, fragments)
+                })
+            elif leaf['kind'] == 'FragmentSpread':
+                field.update(collect_fields(fragments[leaf['name']['value']],
+                                            fragments))
+
+    return field
+
+
+def get_fields(info):
+    """A convenience function to call collect_fields with info
+    Args:
+        info (ResolveInfo)
+    Returns:
+        dict: Returned from collect_fields
+    """
+
+    fragments = {}
+    node = ast_to_dict(info.field_asts[0])
+
+    for name, value in info.fragments.items():
+        fragments[name] = ast_to_dict(value)
+
+    return collect_fields(node, fragments)
