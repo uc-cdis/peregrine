@@ -635,16 +635,6 @@ def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     }
     
 
-<<<<<<< HEAD
-=======
-def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
-    post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
-        'query': """query Test { transaction_log { id, project_id, submitter } }"""}))
-    with pg_driver_clean.session_scope():
-        assert len(r.json['data']['transaction_log']) == 2, r.data
-
->>>>>>> fca3b33b76ef4b900f08b27b4678a11f15fbc9c8
 def test_auth_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     utils.reset_transactions(pg_driver_clean)
     post_example_entities_together(client, pg_driver_clean, submitter)
