@@ -231,6 +231,7 @@ class TransactionLog(graphene.ObjectType):
     # These fields depend on these columns being loaded
     fields_depend_on_columns = {
         "type": {"role"},
+        "project_id": {"project", "program"},
     }
 
     TYPE_MAP = {
