@@ -9,12 +9,12 @@ Defines utility functions for GraphQL implementation.
 
 from flask import current_app as capp
 from flask import g as fg
-from peregrine.errors import InternalError, AuthError, UserError
+from peregrine.errors import AuthError, UserError
 from gdcdatamodel.models import Project
 from graphql import GraphQLError
 
 from graphql.utils.ast_to_dict import ast_to_dict
-from sqlalchemy.orm import subqueryload, load_only
+from sqlalchemy.orm import load_only
 
 import psqlgraph
 
@@ -29,6 +29,9 @@ def set_session_timeout(session, timeout):
 
 def get_column_names(entity):
     """Returns an iterable of column names the entity has"""
+    if hasattr(entity, '__pg_properties__'):
+        return (k for k in entity.__pg_properties__)
+
     return (c.name for c in entity.__table__.columns)
 
 

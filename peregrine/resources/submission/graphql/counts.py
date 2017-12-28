@@ -8,13 +8,11 @@ import node_subclass as ns
 import transaction
 
 from .base import (
-    GraphQLQuery,
     assert_type,
     munge,
 )
 
 from gdcgraphql import (
-    Int,
     Query,
 )
 
