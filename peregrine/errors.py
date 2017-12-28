@@ -22,7 +22,8 @@ class NotFoundError(APIError):
 
 
 class UserError(APIError):
-    def __init__(self, message, code=400, json={}):
+    def __init__(self, message, code=400, json=None):
+        json = json or {}
         self.json = json
         self.message = message
         self.code = code

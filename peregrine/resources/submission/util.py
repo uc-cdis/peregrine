@@ -23,7 +23,6 @@ from threading import Thread
 
 from peregrine.errors import UserError
 from peregrine.resources.submission.constants import (
-    uuid_regex,
     project_seed,
     program_seed,
     ERROR_STATE,

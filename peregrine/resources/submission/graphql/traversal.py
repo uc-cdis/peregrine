@@ -8,7 +8,6 @@ execute those traversal queries in the database
 """
 
 from psqlgraph import Node, Edge
-from gdcdatamodel import models as md
 import sqlalchemy as sa
 
 from flask import current_app as capp
@@ -137,7 +136,7 @@ def union_subq_path(q, src_label, dst_label, post_filters=[]):
     return base
 
 
-def subq_paths(q, dst_label, post_filters=[]):
+def subq_paths(q, dst_label, post_filters=None):
     """Given a query and the label of the destination type, filter the
     selected entity (in the query) on the criteria that it has a path
     to at least one node with label :param:`dst_label` that matches
@@ -163,6 +162,8 @@ def subq_paths(q, dst_label, post_filters=[]):
         entity as the original :param:`q`
 
     """
+
+    post_filters = post_filters or []
 
     paths = traversals.get(q.entity().label, {}).get(dst_label, {})
     if not paths:
