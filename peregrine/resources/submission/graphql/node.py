@@ -391,7 +391,6 @@ def resolve_node(self, info, **args):
 
     """
 
-    fields_depend_on_columns = Node.fields_depend_on_columns
     requested_fields = get_fields(info)
 
     q = get_authorized_query(psqlgraph.Node)
@@ -400,7 +399,7 @@ def resolve_node(self, info, **args):
                      == args['project_id'])
 
     q = apply_query_args(q, args, info)
-    q = apply_load_only(q, info, fields_depend_on_columns)
+    q = apply_load_only(q, info, Node.fields_depend_on_columns)
 
     if 'of_type' in args:
         # TODO: (jsm) find a better solution.  currently this filter
@@ -728,6 +727,7 @@ def create_root_fields(fields):
         def resolver(self, info, cls=cls, gql_object=gql_object, **args):
             q = get_authorized_query(cls)
             q = apply_query_args(q, args, info)
+            q = apply_load_only(q, info, Node.fields_depend_on_columns)
             try:
                 return [gql_object(**load_node(n)) for n in q.all()]
             except Exception as e:
