@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 import json
 import graphene
 import sqlalchemy as sa
-from sqlalchemy.orm import subqueryload, load_only
+from sqlalchemy.orm import subqueryload
 
 from ..constants import (
     TX_LOG_STATE_SUCCEEDED,

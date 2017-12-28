@@ -21,6 +21,8 @@ from .util import (
     apply_arg_limit,
     apply_arg_offset,
     get_authorized_query,
+    get_fields,
+    apply_load_only,
 )
 
 from .traversal import (
@@ -373,6 +375,12 @@ class Node(graphene.Interface):
     created_datetime = graphene.String()
     updated_datetime = graphene.String()
 
+    # These fields depend on these columns being loaded
+    fields_depend_on_columns = {
+        "type": {"role"},
+        "project_id": {"project", "program"},
+    }
+
 
 def resolve_node(self, info, **args):
     """The root query for the :class:`Node` node interface.
@@ -383,12 +391,16 @@ def resolve_node(self, info, **args):
 
     """
 
+    fields_depend_on_columns = Node.fields_depend_on_columns
+    requested_fields = get_fields(info)
+
     q = get_authorized_query(psqlgraph.Node)
     if 'project_id' in args:
         q = q.filter(q.entity()._props['project_id'].astext
                      == args['project_id'])
 
     q = apply_query_args(q, args, info)
+    q = apply_load_only(q, info, fields_depend_on_columns)
 
     if 'of_type' in args:
         # TODO: (jsm) find a better solution.  currently this filter
