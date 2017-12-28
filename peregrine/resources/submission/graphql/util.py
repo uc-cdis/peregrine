@@ -162,6 +162,11 @@ def get_loaded_columns(entity, info, fields_depend_on_columns=None):
 def apply_load_only(query, info, fields_depend_on_columns=None):
     """Returns optimized q by selecting only the necessary columns"""
 
+    # if the entity doesn't have a backing table then don't do this
+    # this happens when using the generic node property
+    if not hasattr(query.entity(), '__table__'):
+        return query
+
     columns = get_loaded_columns(query.entity(), info, fields_depend_on_columns)
 
     return query.options(load_only(*columns))
