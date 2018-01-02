@@ -376,8 +376,7 @@ class Node(graphene.Interface):
 
     # These fields depend on these columns being loaded
     fields_depend_on_columns = {
-        "type": {"role"},
-        "project_id": {"project", "program", "code"},
+        "project_id": {"program", "code"},
     }
 
 
