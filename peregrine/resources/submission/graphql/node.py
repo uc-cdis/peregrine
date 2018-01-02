@@ -21,6 +21,8 @@ from .util import (
     apply_arg_limit,
     apply_arg_offset,
     get_authorized_query,
+    get_fields,
+    filtered_column_dict
 )
 
 from .traversal import (
@@ -342,7 +344,7 @@ def apply_query_args(q, args, info):
 # ======================================================================
 # Node interface
 
-def load_node(n):
+def load_node(n, info, fields_depend_on_columns=None):
     """Turns a node into a dictionary (including ``type, id``).  This
     dictionary will prune any unexpected properties from the JSONB.
     (This could happen when somebody else has written a node using a
@@ -358,11 +360,10 @@ def load_node(n):
 
     """
     return dict(
+        filtered_column_dict(n, info, fields_depend_on_columns),
         id=n.node_id,
         type=n.label,
-        **{k: v for k, v in n.props.iteritems() if k in n.__pg_properties__}
     )
-
 
 class Node(graphene.Interface):
     """The query object that represents the psqlgraph.Node base"""
@@ -373,6 +374,11 @@ class Node(graphene.Interface):
     created_datetime = graphene.String()
     updated_datetime = graphene.String()
 
+    # These fields depend on these columns being loaded
+    fields_depend_on_columns = {
+        "project_id": {"program", "code"},
+    }
+
 
 def resolve_node(self, info, **args):
     """The root query for the :class:`Node` node interface.
@@ -382,6 +388,8 @@ def resolve_node(self, info, **args):
         (not a gdcdatamodel Case)).
 
     """
+
+    requested_fields = get_fields(info)
 
     q = get_authorized_query(psqlgraph.Node)
     if 'project_id' in args:
@@ -415,7 +423,7 @@ def resolve_node(self, info, **args):
         q = apply_arg_limit(q, args, info)
         q = apply_arg_offset(q, args, info)
 
-    return [__gql_object_classes[n.label](**load_node(n)) for n in q.all()]
+    return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
 
 
 def lookup_graphql_type(T):
@@ -568,7 +576,7 @@ def get_node_class_link_attrs(cls):
         }, info, name='related_cases')
         qcls = __gql_object_classes['case']
         try:
-            return [qcls(**load_node(n)) for n in q.all()]
+            return [qcls(**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
         except Exception as e:
             capp.logger.exception(e)
             raise
@@ -637,7 +645,7 @@ def get_node_class_link_resolver_attrs(cls):
             try:
                 q = link_query(self, info, cls=cls, link=link, **args)
                 qcls = __gql_object_classes[link['type'].label]
-                return [qcls(**load_node(n)) for n in q.all()]
+                return [qcls(**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
             except Exception as e:
                 capp.logger.exception(e)
                 raise
@@ -675,7 +683,7 @@ def get_node_class_link_resolver_attrs(cls):
                 q = q1.union(q2)
                 apply_arg_limit(q, args, info)
                 return [
-                    __gql_object_classes[n.label](**load_node(n))
+                    __gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns))
                     for n in q.all()
                 ]
             except Exception as e:
@@ -717,7 +725,7 @@ def create_root_fields(fields):
             q = get_authorized_query(cls)
             q = apply_query_args(q, args, info)
             try:
-                return [gql_object(**load_node(n)) for n in q.all()]
+                return [gql_object(**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
             except Exception as e:
                 capp.logger.exception(e)
                 raise

@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 import json
 import graphene
 import sqlalchemy as sa
-
+from sqlalchemy.orm import subqueryload
 
 from ..constants import (
     TX_LOG_STATE_SUCCEEDED,
@@ -27,6 +27,9 @@ from .util import (
     apply_arg_limit,
     apply_arg_offset,
     column_dict,
+    filtered_column_dict,
+    get_fields,
+    apply_load_only,
 )
 
 from peregrine.resources.submission.constants import (
@@ -188,11 +191,11 @@ class TransactionDocument(graphene.ObjectType):
     response = graphene.Field(TransactionResponse)
 
     @classmethod
-    def resolve_doc_size(cls, document, **args):
+    def resolve_doc_size(cls, document, *args, **kwargs):
         return len(document.doc)
 
     @classmethod
-    def resolve_response(cls, document, **args):
+    def resolve_response(cls, document, *arg, **kwargss):
         try:
             response_json = json.loads(document.response_json)
             return instantiate_safely(TransactionResponse, response_json)
@@ -200,12 +203,11 @@ class TransactionDocument(graphene.ObjectType):
             logger.exception(exc)
 
     @classmethod
-    def resolve_response_json(cls, document, **args):
+    def resolve_response_json(cls, document, *args, **kwargs):
         try:
             return document.response_json
         except Exception as exc:
             logger.exception(exc)
-
 
 class TransactionLog(graphene.ObjectType):
     id = graphene.ID()
@@ -226,6 +228,12 @@ class TransactionLog(graphene.ObjectType):
     documents = graphene.List(TransactionDocument)
     related_cases = graphene.List(TransactionResponseEntityRelatedCases)
 
+    # These fields depend on these columns being loaded
+    fields_depend_on_columns = {
+        "type": {"role"},
+        "project_id": {"project", "program"},
+    }
+
     TYPE_MAP = {
         "update": "upload",
         "create": "upload",
@@ -237,13 +245,13 @@ class TransactionLog(graphene.ObjectType):
 
     def resolve_documents(self, info, **args):
         return [TransactionDocument(**dict(
-            column_dict(r),
+            filtered_column_dict(r, info),
             **{'response_json': json.dumps(r.response_json)}
         )) for r in self.documents]
 
     def resolve_snapshots(self, info, **args):
         return [
-            TransactionSnapshot(**column_dict(r))
+            TransactionSnapshot(**filtered_column_dict(r, info))
             for r in self.snapshots
         ]
 
@@ -373,15 +381,39 @@ def resolve_transaction_log_query(self, info, **args):
     q = apply_arg_offset(q, args, info)
     return q
 
+def apply_transaction_log_eagerload(q, info):
+    """Optimize the transaction_log query to prevent an N+1 query
+       problem by eagerly loading relationships from the database
+    """
+
+    fields = get_fields(info)
+
+    if 'documents' in fields:
+        q = q.options(subqueryload(sub.TransactionLog.documents))
+
+    if 'snapshots' in fields:
+        q = q.options(subqueryload(sub.TransactionLog.entities))
+
+    return q
 
 def resolve_transaction_log(self, info, **args):
+    fields_depend_on_columns = TransactionLog.fields_depend_on_columns
+    requested_fields = get_fields(info)
+
     q = resolve_transaction_log_query(self, info, **args)
-    def fast_fix_dict(r):
-        good_dict = r.__dict__.copy()
-        del good_dict['_sa_instance_state']
-        good_dict['snapshots'] = r.entities
-        return good_dict
-    return [TransactionLog(**fast_fix_dict(r)) for r in q.all()]
+    q = apply_transaction_log_eagerload(q, info)
+    q = apply_load_only(q, info, fields_depend_on_columns)
+
+    results = []
+
+    for tx_log in q.all():
+        fields = filtered_column_dict(tx_log, info, fields_depend_on_columns)
+        if 'documents' in requested_fields:
+            fields['documents'] = tx_log.documents
+        if 'snapshots' in requested_fields:
+            fields['snapshots'] = tx_log.entities
+        results.append(TransactionLog(**fields))
+    return results
 
 
 def resolve_transaction_log_count(self, info, **args):

@@ -4,6 +4,7 @@ import os
 import pytest
 from flask import g
 from gdcdatamodel import models
+from gdcdatamodel.models.submission import TransactionLog
 from psqlgraph import Node
 
 from tests.graphql import utils
@@ -15,6 +16,70 @@ BRCA_PATH = '/v0/submission/TCGA/BRCA/'
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 
 path = '/v0/submission/graphql'
+
+# ======================================================================
+# Fixtures
+
+@pytest.fixture
+def graphql_client(client, submitter):
+    def execute(query, variables={}):
+        return client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+            'query': query,
+            'variables': variables,
+        }))
+    return execute
+
+
+@pytest.fixture
+def mock_tx_log(pg_driver_clean):
+    utils.reset_transactions(pg_driver_clean)
+    with pg_driver_clean.session_scope() as session:
+        return session.merge(TransactionLog(
+            is_dry_run=True,
+            program='CGCI',
+            project='BLGSP',
+            role='create',
+            state='SUCCEEDED',
+            committed_by=12345,
+            closed=False,
+        ))
+
+
+@pytest.fixture
+def populated_blgsp(client, submitter, pg_driver_clean):
+    utils.reset_transactions(pg_driver_clean)
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+
+@pytest.fixture
+def failed_deletion_transaction(client, submitter, pg_driver_clean, populated_blgsp):
+    with pg_driver_clean.session_scope():
+        node_id = pg_driver_clean.nodes(models.Sample).first().node_id
+    delete_path = '/v0/submission/CGCI/BLGSP/entities/{}'.format(node_id)
+    r = client.delete(
+        delete_path,
+        headers=submitter(delete_path, 'delete'))
+    assert r.status_code == 400, r.data
+    return str(r.json['transaction_id'])
+
+
+@pytest.fixture
+def failed_upload_transaction(client, submitter, pg_driver_clean):
+    put_path = '/v0/submission/CGCI/BLGSP/'
+    r = client.put(
+        put_path,
+        data=json.dumps({
+            'type': 'sample',
+            'cases': [{'id': 'no idea'}],
+            'sample_type': 'teapot',
+            'how_heavy': 'no',
+        }),
+        headers=submitter(put_path, 'put'))
+    assert r.status_code == 400, r.data
+    return str(r.json['transaction_id'])
+
+# ======================================================================
+# Tests
 
 def post_example_entities_together(
         client, pg_driver_clean, submitter, data_fnames=data_fnames):
@@ -556,13 +621,19 @@ def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
     with pg_driver_clean.session_scope():
         assert r.json['data']['_case_count'] == 0
 
-
 def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
-        'query': """query Test { transaction_log { id, project_id, submitter } }"""}))
-    with pg_driver_clean.session_scope():
-        assert len(r.json['data']['transaction_log']) == 2, r.data
+        'query': """query Test { transaction_log(first:1) { project_id, submitter } }"""}))
+    assert len(r.json['data']['transaction_log']) == 1, r.data
+    assert r.json == {
+        "data": {
+            "transaction_log": [{
+            'project_id': 'CGCI-BLGSP', 'submitter': None
+            }]
+        }
+    }
+    
 
 def test_auth_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     utils.reset_transactions(pg_driver_clean)
@@ -955,3 +1026,198 @@ def test_read_group_with_path_to_case(
             "_read_group_count": 1,
         }
     }
+
+
+
+
+def test_tx_logs_async_fields(pg_driver_clean, graphql_client, cgci_blgsp):
+    assert graphql_client("""{
+        tx_log: transaction_log {
+            is_dry_run, state, committed_by
+        }
+    }""").json == {
+        "data": {
+            'tx_log': [{
+                "is_dry_run": False,
+                "state": "PENDING",
+                "committed_by": None
+            }],
+        }
+    }
+
+
+def test_tx_logs_state(pg_driver_clean, graphql_client, cgci_blgsp, mock_tx_log):
+    assert graphql_client("""{
+        total: _transaction_log_count
+        succeeded: _transaction_log_count(state: "SUCCEEDED")
+        failed: _transaction_log_count(state: "FAILED")
+    }""").json == {
+        "data": {
+            "total": 1,
+            "succeeded": 1,
+            "failed": 0,
+        }
+    }
+
+
+def test_tx_logs_is_dry_run(pg_driver_clean, cgci_blgsp, mock_tx_log, graphql_client):
+    assert graphql_client("""{
+        total: _transaction_log_count
+        is: _transaction_log_count(is_dry_run: true)
+        isnt: _transaction_log_count(is_dry_run: false)
+    }""").json == {
+        "data": {
+            "total": 1,
+            "is": 1,
+            "isnt": 0,
+        }
+    }
+
+
+def test_tx_logs_committed_by(pg_driver_clean, cgci_blgsp, mock_tx_log, graphql_client):
+    assert graphql_client("""{
+        total: _transaction_log_count
+        right: _transaction_log_count(committed_by: 12345)
+        wrong: _transaction_log_count(committed_by: 54321)
+    }""").json == {
+        "data": {
+            "total": 1,
+            "right": 1,
+            "wrong": 0,
+        }
+    }
+
+
+def test_tx_logs_committable(pg_driver_clean, graphql_client, cgci_blgsp, mock_tx_log):
+    assert graphql_client("""{
+        total: _transaction_log_count
+        committable: _transaction_log_count(committable: true)
+        not_committable: _transaction_log_count(committable: false)
+    }""").json == {
+        "data": {
+            "total": 1,
+            "committable": 0,
+            "not_committable": 1,
+        }
+    }
+
+@pytest.mark.skip(reason='we have different data')
+def test_tx_logs_deletion(pg_driver_clean, graphql_client, cgci_blgsp, failed_deletion_transaction):
+    response = graphql_client("""{
+        transaction_log(id: %s) {
+            id
+            type
+            documents {
+            response {
+              entities {
+                unique_keys
+                related_cases { submitter_id }
+                errors {
+                  message
+                }
+              }
+            }
+          }
+        }
+      }
+    """ % failed_deletion_transaction)
+
+    assert response.json == {
+        "data": {
+            "transaction_log": [{
+                "documents": [{
+                    "response": {
+                        "entities": [{
+                            'related_cases': [{
+                                'submitter_id': 'BLGSP-71-06-00019'
+                            }],
+                            'unique_keys': json.dumps([{
+                                "project_id": "CGCI-BLGSP",
+                                "submitter_id": "BLGSP-71-06-00019s",
+                            }]),
+                            "errors": [{
+                                "message": "Unable to delete entity because 4 others directly or indirectly depend on it. You can only delete this entity by deleting its dependents prior to, or during the same transaction as this one."
+                            }]
+                        }]
+                    }
+                }],
+                "id": failed_deletion_transaction,
+                "type": "delete"
+            }]
+        }
+    }
+
+
+#: Transaction log query that is representative of a query from the
+#: Submission UI
+COMPREHENSIVE_TX_LOG_QUERY = """
+query TransactionDetailsQuery {
+  item: transaction_log {
+    id
+    project_id
+    type
+    state
+    committed_by
+    submitter
+    is_dry_run
+    closed
+    created_datetime
+    documents {
+      id
+      name
+      doc
+      doc_size
+      doc_format
+      response_json
+      response {
+        message
+        entities {
+          id
+          unique_keys
+          action
+          type
+          related_cases {
+            id
+            submitter_id
+          }
+          errors {
+            keys
+            type
+            message
+            dependents {
+              id
+              type
+            }
+          }
+        }
+      }
+    }
+  }
+}"""
+
+
+def test_tx_log_comprehensive_query_failed_upload(
+        pg_driver_clean, graphql_client, cgci_blgsp, failed_upload_transaction):
+    """Test a comprehensive tx_log query for a failed upload"""
+
+    response = graphql_client(COMPREHENSIVE_TX_LOG_QUERY)
+    assert response.status_code == 200, response.data
+    assert 'errors' not in response.json, response.data
+
+
+def test_tx_log_comprehensive_query_upload(
+        pg_driver_clean, graphql_client, populated_blgsp):
+    """Test a comprehensive tx_log query for a successful upload"""
+
+    response = graphql_client(COMPREHENSIVE_TX_LOG_QUERY)
+    assert response.status_code == 200, response.data
+    assert 'errors' not in response.json, response.data
+
+
+def test_tx_log_comprehensive_query_failed_deletion(
+        pg_driver_clean, graphql_client, cgci_blgsp, failed_deletion_transaction):
+    """Test a comprehensive tx_log query for a failed deletion"""
+
+    response = graphql_client(COMPREHENSIVE_TX_LOG_QUERY)
+    assert response.status_code == 200, response.data
+    assert 'errors' not in response.json, response.data
