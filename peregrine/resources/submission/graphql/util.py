@@ -18,6 +18,10 @@ from sqlalchemy.orm import load_only
 
 import psqlgraph
 
+from peregrine.resources.submission.constants import (
+    FILTER_ACTIVE,
+)
+
 DEFAULT_LIMIT = 10
 
 
@@ -120,8 +124,9 @@ def authorization_filter(q):
     if cls == psqlgraph.Node or hasattr(cls, 'project_id'):
         q = q.filter(cls._props['project_id'].astext.in_(fg.read_access_projects))
 
-    # Plan X doesn't use this filter so lets take it out for now.
-    #q = active_project_filter(q)
+    if FILTER_ACTIVE:
+        q = active_project_filter(q)
+
     return q
 
 

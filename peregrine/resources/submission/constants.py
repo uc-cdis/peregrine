@@ -22,6 +22,12 @@ CACHE_CASES = (
     else gdcdictionary.settings.get('enable_case_cache', True)
 )
 
+#: Do we have a filter active project setting and should we do it?
+FILTER_ACTIVE = (
+    True if not hasattr(gdcdictionary, 'settings')
+    else gdcdictionary.settings.get('filter_active_projects', True)
+)
+
 
 # ======================================================================
 # File upload
