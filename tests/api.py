@@ -49,6 +49,8 @@ def app_register_blueprints(app):
         gdcdictionary.gdcdictionary, gdcdatamodel.models
     )
 
+    app.register_blueprint(sheepdog_blueprint, url_prefix=v0+'/submission')
+
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix=v0+'/submission')
     app.register_blueprint(cdis_oauth2client.blueprint, url_prefix=v0+'/oauth2')
 
@@ -137,8 +139,6 @@ def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
-    from peregrine.resources.submission.graphql.node import get_fields
-    fields = get_fields()
     
     app_register_blueprints(app)
     # app_register_duplicate_blueprints(app)

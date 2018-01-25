@@ -20,7 +20,7 @@ from .util import (
     apply_arg_limit,
     apply_arg_offset,
     get_authorized_query,
-    get_fields,
+    get_fields as util_get_fields,
     filtered_column_dict
 )
 
@@ -389,7 +389,7 @@ def resolve_node(self, info, **args):
 
     """
 
-    requested_fields = get_fields(info)
+    requested_fields = util_get_fields(info)
 
     q = get_authorized_query(psqlgraph.Node)
     if 'project_id' in args:
