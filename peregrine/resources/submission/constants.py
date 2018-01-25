@@ -17,16 +17,33 @@ import uuid
 # Dictionary Consts
 
 #: Do we have a cache case setting and should we do it?
-CACHE_CASES = (
-    True if not hasattr(gdcdictionary, 'settings')
-    else gdcdictionary.settings.get('enable_case_cache', True)
-)
+#: Do we have a cache case setting and should we do it?
+def case_cache_enabled():
+    """
+    Return if the case cache is enabled or not. NOTE that the dictionary must be initialized
+    first!
 
-#: Do we have a filter active project setting and should we do it?
-FILTER_ACTIVE = (
-    True if not hasattr(gdcdictionary, 'settings')
-    else gdcdictionary.settings.get('filter_active_projects', True)
-)
+    .. note::
+
+        This function assumes that the dictionary has already been initialized.
+        The except/return None behavior is to, for example, allow Sphinx to
+        still import/run individual modules without raising errors.
+    """
+    from peregrine import dictionary
+    try:
+        return (
+            True if dictionary.settings == None
+            else dictionary.settings.get('enable_case_cache', True)
+        )
+    except (AttributeError, KeyError, TypeError):
+        return True
+
+
+# #: Do we have a filter active project setting and should we do it?
+# FILTER_ACTIVE = (
+#     True if not hasattr(gdcdictionary, 'settings')
+#     else gdcdictionary.settings.get('filter_active_projects', True)
+# )
 
 
 # ======================================================================
@@ -36,8 +53,36 @@ FILTER_ACTIVE = (
 ERROR_STATE = 'error'
 
 #: Initial file state
-SUBMITTED_STATE = (gdcdictionary.resolvers['_definitions.yaml']
-                   .source['file_state']['default'])
+def submitted_state():
+    """
+    Return the initial file state. NOTE that the dictionary must be initialized
+    first!
+
+    This would be a global defined as:
+
+    .. code-block:: python
+
+        SUBMITTED_STATE = (
+            dictionary.resolvers['_definitions.yaml'].source['file_state']['default']
+        )
+
+    but the dictionary must be initialized first, so this value cannot be used
+    before that.
+
+    .. note::
+
+        This function assumes that the dictionary has already been initialized.
+        The except/return None behavior is to, for example, allow Sphinx to
+        still import/run individual modules without raising errors.
+    """
+    from peregrine import dictionary
+    try:
+        return (
+            dictionary.resolvers['_definitions.yaml']
+            .source['file_state']['default']
+        )
+    except (AttributeError, KeyError, TypeError):
+        return None
 
 #: State file enters when user begins upload
 UPLOADING_STATE = 'uploading'
@@ -63,7 +108,7 @@ ALLOWED_DELETION_STATES = [
 #: This is a list of file_states that a a file must be in to allow
 #: deletion
 ALLOWED_DELETION_FILE_STATES = [
-    SUBMITTED_STATE,
+    submitted_state,
 ]
 
 

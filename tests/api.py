@@ -1,27 +1,31 @@
-import random
 import os
 import string
 import sys
 
-import cdis_oauth2client
-from cdis_oauth2client import OAuth2Client, OAuth2Error
-from cdisutils.log import get_handler
 from elasticsearch import ElasticsearchException, Elasticsearch
+import flask
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
-import gdcdatamodel
-import gdcdictionary
-from indexclient.client import IndexClient as SignpostClient
 from psqlgraph import PsqlGraphDriver
-import sheepdog
+
+from dictionaryutils import DataDictionary, dictionary as dict_init
+import datamodelutils
+from peregrine import dictionary
+from datamodelutils import models, validators
+from indexclient.client import IndexClient as SignpostClient
 from userdatamodel.driver import SQLAlchemyDriver
+
+import cdis_oauth2client
+from cdis_oauth2client import OAuth2Client, OAuth2Error
+from cdisutils.log import get_handler
+
+import peregrine
+from peregrine import blueprints
 
 from peregrine.auth import AuthDriver
 from peregrine.config import LEGACY_MODE
 from peregrine.errors import APIError, setup_default_handlers, UnhealthyCheck
-from peregrine import blueprints
-from peregrine.blueprints import blueprint
 from peregrine.resources import submission
 from peregrine.version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
 
@@ -38,47 +42,21 @@ def app_register_blueprints(app):
     v0 = '/v0'
     app.url_map.strict_slashes = False
 
-    app.register_blueprint(blueprint, url_prefix=v0+'/submission')
-
     import sheepdog
+    import gdcdictionary
+    import gdcdatamodel
     sheepdog_blueprint = sheepdog.blueprint.create_blueprint(
         gdcdictionary.gdcdictionary, gdcdatamodel.models
     )
 
-    app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
+    app.register_blueprint(peregrine.blueprints.blueprint, url_prefix=v0+'/submission')
     app.register_blueprint(cdis_oauth2client.blueprint, url_prefix=v0+'/oauth2')
-
-    #print('In app_register_blueprints:', submission.blueprint)
 
 
 def app_register_duplicate_blueprints(app):
     # TODO: (jsm) deprecate this v0 version under root endpoint.  This
     # root endpoint duplicates /v0 to allow gradual client migration
-    app.register_blueprint(blueprints.blueprint, url_prefix='/submission')
-
-
-def app_register_legacy_blueprints(app):
-    legacy = '/legacy'
-    app.register_blueprint(index.v0.blueprint, url_prefix=legacy)
-    app.register_blueprint(index.v0.blueprint, url_prefix=legacy+'/index')
-    app.register_blueprint(misc.v0.blueprint, url_prefix=legacy)
-    app.register_blueprint(auth.v0.blueprint, url_prefix=legacy+'/auth')
-    app.register_blueprint(manifest.v0.blueprint, url_prefix=legacy+'/manifest')
-    app.register_blueprint(download.v0.blueprint, url_prefix=legacy+'/data')
-    app.register_blueprint(submission.blueprint, url_prefix=legacy+'/submission')
-    app.register_blueprint(slicing.v0.blueprint, url_prefix=legacy+'/slicing')
-
-
-def app_register_v0_legacy_blueprints(app):
-    v0_legacy = '/v0/legacy'
-    app.register_blueprint(index.v0.blueprint, url_prefix=v0_legacy)
-    app.register_blueprint(index.v0.blueprint, url_prefix=v0_legacy+'/index')
-    app.register_blueprint(misc.v0.blueprint, url_prefix=v0_legacy)
-    app.register_blueprint(auth.v0.blueprint, url_prefix=v0_legacy+'/auth')
-    app.register_blueprint(manifest.v0.blueprint, url_prefix=v0_legacy+'/manifest')
-    app.register_blueprint(download.v0.blueprint, url_prefix=v0_legacy+'/data')
-    app.register_blueprint(submission.blueprint, url_prefix=v0_legacy+'/submission')
-    app.register_blueprint(slicing.v0.blueprint, url_prefix=v0_legacy+'/slicing')
+    app.register_blueprint(peregrine.blueprints.blueprint, url_prefix='/submission')
 
 
 def async_pool_init(app):
@@ -88,7 +66,7 @@ def async_pool_init(app):
         .get('ASYNC', {})
         .get('N_WORKERS', DEFAULT_ASYNC_WORKERS)
     )
-    app.async_pool = sheepdog.utils.scheduling.AsyncPool()
+    app.async_pool = peregrine.utils.scheduling.AsyncPool()
     app.async_pool.start(n_async_workers)
 
 
@@ -136,10 +114,33 @@ def cors_init(app):
         r"/*": {"origins": '*'},
         }, headers=accepted_headers, expose_headers=['Content-Disposition'])
 
+def dictionary_init(app):
+    dictionary_url = app.config.get('DICTIONARY_URL')
+    if dictionary_url:
+        app.logger.info('Initializing dictionary from url')
+        d = DataDictionary(url=dictionary_url)
+        dict_init.init(d)
+        dictionary.init(d)
+    else:
+        app.logger.info('Initializing dictionary from gdcdictionary')
+        from gdcdictionary import gdcdictionary
+        dictionary.init(gdcdictionary)
+    from gdcdatamodel import models as md
+    from gdcdatamodel import validators as vd
+    datamodelutils.validators.init(vd)
+    datamodelutils.models.init(md)
+
+    from datamodelutils.models import *
+    
 
 def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
+    dictionary_init(app)
+    from peregrine.resources.submission.graphql.node import get_fields
+    fields = get_fields()
+    
+    app_register_blueprints(app)
     # app_register_duplicate_blueprints(app)
     if LEGACY_MODE:
         app_register_legacy_blueprints(app)
@@ -148,6 +149,7 @@ def app_init(app):
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
+    app.graphql_schema = submission.graphql.get_schema()
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:
@@ -158,15 +160,12 @@ def app_init(app):
     async_pool_init(app)
     app.logger.info('Initialization complete.')
 
-
 app = Flask(__name__)
 
 # Setup logger
 app.logger.addHandler(get_handler())
 
 setup_default_handlers(app)
-app_register_blueprints(app)
-
 
 @app.route('/_status', methods=['GET'])
 def health_check():
@@ -216,12 +215,11 @@ def _log_and_jsonify_exception(e):
     else:
         return jsonify(message=e.message), e.code
 
-
 app.register_error_handler(APIError, _log_and_jsonify_exception)
 
-import sheepdog.errors
+import peregrine.errors
 app.register_error_handler(
-    sheepdog.errors.APIError, _log_and_jsonify_exception
+    peregrine.errors.APIError, _log_and_jsonify_exception
 )
 app.register_error_handler(OAuth2Error, _log_and_jsonify_exception)
 
@@ -240,8 +238,8 @@ def run_for_development(**kwargs):
             del os.environ[key]
     app.config.from_object('peregrine.dev_settings')
 
-    kwargs['port'] = app.config['GDC_API_PORT']
-    kwargs['host'] = app.config['GDC_API_HOST']
+    kwargs['port'] = app.config['PEREGRINE_PORT']
+    kwargs['host'] = app.config['PEREGRINE_HOST']
 
     try:
         app_init(app)

@@ -13,8 +13,7 @@ import simplejson
 import yaml
 import flask
 
-from gdcdatamodel import models
-from gdcdictionary import gdcdictionary
+from datamodelutils import models
 from flask import current_app as capp
 from flask import request
 from functools import wraps
@@ -29,7 +28,7 @@ from peregrine.resources.submission.constants import (
     program_seed,
     ERROR_STATE,
     FLAG_IS_ASYNC,
-    SUBMITTED_STATE,
+    submitted_state,
     UPLOADING_STATE,
     SUCCESS_STATE,
 )

@@ -12,8 +12,7 @@ from flask import request, g, session
 from flask import current_app as app
 from flask_sqlalchemy_session import current_session
 from peregrine.errors import InternalError, AuthError, NotFoundError, InvalidTokenError
-from gdcdatamodel.models import Project, Program
-from gdcdictionary import gdcdictionary
+from datamodelutils import models
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 import userdatamodel
@@ -109,7 +108,7 @@ class AuthDriver(object):
             with app.db.session_scope():
                 program, project = node.project_id.split('-', 1)
                 try:
-                    project = (app.db.nodes(Project)
+                    project = (app.db.nodes(models.Project)
                                .props(code=project)
                                .path('programs')
                                .props(name=program)
@@ -195,13 +194,13 @@ class FederatedUser(object):
         if phsid in self.mapping:
             return self.mapping[phsid]
         with app.db.session_scope():
-            project = app.db.nodes(Project).props(
+            project = app.db.nodes(models.Project).props(
                 dbgap_accession_number=phsid).first()
             self.mapping[phsid] = []
             if project:
                 self.mapping[phsid] = [project.programs[0].name + '-' + project.code]
             else:
-                program = app.db.nodes(Program).props(
+                program = app.db.nodes(models.Program).props(
                     dbgap_accession_number=phsid).first()
                 if program:
                     self.mapping[phsid] = [

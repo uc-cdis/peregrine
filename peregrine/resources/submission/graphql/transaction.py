@@ -6,18 +6,18 @@ peregrine.resources.submission.graphql.transaction
 GraphQL Models for TransactionLogs
 """
 
-
-from cdisutils.log import get_logger
 from collections import defaultdict
-import flask
-from gdcdatamodel.models import submission as sub
-
-logger = get_logger(__name__)
 
 import json
+import flask
 import graphene
 import sqlalchemy as sa
 from sqlalchemy.orm import subqueryload
+
+from cdispyutils.log import get_logger
+from datamodelutils import models
+
+logger = get_logger(__name__)
 
 from ..constants import (
     TX_LOG_STATE_SUCCEEDED,
@@ -33,7 +33,7 @@ from .util import (
 )
 
 from peregrine.resources.submission.constants import (
-    CACHE_CASES,
+    case_cache_enabled,
 )
 
 def filter_to_cls_fields(cls, doc):
@@ -141,7 +141,7 @@ class TransactionResponseEntity(graphene.ObjectType):
         return lambda: self.type
 
     def resolve_related_cases(self, info, **args):
-        if CACHE_CASES:
+        if case_cache_enabled():
             return [
                 instantiate_safely(TransactionResponseEntityRelatedCases, case)
                 for case in self.related_cases
@@ -260,7 +260,7 @@ class TransactionLog(graphene.ObjectType):
         return self.TYPE_MAP.get(self.role.lower(), self.role.lower())
 
     def resolve_related_cases(self, info, **args):
-	if not CACHE_CASES:
+	if not case_cache_enabled():
             return []
         related_cases = {}
         for document in self.documents:
@@ -305,8 +305,8 @@ def resolve_transaction_log_query(self, info, **args):
     sortable = ['id', 'submitter', 'role', 'program', 'project',
                 'created_datetime', 'canonical_json', 'project_id']
 
-    q = flask.current_app.db.nodes(sub.TransactionLog).filter(
-        sub.TransactionLog.project_id.in_(flask.g.read_access_projects)
+    q = flask.current_app.db.nodes(models.submission.TransactionLog).filter(
+        models.submission.TransactionLog.project_id.in_(flask.g.read_access_projects)
     )
 
     if 'quick_search' in args:
@@ -317,46 +317,46 @@ def resolve_transaction_log_query(self, info, **args):
             # filter should return 0 results.
             return q.filter(sa.sql.false())
         else:
-            q = q.filter(sub.TransactionLog.id == id_)
+            q = q.filter(models.submission.TransactionLog.id == id_)
 
     if 'id' in args:
-        q = q.filter(sub.TransactionLog.id == args['id'])
+        q = q.filter(models.submission.TransactionLog.id == args['id'])
     if 'is_dry_run' in args:
-        q = q.filter(sub.TransactionLog.is_dry_run == args['is_dry_run'])
+        q = q.filter(models.submission.TransactionLog.is_dry_run == args['is_dry_run'])
     if 'state' in args:
-        q = q.filter(sub.TransactionLog.state == args['state'])
+        q = q.filter(models.submission.TransactionLog.state == args['state'])
     if 'committed_by' in args:
-        q = q.filter(sub.TransactionLog.committed_by == args['committed_by'])
+        q = q.filter(models.submission.TransactionLog.committed_by == args['committed_by'])
     if 'closed' in args:
-        q = q.filter(sub.TransactionLog.closed == args['closed'])
+        q = q.filter(models.submission.TransactionLog.closed == args['closed'])
     if 'committable' in args:
         if args['committable']:
             # is committable
             q = q.filter(sa.and_(
-                sub.TransactionLog.is_dry_run == True,
-                sub.TransactionLog.state == TX_LOG_STATE_SUCCEEDED,
-                sub.TransactionLog.closed == False,
-                sub.TransactionLog.committed_by == None))
+                models.submission.TransactionLog.is_dry_run == True,
+                models.submission.TransactionLog.state == TX_LOG_STATE_SUCCEEDED,
+                models.submission.TransactionLog.closed == False,
+                models.submission.TransactionLog.committed_by == None))
         else:
             # is not committable
             q = q.filter(sa.or_(
-                sub.TransactionLog.is_dry_run == False,
-                sub.TransactionLog.state != TX_LOG_STATE_SUCCEEDED,
-                sub.TransactionLog.closed == True,
-                sub.TransactionLog.committed_by != None))
+                models.submission.TransactionLog.is_dry_run == False,
+                models.submission.TransactionLog.state != TX_LOG_STATE_SUCCEEDED,
+                models.submission.TransactionLog.closed == True,
+                models.submission.TransactionLog.committed_by != None))
     if 'project_id' in args:
-        q = q.filter(sub.TransactionLog.project_id.in_(args['project_id']))
+        q = q.filter(models.submission.TransactionLog.project_id.in_(args['project_id']))
     if 'project' in args:
-        q = q.filter(sub.TransactionLog.project == args['project'])
+        q = q.filter(models.submission.TransactionLog.project == args['project'])
     if 'program' in args:
-        q = q.filter(sub.TransactionLog.program == args['program'])
+        q = q.filter(models.submission.TransactionLog.program == args['program'])
     if 'entities' in args:
-        q = q.join(sub.TransactionLog.entities)\
-             .filter(sub.TransactionSnapshot.id.in_(args['entities']))\
+        q = q.join(models.submission.TransactionLog.entities)\
+             .filter(models.submission.TransactionSnapshot.id.in_(args['entities']))\
              .reset_joinpoint()
     if 'related_cases' in args:
-        q = q.join(sub.TransactionLog.documents)\
-             .filter(sa.or_(sub.TransactionDocument.response_json.contains({
+        q = q.join(models.submission.TransactionLog.documents)\
+             .filter(sa.or_(models.submission.TransactionDocument.response_json.contains({
                  'entities': [{'related_cases': [
                      {'id': r_id}]}]}) for r_id in args['related_cases']))\
              .reset_joinpoint()
@@ -364,7 +364,7 @@ def resolve_transaction_log_query(self, info, **args):
         inv_map = defaultdict(list)
         for k, v in TransactionLog.TYPE_MAP.iteritems():
             inv_map[v].append(k)
-        q = q.filter(sub.TransactionLog.role.in_(
+        q = q.filter(models.submission.TransactionLog.role.in_(
             inv_map.get(args['type'], [args['type']])))
 
     if args.get('order_by_asc') in sortable:
@@ -389,10 +389,10 @@ def apply_transaction_log_eagerload(q, info):
     fields = get_fields(info)
 
     if 'documents' in fields:
-        q = q.options(subqueryload(sub.TransactionLog.documents))
+        q = q.options(subqueryload(models.submission.TransactionLog.documents))
 
     if 'snapshots' in fields:
-        q = q.options(subqueryload(sub.TransactionLog.entities))
+        q = q.options(subqueryload(models.submission.TransactionLog.entities))
 
     return q
 

@@ -2,19 +2,26 @@ import os
 import string
 import sys
 
-import cdis_oauth2client
-from cdis_oauth2client import OAuth2Client, OAuth2Error
-from cdisutils.log import get_handler
 from elasticsearch import ElasticsearchException, Elasticsearch
+import flask
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
-import gdcdatamodel
-import gdcdictionary
-from indexclient.client import IndexClient as SignpostClient
 from psqlgraph import PsqlGraphDriver
+
+from dictionaryutils import DataDictionary, dictionary as dict_init
+import datamodelutils
+from peregrine import dictionary
+from datamodelutils import models, validators
+from indexclient.client import IndexClient as SignpostClient
 from userdatamodel.driver import SQLAlchemyDriver
+
+import cdis_oauth2client
+from cdis_oauth2client import OAuth2Client, OAuth2Error
+from cdisutils.log import get_handler
+
 import peregrine
+from peregrine import blueprints
 
 from .auth import AuthDriver
 from .config import LEGACY_MODE
@@ -34,10 +41,9 @@ def app_register_blueprints(app):
     # path) for migration
     v0 = '/v0'
     app.url_map.strict_slashes = False
+
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix=v0+'/submission')
     app.register_blueprint(cdis_oauth2client.blueprint, url_prefix=v0+'/oauth2')
-
-    #print('In app_register_blueprints:', submission.blueprint)
 
 
 def app_register_duplicate_blueprints(app):
@@ -101,10 +107,33 @@ def cors_init(app):
         r"/*": {"origins": '*'},
         }, headers=accepted_headers, expose_headers=['Content-Disposition'])
 
+def dictionary_init(app):
+    dictionary_url = app.config.get('DICTIONARY_URL')
+    if dictionary_url:
+        app.logger.info('Initializing dictionary from url')
+        d = DataDictionary(url=dictionary_url)
+        dict_init.init(d)
+        dictionary.init(d)
+    else:
+        app.logger.info('Initializing dictionary from gdcdictionary')
+        from gdcdictionary import gdcdictionary
+        dictionary.init(gdcdictionary)
+    from gdcdatamodel import models as md
+    from gdcdatamodel import validators as vd
+    datamodelutils.validators.init(vd)
+    datamodelutils.models.init(md)
+
+    from datamodelutils.models import *
+    
 
 def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
+    dictionary_init(app)
+    from peregrine.resources.submission.graphql.node import get_fields
+    fields = get_fields()
+    
+    app_register_blueprints(app)
     # app_register_duplicate_blueprints(app)
     if LEGACY_MODE:
         app_register_legacy_blueprints(app)
@@ -113,6 +142,7 @@ def app_init(app):
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
+    app.graphql_schema = submission.graphql.get_schema()
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:
@@ -129,7 +159,6 @@ app = Flask(__name__)
 app.logger.addHandler(get_handler())
 
 setup_default_handlers(app)
-app_register_blueprints(app)
 
 @app.route('/_status', methods=['GET'])
 def health_check():
@@ -202,8 +231,8 @@ def run_for_development(**kwargs):
             del os.environ[key]
     app.config.from_object('peregrine.dev_settings')
 
-    kwargs['port'] = app.config['GDC_API_PORT']
-    kwargs['host'] = app.config['GDC_API_HOST']
+    kwargs['port'] = app.config['PEREGRINE_PORT']
+    kwargs['host'] = app.config['PEREGRINE_HOST']
 
     try:
         app_init(app)

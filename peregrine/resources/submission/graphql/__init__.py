@@ -12,7 +12,9 @@ from .node import (
     create_root_fields,
     resolve_node,
 )
-from .node import __fields as ns_fields
+#from .node import __fields as ns_fields
+from .node import get_fields
+
 from .transaction import (
     TransactionLogCountField,
     TransactionLogField,
@@ -40,6 +42,7 @@ def get_schema():
     """Create GraphQL Schema"""
 
     root_fields = {}
+    ns_fields = get_fields()
     root_fields.update(create_root_fields(ns_fields))
 
     Viewer = type('viewer', (graphene.ObjectType,), root_fields)
@@ -63,8 +66,6 @@ def get_schema():
     return Schema
 
 
-Schema = get_schema()
-
 
 def execute_query(query, variables=None):
     """
@@ -82,7 +83,8 @@ def execute_query(query, variables=None):
         with session_scope as session:
             with timer:
                 set_session_timeout(session, GRAPHQL_TIMEOUT)
-                result = Schema.execute(query, variable_values=variables)
+                #result = Schema.execute(query, variable_values=variables)
+                result = flask.current_app.graphql_schema.execute(query, variable_values=variables)
     except graphql.error.GraphQLError as e:
         return None, [str(e)]
 

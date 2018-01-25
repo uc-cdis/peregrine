@@ -7,16 +7,15 @@ Implements GraphQL queries for each gdcdatamodel.model node type
 using the Graphene GraphQL library
 """
 
-from . import transaction
-from flask import current_app as capp
-from gdcdatamodel import models as md  # noqa
 
+from flask import current_app as capp
 import dateutil
 import graphene
 import logging
 import psqlgraph
 import sqlalchemy as sa
 
+from datamodelutils import models as md  # noqa
 from .util import (
     apply_arg_limit,
     apply_arg_offset,
@@ -25,12 +24,13 @@ from .util import (
     filtered_column_dict
 )
 
+from . import transaction
 from .traversal import (
     subq_paths,
 )
 
 from peregrine.resources.submission.constants import (
-    CACHE_CASES,
+    case_cache_enabled,
 )
 
 logging.root.setLevel(level=logging.ERROR)
@@ -125,7 +125,7 @@ def with_path_to(q, value, info, union=False, name='with_path_to'):
             return q
 
         # Special case for traversing TO case
-        if CACHE_CASES and dst_type == 'case':
+        if case_cache_enabled() and dst_type == 'case':
             # Rely on shortcut link to case, if it doesn't exist, then
             # this entity does not relate to any cases
             if hasattr(q.entity(), '_related_cases'):
@@ -134,7 +134,7 @@ def with_path_to(q, value, info, union=False, name='with_path_to'):
                 subq = q.filter(sa.sql.false())
 
         # Special case for traversing FROM case
-        elif CACHE_CASES and q.entity().label == 'case':
+        elif case_cache_enabled() and q.entity().label == 'case':
             link = '_related_{}'.format(dst_type)
             q = q.limit(None)
             if hasattr(q.entity(), link):
@@ -564,7 +564,7 @@ def get_node_class_link_attrs(cls):
     ) for name, link in cls._pg_edges.iteritems()}
 
     def resolve__related_cases(self, info, args):
-        if not CACHE_CASES:
+        if not case_cache_enabled():
 	    return []
         # Don't resolve related cases for cases
         if cls.label == 'case':
@@ -581,7 +581,7 @@ def get_node_class_link_attrs(cls):
             capp.logger.exception(e)
             raise
 
-    if CACHE_CASES:
+    if case_cache_enabled():
         attrs['resolve__related_cases'] = resolve__related_cases
         attrs['_related_cases'] = graphene.List(
             'case',
@@ -768,13 +768,17 @@ WithPathToInput = type('WithPathToInput', (graphene.InputObjectType,), dict(
     ] for k, v in cls_attrs.iteritems()}
 ))
 
-__fields = {
-    cls: create_node_class_gql_object(cls)
-    for cls in psqlgraph.Node.get_subclasses()
-}
+def get_fields():
+    #import pdb; pdb.set_trace()
+    __fields = {
+        cls: create_node_class_gql_object(cls)
+        for cls in psqlgraph.Node.get_subclasses()
+    }
 
-for cls, gql_object in __fields.iteritems():
-    __gql_object_classes[cls.label] = gql_object
+    for cls, gql_object in __fields.iteritems():
+        __gql_object_classes[cls.label] = gql_object
+    
+    return __fields
 
 
 NodeField = graphene.List(Node, args=get_node_interface_args())

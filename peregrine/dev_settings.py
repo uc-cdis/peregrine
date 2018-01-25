@@ -71,8 +71,8 @@ PSQL_USER_DB_CONNECTION = "postgresql://{name}:{password}@{host}/{db}".format(
 GDC_PORTAL_ENDPOINT = os.getenv("GDC_PORTAL_ENDPOINT", 'http://gdc-portal.nci.nih.gov:*')
 
 # API server
-GDC_API_HOST = os.getenv("GDC_API_HOST", "localhost")
-GDC_API_PORT = int(os.getenv("GDC_API_PORT", "5000"))
+PEREGRINE_HOST = os.getenv("PEREGRINE_HOST", "localhost")
+PEREGRINE_PORT = int(os.getenv("PEREGRINE_PORT", "5000"))
 
 # ES settings
 _default_index = "gdc_legacy_test" if LEGACY_MODE else "gdc_test"
