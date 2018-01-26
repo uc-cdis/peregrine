@@ -1,12 +1,10 @@
 import os
-import string
 import sys
 
 import flask
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
-from elasticsearch import ElasticsearchException, Elasticsearch
 from psqlgraph import PsqlGraphDriver
 
 import cdis_oauth2client
@@ -95,12 +93,6 @@ def db_init(app):
         app.auth = AuthDriver(app.config["AUTH_ADMIN_CREDS"], app.config["INTERNAL_AUTH"])
     except Exception:
         app.logger.exception("Couldn't initialize auth, continuing anyway")
-
-
-def es_init(app):
-    app.logger.info('Initializing Elasticsearch driver')
-    app.es = Elasticsearch([app.config["GDC_ES_HOST"]],
-                           **app.config["GDC_ES_CONF"])
 
 
 # Set CORS options on app configuration

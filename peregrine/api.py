@@ -1,17 +1,13 @@
 import os
-import string
 import sys
 
-from elasticsearch import ElasticsearchException, Elasticsearch
-import flask
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
 from psqlgraph import PsqlGraphDriver
 
-from dictionaryutils import DataDictionary, dictionary as dict_init
 import datamodelutils
-from datamodelutils import models, validators
+from dictionaryutils import DataDictionary, dictionary as dict_init
 from indexclient.client import IndexClient as SignpostClient
 from userdatamodel.driver import SQLAlchemyDriver
 import cdis_oauth2client
@@ -19,9 +15,8 @@ from cdis_oauth2client import OAuth2Client, OAuth2Error
 from cdispyutils.log import get_handler
 
 import peregrine
-from peregrine import blueprints, dictionary
+from peregrine import dictionary
 from .auth import AuthDriver
-from .config import LEGACY_MODE
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
 from .resources import submission
 from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
@@ -113,15 +108,15 @@ def dictionary_init(app):
     from gdcdatamodel import validators as vd
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
-    
+
 def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
-    
+
     app_register_blueprints(app)
     app_register_duplicate_blueprints(app)
-    
+
     db_init(app)
     # exclude es init as it's not used yet
     # es_init(app)
@@ -148,9 +143,9 @@ setup_default_handlers(app)
 def health_check():
     with app.db.session_scope() as session:
         try:
-            query = session.execute('SELECT 1')
-        except Exception as e:
-            raise UnhealthyCheck()
+            session.execute('SELECT 1')
+        except Exception:
+            raise UnhealthyCheck('Unhealthy')
 
     return 'Healthy', 200
 

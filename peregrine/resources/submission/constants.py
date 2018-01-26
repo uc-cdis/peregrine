@@ -8,8 +8,6 @@ contain things like state transition flows.
 
 """
 
-from gdcdictionary import gdcdictionary
-
 import re
 import uuid
 
@@ -37,13 +35,6 @@ def case_cache_enabled():
         )
     except (AttributeError, KeyError, TypeError):
         return True
-
-
-# #: Do we have a filter active project setting and should we do it?
-# FILTER_ACTIVE = (
-#     True if not hasattr(gdcdictionary, 'settings')
-#     else gdcdictionary.settings.get('filter_active_projects', True)
-# )
 
 
 # ======================================================================

@@ -6,9 +6,9 @@ from flask import Response
 from ...utils.pyutils import get_s3_conn
 from ...errors import UserError, InternalError
 from util import (
-    SUBMITTED_STATE, UPLOADING_STATE,
+    submitted_state, UPLOADING_STATE,
     SUCCESS_STATE, ERROR_STATE)
-ALLOWED_STATES = [ERROR_STATE, SUBMITTED_STATE, UPLOADING_STATE]
+ALLOWED_STATES = [ERROR_STATE, submitted_state(), UPLOADING_STATE]
 
 PERMISSIONS = {
     'list_parts': 'read', 'abort_multipart': 'create',
@@ -62,7 +62,7 @@ def make_s3_request(project_id, uuid, data, args, headers, method, action):
     if action in ['upload_part', 'list_parts',
                   'complete_multipart', 'abort_multipart']:
         upload_id = parse_qs(args)['uploadId'][0]
-        for ip in get_s3_hosts():
+        for _ in get_s3_hosts():
             bucket = get_submission_bucket()
             res = bucket.connection.make_request(
                 'GET', bucket=bucket.name, key=key_name,

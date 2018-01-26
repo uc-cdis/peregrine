@@ -1,5 +1,3 @@
-from .config import LEGACY_MODE
-
 SIGNPOST = {
     "host": "http://localhost:8000/", 'version': 'v0',
     "auth": None}

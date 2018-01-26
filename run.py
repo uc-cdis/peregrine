@@ -13,7 +13,8 @@ import requests
 requests.packages.urllib3.disable_warnings()
 
 
-roles = defaultdict(lambda: all_roles.values())
+all_role_values = all_roles.values()
+roles = defaultdict(lambda: all_role_values)
 
 
 class FakeBotoKey(object):
@@ -24,7 +25,7 @@ class FakeBotoKey(object):
     def close(self):
         pass
 
-    def open_read(*args, **kwargs):
+    def open_read(self,*args, **kwargs):
         pass
 
     @property
@@ -41,7 +42,7 @@ def fake_get_nodes(dids):
     for did in dids:
         try:
             file_name = files.get(did, {})["data"]["file_name"]
-        except:
+        except ValueError:
             file_name = did
         nodes.append(Node(
             node_id=did,
@@ -80,7 +81,9 @@ def set_user(*args, **kwargs):
 
 
 def run_with_fake_auth():
-    def get_project_ids(role='_member_', project_ids=[]):
+    def get_project_ids(role='_member_', project_ids=None):
+        if project_ids is None:
+            project_ids = []
         if not project_ids:
             with current_app.db.session_scope():
                 project_ids += [
@@ -107,7 +110,6 @@ def run_with_fake_auth():
         'peregrine.auth.verify_hmac',
         new=set_user,
     ):
-        instance = Auth.return_value
         run_for_development(debug=debug, threaded=True)
 
 

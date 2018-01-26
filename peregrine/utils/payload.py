@@ -10,20 +10,15 @@ from collections import Counter
 import json
 import os
 import simplejson
-import yaml
 import flask
 
-from datamodelutils import models
 from flask import current_app as capp
 from flask import request
 from functools import wraps
-from psqlgraph import Node
-import sqlalchemy
 from threading import Thread
 
 from peregrine.errors import UserError
 from peregrine.resources.submission.constants import (
-    uuid_regex,
     project_seed,
     program_seed,
     ERROR_STATE,

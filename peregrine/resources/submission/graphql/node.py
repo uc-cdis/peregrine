@@ -389,7 +389,7 @@ def resolve_node(self, info, **args):
 
     """
 
-    requested_fields = util_get_fields(info)
+    #requested_fields = util_get_fields(info)
 
     q = get_authorized_query(psqlgraph.Node)
     if 'project_id' in args:
@@ -777,7 +777,7 @@ def get_fields():
 
     for cls, gql_object in __fields.iteritems():
         __gql_object_classes[cls.label] = gql_object
-    
+
     return __fields
 
 

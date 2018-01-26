@@ -26,7 +26,6 @@ from ..constants import (
 from .util import (
     apply_arg_limit,
     apply_arg_offset,
-    column_dict,
     filtered_column_dict,
     get_fields,
     apply_load_only,
@@ -312,7 +311,7 @@ def resolve_transaction_log_query(self, info, **args):
     if 'quick_search' in args:
         try:
             id_ = int(args['quick_search'])
-        except ValueError as e:
+        except ValueError:
             # Because id is an int, if we couldn't parse it to an int,
             # filter should return 0 results.
             return q.filter(sa.sql.false())
