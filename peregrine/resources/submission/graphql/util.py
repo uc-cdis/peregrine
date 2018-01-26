@@ -10,7 +10,7 @@ Defines utility functions for GraphQL implementation.
 from flask import current_app as capp
 from flask import g as fg
 from peregrine.errors import AuthError, UserError
-from gdcdatamodel.models import Project
+from datamodelutils import models
 from graphql import GraphQLError
 
 from graphql.utils.ast_to_dict import ast_to_dict
@@ -65,8 +65,8 @@ def get_active_project_ids():
     return [
         '{}-{}'.format(project.programs[0].name, project.code)
         for project in capp.db.nodes(Project)
-        .filter(Project._props['state'].astext != 'closed')
-        .filter(Project._props['state'].astext != 'legacy')
+        .filter(models.Project._props['state'].astext != 'closed')
+        .filter(models.Project._props['state'].astext != 'legacy')
         .all()
     ]
 
@@ -92,8 +92,8 @@ def active_project_filter(q):
     cls = q.entity()
 
     if cls.label == 'project':
-        return (q.filter(Project._props['state'].astext != 'closed')
-                .filter(Project._props['state'].astext != 'legacy'))
+        return (q.filter(models.Project._props['state'].astext != 'closed')
+                .filter(models.Project._props['state'].astext != 'legacy'))
 
     fg.active_project_ids = fg.get('active_project_ids') or get_active_project_ids()
     if cls == psqlgraph.Node or hasattr(cls, 'project_id'):

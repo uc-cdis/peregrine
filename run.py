@@ -3,7 +3,6 @@
 import os
 from peregrine.api import run_for_development
 from flask import current_app
-from gdcdatamodel import models as md
 
 from mock import patch, PropertyMock
 

@@ -2,27 +2,28 @@ import os
 import string
 import sys
 
-from elasticsearch import ElasticsearchException, Elasticsearch
 import flask
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
+from elasticsearch import ElasticsearchException, Elasticsearch
 from psqlgraph import PsqlGraphDriver
-
-from dictionaryutils import DataDictionary, dictionary as dict_init
-import datamodelutils
-from peregrine import dictionary
-from datamodelutils import models, validators
-from indexclient.client import IndexClient as SignpostClient
-from userdatamodel.driver import SQLAlchemyDriver
 
 import cdis_oauth2client
 from cdis_oauth2client import OAuth2Client, OAuth2Error
-from cdisutils.log import get_handler
+from cdispyutils.log import get_handler
+from dictionaryutils import DataDictionary, dictionary as dict_init
+import datamodelutils
+from datamodelutils import models, validators
+import gdcdictionary
+import gdcdatamodel
+from indexclient.client import IndexClient as SignpostClient
+from userdatamodel.driver import SQLAlchemyDriver
+import sheepdog
 
 import peregrine
+from peregrine import dictionary
 from peregrine import blueprints
-
 from peregrine.auth import AuthDriver
 from peregrine.config import LEGACY_MODE
 from peregrine.errors import APIError, setup_default_handlers, UnhealthyCheck
@@ -34,7 +35,6 @@ from peregrine.version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
 sys.setrecursionlimit(10000)
 DEFAULT_ASYNC_WORKERS = 8
 
-
 def app_register_blueprints(app):
     # TODO: (jsm) deprecate the index endpoints on the root path,
     # these are currently duplicated under /index (the ultimate
@@ -42,9 +42,6 @@ def app_register_blueprints(app):
     v0 = '/v0'
     app.url_map.strict_slashes = False
 
-    import sheepdog
-    import gdcdictionary
-    import gdcdatamodel
     sheepdog_blueprint = sheepdog.blueprint.create_blueprint(
         gdcdictionary.gdcdictionary, gdcdatamodel.models
     )
@@ -59,6 +56,7 @@ def app_register_duplicate_blueprints(app):
     # TODO: (jsm) deprecate this v0 version under root endpoint.  This
     # root endpoint duplicates /v0 to allow gradual client migration
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix='/submission')
+    app.register_blueprint(cdis_oauth2client.blueprint, url_prefix='/oauth2')
 
 
 def async_pool_init(app):
@@ -132,19 +130,13 @@ def dictionary_init(app):
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
 
-    from datamodelutils.models import *
-    
-
 def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
-    
+
     app_register_blueprints(app)
-    # app_register_duplicate_blueprints(app)
-    if LEGACY_MODE:
-        app_register_legacy_blueprints(app)
-        app_register_v0_legacy_blueprints(app)
+    app_register_duplicate_blueprints(app)
     db_init(app)
     # exclude es init as it's not used yet
     # es_init(app)
@@ -201,7 +193,6 @@ def server_error(e):
     app.logger.exception(e)
     return jsonify(message="internal server error"), 500
 
-
 def _log_and_jsonify_exception(e):
     """
     Log an exception and return the jsonified version along with the code.
@@ -216,35 +207,3 @@ def _log_and_jsonify_exception(e):
         return jsonify(message=e.message), e.code
 
 app.register_error_handler(APIError, _log_and_jsonify_exception)
-
-import peregrine.errors
-app.register_error_handler(
-    peregrine.errors.APIError, _log_and_jsonify_exception
-)
-app.register_error_handler(OAuth2Error, _log_and_jsonify_exception)
-
-
-def run_for_development(**kwargs):
-    import logging
-    app.logger.setLevel(logging.INFO)
-    # app.config['PROFILE'] = True
-    # from werkzeug.contrib.profiler import ProfilerMiddleware, MergeStream
-    # f = open('profiler.log', 'w')
-    # stream = MergeStream(sys.stdout, f)
-    # app.wsgi_app = ProfilerMiddleware(app.wsgi_app, f, restrictions=[2000])
-
-    for key in ["http_proxy", "https_proxy"]:
-        if os.environ.get(key):
-            del os.environ[key]
-    app.config.from_object('peregrine.dev_settings')
-
-    kwargs['port'] = app.config['PEREGRINE_PORT']
-    kwargs['host'] = app.config['PEREGRINE_HOST']
-
-    try:
-        app_init(app)
-    except:
-        app.logger.exception(
-            "Couldn't initialize application, continuing anyway"
-        )
-    app.run(**kwargs)

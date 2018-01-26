@@ -1,16 +1,18 @@
 from collections import defaultdict
 import functools
+
 import json
+import flask
+from flask import request, g, session
+from flask import current_app as app
+from flask_sqlalchemy_session import current_session
 
 import cdis_oauth2client
 from cdis_oauth2client import OAuth2Error
 from cdispyutils.hmac4 import verify_hmac
 from cdispyutils.hmac4.hmac4_auth_utils import HMAC4Error
 from cryptography.fernet import Fernet
-import flask
-from flask import request, g, session
-from flask import current_app as app
-from flask_sqlalchemy_session import current_session
+
 from peregrine.errors import InternalError, AuthError, NotFoundError, InvalidTokenError
 from datamodelutils import models
 from sqlalchemy.dialects.postgresql import BYTEA
@@ -68,6 +70,8 @@ class AuthDriver(object):
             .all()
         )
         return_res = {}
+        if not results:
+            raise AuthError("No project access")
         for item in results:
             dbgap_no, user_access = item
             return_res[dbgap_no] = user_access.privilege

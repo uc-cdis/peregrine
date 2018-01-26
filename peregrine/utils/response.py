@@ -6,7 +6,7 @@ from datetime import datetime
 
 import dicttoxml
 import os
-from cdisutils.log import get_handler
+from cdispyutils.log import get_handler
 from flask import Response, Markup
 from peregrine import VERSION
 from peregrine.utils.json2csv import to_csv

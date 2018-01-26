@@ -29,15 +29,9 @@ PSQLGRAPH = {
 }
 
 GDC_PORTAL_ENDPOINT = 'http://fake_portal_endpoint_for_tests'
-GDC_API_HOST = "localhost"
-GDC_API_PORT = "443"
 
-GDC_ES_INDEX = "gdc_legacy_test" if LEGACY_MODE else "gdc_test"
-GDC_ES_HOST = "localhost"
-GDC_ES_CONF = {"port": 9200}
-GDC_ES_STATS_INDEX = "gdc_stats_test"
-
-GEO_API = 'http://fake_geolocation_service'
+PEREGRINE_HOST = "localhost"
+PEREGRINE_PORT = "443"
 
 # Slicing settings
 SLICING = {

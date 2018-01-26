@@ -11,18 +11,15 @@ from psqlgraph import PsqlGraphDriver
 
 from dictionaryutils import DataDictionary, dictionary as dict_init
 import datamodelutils
-from peregrine import dictionary
 from datamodelutils import models, validators
 from indexclient.client import IndexClient as SignpostClient
 from userdatamodel.driver import SQLAlchemyDriver
-
 import cdis_oauth2client
 from cdis_oauth2client import OAuth2Client, OAuth2Error
-from cdisutils.log import get_handler
+from cdispyutils.log import get_handler
 
 import peregrine
-from peregrine import blueprints
-
+from peregrine import blueprints, dictionary
 from .auth import AuthDriver
 from .config import LEGACY_MODE
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
@@ -33,7 +30,6 @@ from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
 # recursion depth is increased for complex graph traversals
 sys.setrecursionlimit(10000)
 DEFAULT_ASYNC_WORKERS = 8
-
 
 def app_register_blueprints(app):
     # TODO: (jsm) deprecate the index endpoints on the root path,
@@ -50,6 +46,7 @@ def app_register_duplicate_blueprints(app):
     # TODO: (jsm) deprecate this v0 version under root endpoint.  This
     # root endpoint duplicates /v0 to allow gradual client migration
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix='/submission')
+    app.register_blueprint(cdis_oauth2client.blueprint, url_prefix='/oauth2')
 
 
 def async_pool_init(app):
@@ -90,12 +87,6 @@ def db_init(app):
         app.logger.exception("Couldn't initialize auth, continuing anyway")
 
 
-def es_init(app):
-    app.logger.info('Initializing Elasticsearch driver')
-    app.es = Elasticsearch([app.config["GDC_ES_HOST"]],
-                           **app.config["GDC_ES_CONF"])
-
-
 # Set CORS options on app configuration
 def cors_init(app):
     accepted_headers = [
@@ -122,22 +113,15 @@ def dictionary_init(app):
     from gdcdatamodel import validators as vd
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
-
-    from datamodelutils.models import *
     
-
 def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
-    from peregrine.resources.submission.graphql.node import get_fields
-    fields = get_fields()
     
     app_register_blueprints(app)
-    # app_register_duplicate_blueprints(app)
-    if LEGACY_MODE:
-        app_register_legacy_blueprints(app)
-        app_register_v0_legacy_blueprints(app)
+    app_register_duplicate_blueprints(app)
+    
     db_init(app)
     # exclude es init as it's not used yet
     # es_init(app)
@@ -210,7 +194,6 @@ def _log_and_jsonify_exception(e):
 
 app.register_error_handler(APIError, _log_and_jsonify_exception)
 
-import peregrine.errors
 app.register_error_handler(
     peregrine.errors.APIError, _log_and_jsonify_exception
 )
@@ -220,11 +203,6 @@ app.register_error_handler(OAuth2Error, _log_and_jsonify_exception)
 def run_for_development(**kwargs):
     import logging
     app.logger.setLevel(logging.INFO)
-    # app.config['PROFILE'] = True
-    # from werkzeug.contrib.profiler import ProfilerMiddleware, MergeStream
-    # f = open('profiler.log', 'w')
-    # stream = MergeStream(sys.stdout, f)
-    # app.wsgi_app = ProfilerMiddleware(app.wsgi_app, f, restrictions=[2000])
 
     for key in ["http_proxy", "https_proxy"]:
         if os.environ.get(key):
