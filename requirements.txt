@@ -25,7 +25,6 @@ dicttoxml==1.5.8
 sqlalchemy==0.9.9
 python-dateutil==2.4.2
 graphene==2.0.1
-graphql-core==2.0
 graphql-relay==0.4.5
 cyordereddict==1.0.0
 Flask-SQLAlchemy-Session==1.1
@@ -38,3 +37,4 @@ Flask-SQLAlchemy-Session==1.1
 -e git+https://git@github.com/uc-cdis/userdatamodel.git@1.0.2#egg=userdatamodel
 -e git+https://git@github.com/uc-cdis/cdis-python-utils.git@0.1.5#egg=cdispyutils
 -e git+https://git@github.com/uc-cdis/storage-client.git@0.1.1#egg=storageclient
+-e git+https://git@github.com/uc-cdis/graphql-core.git@f3b9908ec36de85d6964f33dfcadfe49e16eb3ae#egg=graphql-core
