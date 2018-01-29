@@ -23,6 +23,9 @@ def get_open_project_ids():
             list of project ids for open projects and list of error messages
             generated from running graphql
     """
+    if not hasattr(models.Project, 'availability_type'):
+        return []
+
     with flask.current_app.db.session_scope():
         projects = (
             flask.current_app.db
