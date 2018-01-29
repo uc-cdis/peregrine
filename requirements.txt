@@ -30,11 +30,11 @@ cyordereddict==1.0.0
 Flask-SQLAlchemy-Session==1.1
 -e git+https://git@github.com/uc-cdis/indexclient.git@1.0#egg=indexclient
 -e git+https://git@github.com/uc-cdis/cdis_oauth2client.git@0.1.1#egg=cdis_oauth2client
--e git+https://git@github.com/uc-cdis/gtex-dictionary.git@1647c7b10fdb58023274131323a5f79933b20390#egg=gdcdictionary
+-e git+https://git@github.com/uc-cdis/datadictionary.git@0.1.1#egg=gdcdictionary
 -e git+https://git@github.com/NCI-GDC/gdcdatamodel.git@568aa07e686fd06d116f67521bb5c8db672cd1cd#egg=gdcdatamodel
 -e git+https://git@github.com/NCI-GDC/psqlgraph.git@5cddf49dd03a25bd4e553161d7ad7b9a6fe0ac0d#egg=psqlgraph
 -e git+https://git@github.com/NCI-GDC/cdisutils.git@8a8e599fdab5ade9bd8c586132d974a102e5d72d#egg=cdisutils
 -e git+https://git@github.com/uc-cdis/userdatamodel.git@1.0.2#egg=userdatamodel
 -e git+https://git@github.com/uc-cdis/cdis-python-utils.git@0.1.5#egg=cdispyutils
 -e git+https://git@github.com/uc-cdis/storage-client.git@0.1.1#egg=storageclient
--e git+https://git@github.com/uc-cdis/graphql-core.git@f3b9908ec36de85d6964f33dfcadfe49e16eb3ae#egg=graphql-core
+-e git+https://git@github.com/uc-cdis/graphql-core.git@cdis2.0.0#egg=graphql-core
