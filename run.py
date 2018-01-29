@@ -81,6 +81,7 @@ def set_user(*args, **kwargs):
 
 
 def run_with_fake_auth():
+    from datamodelutils import models as md
     def get_project_ids(role='_member_', project_ids=None):
         if project_ids is None:
             project_ids = []
@@ -126,7 +127,7 @@ def run_with_fake_download():
 
 
 if __name__ == '__main__':
-    debug = bool(os.environ.get('GDC_API_DEBUG', True))
+    debug = bool(os.environ.get('PEREGRINE_DEBUG', True))
     if os.environ.get("GDC_FAKE_DOWNLOAD") == 'True':
         run_with_fake_download()
     else:

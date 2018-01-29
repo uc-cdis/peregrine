@@ -70,7 +70,7 @@ def case_cache_enabled():
     from peregrine import dictionary
     try:
         return (
-            True if dictionary.settings == None
+            True if dictionary.settings is None
             else dictionary.settings.get('enable_case_cache', True)
         )
     except (AttributeError, KeyError, TypeError):
