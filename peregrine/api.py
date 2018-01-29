@@ -8,7 +8,6 @@ from psqlgraph import PsqlGraphDriver
 
 import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
-from indexclient.client import IndexClient as SignpostClient
 from userdatamodel.driver import SQLAlchemyDriver
 import cdis_oauth2client
 from cdis_oauth2client import OAuth2Client, OAuth2Error
@@ -70,11 +69,6 @@ def db_init(app):
 
     app.oauth2 = OAuth2Client(**app.config['OAUTH2'])
 
-    app.logger.info('Initializing Signpost driver')
-    app.signpost = SignpostClient(
-        app.config['SIGNPOST']['host'],
-        version=app.config['SIGNPOST']['version'],
-        auth=app.config['SIGNPOST']['auth'])
     try:
         app.logger.info('Initializing Auth driver')
         app.auth = AuthDriver(app.config["AUTH_ADMIN_CREDS"], app.config["INTERNAL_AUTH"])

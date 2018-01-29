@@ -2,12 +2,6 @@ import os
 from boto.s3.connection import OrdinaryCallingFormat
 from os import environ as env
 
-# Signpost
-SIGNPOST = {
-   'host': env.get('SIGNPOST_HOST', 'http://localhost:8888'),
-   'version': 'v0',
-   'auth': None}
-
 # Auth
 AUTH = 'https://gdc-portal.nci.nih.gov/auth/keystone/v3/'
 INTERNAL_AUTH = env.get('INTERNAL_AUTH', 'https://gdc-portal.nci.nih.gov/auth/')
