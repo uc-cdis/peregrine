@@ -6,28 +6,27 @@ peregrine.resources.submission.util
 Provides utility functions for the submission resource.
 """
 
-from collections import Counter
-import json
 import os
-import simplejson
-import yaml
+from collections import Counter
 
-from gdcdatamodel import models
-from gdcdictionary import gdcdictionary
+import json
 from flask import current_app as capp
 from flask import request
 from functools import wraps
 from psqlgraph import Node
 import sqlalchemy
 from threading import Thread
+import simplejson
+import yaml
 
+import datamodelutils.models as models
 from peregrine.errors import UserError
 from peregrine.resources.submission.constants import (
     project_seed,
     program_seed,
     ERROR_STATE,
     FLAG_IS_ASYNC,
-    SUBMITTED_STATE,
+    submitted_state,
     UPLOADING_STATE,
     SUCCESS_STATE,
 )

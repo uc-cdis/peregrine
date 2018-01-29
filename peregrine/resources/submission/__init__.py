@@ -6,9 +6,7 @@ Construct the blueprint for peregrine submissions, using the blueprint from
 import os
 
 import flask
-import gdcdatamodel
-from gdcdatamodel import models
-import gdcdictionary
+import datamodelutils.models as models
 import peregrine.blueprints
 
 from . import graphql

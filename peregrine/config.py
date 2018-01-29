@@ -1,5 +1,5 @@
 import os
-from cdisutils.log import get_logger
+from cdispyutils.log import get_logger
 
 logger = get_logger(__name__)
 
@@ -10,7 +10,7 @@ logger = get_logger(__name__)
 # mode will affect which mapping and index is used is used.
 
 
-LEGACY_MODE = os.environ.get('GDC_API_LEGACY_MODE', '').lower() == 'true'
+LEGACY_MODE = os.environ.get('PEREGRINE_LEGACY_MODE', '').lower() == 'true'
 
 
 if LEGACY_MODE:

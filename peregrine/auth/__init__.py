@@ -1,19 +1,20 @@
 from collections import defaultdict
 import functools
+
 import json
+import flask
+from flask import request, g, session
+from flask import current_app as app
+from flask_sqlalchemy_session import current_session
 
 import cdis_oauth2client
 from cdis_oauth2client import OAuth2Error
 from cdispyutils.hmac4 import verify_hmac
 from cdispyutils.hmac4.hmac4_auth_utils import HMAC4Error
 from cryptography.fernet import Fernet
-import flask
-from flask import request, g, session
-from flask import current_app as app
-from flask_sqlalchemy_session import current_session
+
 from peregrine.errors import InternalError, AuthError, NotFoundError, InvalidTokenError
-from gdcdatamodel.models import Project, Program
-from gdcdictionary import gdcdictionary
+from datamodelutils import models
 from sqlalchemy.dialects.postgresql import BYTEA
 from sqlalchemy.orm.exc import MultipleResultsFound, NoResultFound
 import userdatamodel
@@ -69,6 +70,8 @@ class AuthDriver(object):
             .all()
         )
         return_res = {}
+        if not results:
+            raise AuthError("No project access")
         for item in results:
             dbgap_no, user_access = item
             return_res[dbgap_no] = user_access.privilege
@@ -109,7 +112,7 @@ class AuthDriver(object):
             with app.db.session_scope():
                 program, project = node.project_id.split('-', 1)
                 try:
-                    project = (app.db.nodes(Project)
+                    project = (app.db.nodes(models.Project)
                                .props(code=project)
                                .path('programs')
                                .props(name=program)
@@ -195,13 +198,13 @@ class FederatedUser(object):
         if phsid in self.mapping:
             return self.mapping[phsid]
         with app.db.session_scope():
-            project = app.db.nodes(Project).props(
+            project = app.db.nodes(models.Project).props(
                 dbgap_accession_number=phsid).first()
             self.mapping[phsid] = []
             if project:
                 self.mapping[phsid] = [project.programs[0].name + '-' + project.code]
             else:
-                program = app.db.nodes(Program).props(
+                program = app.db.nodes(models.Program).props(
                     dbgap_accession_number=phsid).first()
                 if program:
                     self.mapping[phsid] = [

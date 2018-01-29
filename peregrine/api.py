@@ -1,23 +1,21 @@
 import os
-import string
 import sys
 
-import cdis_oauth2client
-from cdis_oauth2client import OAuth2Client, OAuth2Error
-from cdisutils.log import get_handler
-from elasticsearch import ElasticsearchException, Elasticsearch
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
-import gdcdatamodel
-import gdcdictionary
-from indexclient.client import IndexClient as SignpostClient
 from psqlgraph import PsqlGraphDriver
-from userdatamodel.driver import SQLAlchemyDriver
-import peregrine
 
+import datamodelutils
+from dictionaryutils import DataDictionary, dictionary as dict_init
+from userdatamodel.driver import SQLAlchemyDriver
+import cdis_oauth2client
+from cdis_oauth2client import OAuth2Client, OAuth2Error
+from cdispyutils.log import get_handler
+
+import peregrine
+from peregrine import dictionary
 from .auth import AuthDriver
-from .config import LEGACY_MODE
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
 from .resources import submission
 from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
@@ -27,23 +25,22 @@ from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
 sys.setrecursionlimit(10000)
 DEFAULT_ASYNC_WORKERS = 8
 
-
 def app_register_blueprints(app):
     # TODO: (jsm) deprecate the index endpoints on the root path,
     # these are currently duplicated under /index (the ultimate
     # path) for migration
     v0 = '/v0'
     app.url_map.strict_slashes = False
+
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix=v0+'/submission')
     app.register_blueprint(cdis_oauth2client.blueprint, url_prefix=v0+'/oauth2')
-
-    #print('In app_register_blueprints:', submission.blueprint)
 
 
 def app_register_duplicate_blueprints(app):
     # TODO: (jsm) deprecate this v0 version under root endpoint.  This
     # root endpoint duplicates /v0 to allow gradual client migration
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix='/submission')
+    app.register_blueprint(cdis_oauth2client.blueprint, url_prefix='/oauth2')
 
 
 def async_pool_init(app):
@@ -72,22 +69,11 @@ def db_init(app):
 
     app.oauth2 = OAuth2Client(**app.config['OAUTH2'])
 
-    app.logger.info('Initializing Signpost driver')
-    app.signpost = SignpostClient(
-        app.config['SIGNPOST']['host'],
-        version=app.config['SIGNPOST']['version'],
-        auth=app.config['SIGNPOST']['auth'])
     try:
         app.logger.info('Initializing Auth driver')
         app.auth = AuthDriver(app.config["AUTH_ADMIN_CREDS"], app.config["INTERNAL_AUTH"])
     except Exception:
         app.logger.exception("Couldn't initialize auth, continuing anyway")
-
-
-def es_init(app):
-    app.logger.info('Initializing Elasticsearch driver')
-    app.es = Elasticsearch([app.config["GDC_ES_HOST"]],
-                           **app.config["GDC_ES_CONF"])
 
 
 # Set CORS options on app configuration
@@ -101,18 +87,35 @@ def cors_init(app):
         r"/*": {"origins": '*'},
         }, headers=accepted_headers, expose_headers=['Content-Disposition'])
 
+def dictionary_init(app):
+    dictionary_url = app.config.get('DICTIONARY_URL')
+    if dictionary_url:
+        app.logger.info('Initializing dictionary from url')
+        d = DataDictionary(url=dictionary_url)
+        dict_init.init(d)
+        dictionary.init(d)
+    else:
+        app.logger.info('Initializing dictionary from gdcdictionary')
+        from gdcdictionary import gdcdictionary
+        dictionary.init(gdcdictionary)
+    from gdcdatamodel import models as md
+    from gdcdatamodel import validators as vd
+    datamodelutils.validators.init(vd)
+    datamodelutils.models.init(md)
 
 def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
-    # app_register_duplicate_blueprints(app)
-    if LEGACY_MODE:
-        app_register_legacy_blueprints(app)
-        app_register_v0_legacy_blueprints(app)
+    dictionary_init(app)
+
+    app_register_blueprints(app)
+    app_register_duplicate_blueprints(app)
+
     db_init(app)
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
+    app.graphql_schema = submission.graphql.get_schema()
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:
@@ -129,15 +132,14 @@ app = Flask(__name__)
 app.logger.addHandler(get_handler())
 
 setup_default_handlers(app)
-app_register_blueprints(app)
 
 @app.route('/_status', methods=['GET'])
 def health_check():
     with app.db.session_scope() as session:
         try:
-            query = session.execute('SELECT 1')
-        except Exception as e:
-            raise UnhealthyCheck()
+            session.execute('SELECT 1')
+        except Exception:
+            raise UnhealthyCheck('Unhealthy')
 
     return 'Healthy', 200
 
@@ -181,7 +183,6 @@ def _log_and_jsonify_exception(e):
 
 app.register_error_handler(APIError, _log_and_jsonify_exception)
 
-import peregrine.errors
 app.register_error_handler(
     peregrine.errors.APIError, _log_and_jsonify_exception
 )
@@ -191,19 +192,14 @@ app.register_error_handler(OAuth2Error, _log_and_jsonify_exception)
 def run_for_development(**kwargs):
     import logging
     app.logger.setLevel(logging.INFO)
-    # app.config['PROFILE'] = True
-    # from werkzeug.contrib.profiler import ProfilerMiddleware, MergeStream
-    # f = open('profiler.log', 'w')
-    # stream = MergeStream(sys.stdout, f)
-    # app.wsgi_app = ProfilerMiddleware(app.wsgi_app, f, restrictions=[2000])
 
     for key in ["http_proxy", "https_proxy"]:
         if os.environ.get(key):
             del os.environ[key]
     app.config.from_object('peregrine.dev_settings')
 
-    kwargs['port'] = app.config['GDC_API_PORT']
-    kwargs['host'] = app.config['GDC_API_HOST']
+    kwargs['port'] = app.config['PEREGRINE_PORT']
+    kwargs['host'] = app.config['PEREGRINE_HOST']
 
     try:
         app_init(app)

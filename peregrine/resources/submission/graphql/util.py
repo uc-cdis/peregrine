@@ -10,7 +10,7 @@ Defines utility functions for GraphQL implementation.
 from flask import current_app as capp
 from flask import g as fg
 from peregrine.errors import AuthError, UserError
-from gdcdatamodel.models import Project
+from datamodelutils import models
 from graphql import GraphQLError
 
 from graphql.utils.ast_to_dict import ast_to_dict
@@ -18,9 +18,9 @@ from sqlalchemy.orm import load_only
 
 import psqlgraph
 
-from peregrine.resources.submission.constants import (
-    FILTER_ACTIVE,
-)
+# from peregrine.resources.submission.constants import (
+#     FILTER_ACTIVE,
+# )
 
 DEFAULT_LIMIT = 10
 
@@ -65,8 +65,8 @@ def get_active_project_ids():
     return [
         '{}-{}'.format(project.programs[0].name, project.code)
         for project in capp.db.nodes(Project)
-        .filter(Project._props['state'].astext != 'closed')
-        .filter(Project._props['state'].astext != 'legacy')
+        .filter(models.Project._props['state'].astext != 'closed')
+        .filter(models.Project._props['state'].astext != 'legacy')
         .all()
     ]
 
@@ -92,8 +92,8 @@ def active_project_filter(q):
     cls = q.entity()
 
     if cls.label == 'project':
-        return (q.filter(Project._props['state'].astext != 'closed')
-                .filter(Project._props['state'].astext != 'legacy'))
+        return (q.filter(models.Project._props['state'].astext != 'closed')
+                .filter(models.Project._props['state'].astext != 'legacy'))
 
     fg.active_project_ids = fg.get('active_project_ids') or get_active_project_ids()
     if cls == psqlgraph.Node or hasattr(cls, 'project_id'):
@@ -124,8 +124,8 @@ def authorization_filter(q):
     if cls == psqlgraph.Node or hasattr(cls, 'project_id'):
         q = q.filter(cls._props['project_id'].astext.in_(fg.read_access_projects))
 
-    if FILTER_ACTIVE:
-        q = active_project_filter(q)
+    # if FILTER_ACTIVE:
+    #     q = active_project_filter(q)
 
     return q
 
