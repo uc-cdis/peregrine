@@ -744,7 +744,8 @@ def create_root_fields(fields):
         def count_resolver(self, info, cls=cls, gql_object=gql_object, **args):
             q = get_authorized_query(cls)
             q = apply_query_args(q, args, info)
-            #q = q.with_entities(sa.distinct(cls.node_id))
+            if 'with_path_to' in args or 'with_path_to_any' in args:
+                q = q.with_entities(sa.distinct(cls.node_id))
             q = q.limit(args.get('first', None))
             return q.count()
 
