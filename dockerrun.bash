@@ -1,7 +1,6 @@
 #!/bin/bash
 
 cd /var/www/peregrine
-python wsgi.py
 
 (
   # Wait for nginx to create uwsgi.sock
