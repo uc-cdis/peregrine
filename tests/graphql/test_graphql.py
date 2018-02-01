@@ -332,8 +332,6 @@ def test_arg_offset(client, submitter, pg_driver_clean, cgci_blgsp):
     offset = {c['id'] for c in r.json['data']['case']}
     assert not offset.intersection(first)
 
-
-@pytest.mark.skip(reason='must rewrite query')
 def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     data = json.dumps({
