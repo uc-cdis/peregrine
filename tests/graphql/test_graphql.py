@@ -332,6 +332,7 @@ def test_arg_offset(client, submitter, pg_driver_clean, cgci_blgsp):
     offset = {c['id'] for c in r.json['data']['case']}
     assert not offset.intersection(first)
 
+@pytest.mark.skip(reason='test does not conform to latest dictionary')
 def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
 
@@ -632,7 +633,7 @@ def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
 def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
-        'query': """query Test { transaction_log(last:1) { project_id, submitter } }"""}))
+        'query': """query Test { transaction_log(first:1) { project_id, submitter } }"""}))
     assert len(r.json['data']['transaction_log']) == 1, r.data
     assert r.json == {
         "data": {
