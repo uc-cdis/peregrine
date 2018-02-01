@@ -359,9 +359,9 @@ def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
         """
     })
     r = client.post(path, headers=submitter(path, 'post'), data=data)
-    print r.data
+    assert r.status_code == 200, r.data
     assert len(r.json['data']['case']) == 1
-    assert r.json['data']['case'][0]['submitter_id'] == "sample1",\
+    assert r.json['data']['case'][0]['submitter_id'] == "case1",\
         r.data
 
 
