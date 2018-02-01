@@ -334,13 +334,19 @@ def test_arg_offset(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
+
+    with pg_driver_clean.session_scope() as s:
+        props = dict(project_id='CGCI-BLGSP', state='validated')
+        case1 = models.Case('case1', submitter_id='case1', **props)
+        sample1 = models.Sample('sample1', submitter_id='sample1', **props)
+        case1.samples = [sample1]
+        s.add_all((case1))
     data = json.dumps({
         'query': """
             query Test {
                 case (
-                        order_by_desc: "created_datetime",
                         with_path_to: {
-                            type: "portion", submitter_id: "BLGSP-71-06-00019-99A"
+                            type: "sample", submitter_id: "sample1"
                         }
                     ) {
                     submitter_id
@@ -351,7 +357,7 @@ def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
     r = client.post(path, headers=submitter(path, 'post'), data=data)
     print r.data
     assert len(r.json['data']['case']) == 1
-    assert r.json['data']['case'][0]['submitter_id'] == "BLGSP-71-06-00019",\
+    assert r.json['data']['case'][0]['submitter_id'] == "sample1",\
         r.data
 
 
