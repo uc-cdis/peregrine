@@ -332,17 +332,26 @@ def test_arg_offset(client, submitter, pg_driver_clean, cgci_blgsp):
     offset = {c['id'] for c in r.json['data']['case']}
     assert not offset.intersection(first)
 
-
-@pytest.mark.skip(reason='must rewrite query')
+@pytest.mark.skip(reason='test does not conform to latest dictionary')
 def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
+
+    with pg_driver_clean.session_scope() as s:
+        props = dict(project_id='CGCI-BLGSP', state='validated')
+        case1 = models.Case('case1', submitter_id='case1', **props)
+        case2 = models.Case('case2', submitter_id='case2', **props)
+        sample1 = models.Sample('sample1', submitter_id='sample1', **props)
+        sample2 = models.Sample('sample2', submitter_id='sample2', **props)
+        case1.samples = [sample1]
+        case2.samples = [sample2]
+        s.add_all((case1, case2))
+
     data = json.dumps({
         'query': """
             query Test {
                 case (
-                        order_by_desc: "created_datetime",
                         with_path_to: {
-                            type: "portion", submitter_id: "BLGSP-71-06-00019-99A"
+                            type: "sample", submitter_id: "sample1"
                         }
                     ) {
                     submitter_id
@@ -351,9 +360,9 @@ def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
         """
     })
     r = client.post(path, headers=submitter(path, 'post'), data=data)
-    print r.data
+    assert r.status_code == 200, r.data
     assert len(r.json['data']['case']) == 1
-    assert r.json['data']['case'][0]['submitter_id'] == "BLGSP-71-06-00019",\
+    assert r.json['data']['case'][0]['submitter_id'] == "case1",\
         r.data
 
 
