@@ -483,7 +483,12 @@ def get_node_interface_args():
     ))
 
 
-def get_node_class_args(cls, _cache={}):
+def get_node_class_args(cls, _cache={}, _type_cache={}):
+    if 'WithPathToInput' not in _type_cache:
+        WithPathToInput = get_withpathto_type()
+        _type_cache['WithPathToInput'] = WithPathToInput
+    else:
+        WithPathToInput = _type_cache['WithPathToInput']
     if cls in _cache:
         return _cache[cls]
 
@@ -759,15 +764,15 @@ def create_root_fields(fields):
 
     return attrs
 
-
-WithPathToInput = type('WithPathToInput', (graphene.InputObjectType,), dict(
-    id=graphene.String(),
-    type=graphene.String(required=True),
-    **{k: graphene.Field(v) for cls_attrs in [
-        get_node_class_property_args(cls)
-        for cls in psqlgraph.Node.get_subclasses()
-    ] for k, v in cls_attrs.iteritems()}
-))
+def get_withpathto_type():
+    return  type('WithPathToInput', (graphene.InputObjectType,), dict(
+        id=graphene.String(),
+        type=graphene.String(required=True),
+        **{k: graphene.Field(v) for cls_attrs in [
+            get_node_class_property_args(cls)
+            for cls in psqlgraph.Node.get_subclasses()
+        ] for k, v in cls_attrs.iteritems()}
+    ))
 
 def get_fields():
     #import pdb; pdb.set_trace()
