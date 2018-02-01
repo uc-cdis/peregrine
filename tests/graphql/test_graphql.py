@@ -338,9 +338,13 @@ def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
     with pg_driver_clean.session_scope() as s:
         props = dict(project_id='CGCI-BLGSP', state='validated')
         case1 = models.Case('case1', submitter_id='case1', **props)
+        case2 = models.Case('case2', submitter_id='case2', **props)
         sample1 = models.Sample('sample1', submitter_id='sample1', **props)
+        sample2 = models.Sample('sample2', submitter_id='sample2', **props)
         case1.samples = [sample1]
-        s.add_all((case1))
+        case2.samples = [sample2]
+        s.add_all((case1, case2))
+
     data = json.dumps({
         'query': """
             query Test {
@@ -628,7 +632,7 @@ def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
 def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
-        'query': """query Test { transaction_log(first:1) { project_id, submitter } }"""}))
+        'query': """query Test { transaction_log(last:1) { project_id, submitter } }"""}))
     assert len(r.json['data']['transaction_log']) == 1, r.data
     assert r.json == {
         "data": {
