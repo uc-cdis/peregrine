@@ -62,7 +62,7 @@ OAUTH2 = {
 
 USER_API = "localhost"
 # used by fence.jwt.token.generate_signed_access_token for iss
-HOSTNAME = "localhost"
+BASE_URL = "localhost"
 
 VERIFY_PROJECT = False
 AUTH_SUBMISSION_LIST = False
