@@ -1,3 +1,6 @@
+from collections import OrderedDict
+
+
 SIGNPOST = {
     "host": "http://localhost:8000/", 'version': 'v0',
     "auth": None}
@@ -57,7 +60,16 @@ OAUTH2 = {
     "redirect_uri": "",
 }
 
-USER_API = "localhost"
+USER_API = "http://localhost"
+# used by fence.jwt.token.generate_signed_access_token for iss
+BASE_URL = "http://localhost"
 
 VERIFY_PROJECT = False
 AUTH_SUBMISSION_LIST = False
+
+JWT_KEYPAIR_FILES = OrderedDict([
+    (
+        'key-test',
+        ('resources/keys/test_public_key.pem', 'resources/keys/test_private_key.pem'),
+    )
+])
