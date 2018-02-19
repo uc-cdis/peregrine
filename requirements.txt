@@ -42,4 +42,4 @@ Flask-SQLAlchemy-Session==1.1
 -e git+https://git@github.com/uc-cdis/graphql-core.git@cdis2.0.0#egg=graphql-core
 -e git+https://git@github.com/uc-cdis/cdiserrors.git@0.0.4#egg=cdiserrors
 -e git+https://git@github.com/uc-cdis/cdislogging.git@master#egg=cdislogging
--e git+https://git@github.com/uc-cdis/authutils.git@f99801e26ee457634802ba6c90c1781912edec8c#egg=authutils
+-e git+https://git@github.com/uc-cdis/authutils.git@1.1.2#egg=authutils
