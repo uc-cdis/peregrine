@@ -144,9 +144,9 @@ def app(request, start_signpost):
     #_app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
 
     _app.logger.setLevel(os.environ.get("GDC_LOG_LEVEL", "WARNING"))
-    _app.jwt_public_keys = {
+    _app.jwt_public_keys = {_app.config['USER_API']: {
             'key-test': utils.read_file('resources/keys/test_public_key.pem')
-    }
+    }}
     return _app
 
 
