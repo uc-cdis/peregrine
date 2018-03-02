@@ -112,6 +112,7 @@ def app_init(app):
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
+    app.graph_traversals = submission.graphql.make_graph_traversal_dict()
     app.graphql_schema = submission.graphql.get_schema()
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
@@ -119,7 +120,6 @@ def app_init(app):
         app.logger.error(
             'Secret key not set in config! Authentication will not work'
         )
-    # slicing.v0.config(app)
     async_pool_init(app)
     app.logger.info('Initialization complete.')
 

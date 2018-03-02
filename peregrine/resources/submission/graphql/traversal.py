@@ -7,12 +7,10 @@ Defines traversals between node types in the graph and functions to
 execute those traversal queries in the database
 """
 
+import flask
 from psqlgraph import Node, Edge
 import sqlalchemy as sa
 
-from flask import current_app as capp
-
-traversals = {}
 terminal_nodes = [
     'annotations',
     'centers',
@@ -84,42 +82,68 @@ def is_valid_direction(root, node, visited, path):
         return this_level >= last_level
 
 
-def construct_traversals(root, node, visited, path):
+def construct_traversals_from_node(root_node):
 
-    # Do we recurse on this path?
-    recurse = lambda neighbor: (
-        neighbor
-        # no backtracking
-        and neighbor not in visited
-        # No 0 length edges
-        and neighbor != node
-        # Don't walk back up the tree
-        and is_valid_direction(root, node, visited, path)
-        # no traveling THROUGH terminal nodes
-        and (path[-1] not in terminal_nodes
-             if path else neighbor.label not in terminal_nodes))
+    node_subclasses = Node.get_subclasses()
+    traversals = {node.label: set() for node in node_subclasses}
 
-    for edge in Edge._get_edges_with_src(node.__name__):
-        neighbor = [n for n in Node.get_subclasses()
-                    if n.__name__ == edge.__dst_class__][0]
-        if recurse(neighbor):
-            construct_traversals(
-                root, neighbor, visited+[node], path+[edge.__src_dst_assoc__])
+    def recursively_contstruct_traversals(node, visited, path):
 
-    for edge in Edge._get_edges_with_dst(node.__name__):
-        neighbor = [n for n in Node.get_subclasses()
-                    if n.__name__ == edge.__src_class__][0]
-        if recurse(neighbor):
-            construct_traversals(
-                root, neighbor, visited+[node], path+[edge.__dst_src_assoc__])
+        traversals[node.label].add('.'.join(path))
 
-    traversals[root][node.label] = traversals[root].get(node.label) or set()
-    traversals[root][node.label].add('.'.join(path))
+        def should_recurse_on(neighbor):
+            """Check whether to recurse on a path."""
+            return (
+                neighbor
+                # no backtracking:
+                and neighbor not in visited
+                # No 0 length edges:
+                and neighbor != node
+                # Don't walk back up the tree:
+                and is_valid_direction(root_node.label, node, visited, path)
+                # no traveling THROUGH terminal nodes:
+                and (
+                    (path and path[-1] not in terminal_nodes)
+                    if path else neighbor.label not in terminal_nodes
+                )
+            )
+
+        for edge in Edge._get_edges_with_src(node.__name__):
+            neighbor_singleton = [
+                n for n in node_subclasses
+                if n.__name__ == edge.__dst_class__
+            ]
+            neighbor = neighbor_singleton[0]
+            if should_recurse_on(neighbor):
+                recursively_contstruct_traversals(
+                    neighbor, visited + [node], path + [edge.__src_dst_assoc__]
+                )
+
+        for edge in Edge._get_edges_with_dst(node.__name__):
+            neighbor_singleton = [
+                n for n in node_subclasses
+                if n.__name__ == edge.__src_class__
+            ]
+            neighbor = neighbor_singleton[0]
+            if should_recurse_on(neighbor):
+                recursively_contstruct_traversals(
+                    neighbor, visited + [node], path + [edge.__dst_src_assoc__]
+                )
+
+    # Build up the traversals dictionary recursively.
+    recursively_contstruct_traversals(root_node, [root_node], [])
+    # Remove empty entries.
+    traversals = {
+        label: paths for label, paths in traversals.iteritems() if bool(paths)
+    }
+    return traversals
 
 
-for node in Node.get_subclasses():
-    traversals[node.label] = {}
-    construct_traversals(node.label, node, [node], [])
+def make_graph_traversal_dict():
+    return {
+        node.label: construct_traversals_from_node(node)
+        for node in Node.get_subclasses()
+    }
 
 
 def union_subq_without_path(q, *args, **kwargs):
@@ -127,9 +151,15 @@ def union_subq_without_path(q, *args, **kwargs):
 
 
 def union_subq_path(q, src_label, dst_label, post_filters=[]):
-    if not traversals.get(src_label, {}).get(dst_label, {}):
+    edges = (
+        flask.current_app
+        .graph_traversals
+        .get(src_label, {})
+        .get(dst_label, {})
+    )
+    if not edges:
         return q
-    paths = list(traversals[src_label][dst_label])
+    paths = list(flask.current_app.graph_traversals[src_label][dst_label])
     base = q.subq_path(paths.pop(), post_filters)
     while paths:
         base = base.union(q.subq_path(paths.pop(), post_filters))
@@ -165,11 +195,18 @@ def subq_paths(q, dst_label, post_filters=None):
 
     post_filters = post_filters or []
 
-    paths = traversals.get(q.entity().label, {}).get(dst_label, {})
+    paths = (
+        flask.current_app
+        .graph_traversals
+        .get(q.entity().label, {})
+        .get(dst_label, {})
+    )
     if not paths:
         return q.filter(sa.sql.false())
 
-    return capp.db.nodes(q.entity()).select_entity_from(sa.union_all(*[
+    nodes = flask.current_app.db.nodes(q.entity())
+    subquery_paths = [
         q.subq_path(path, post_filters).subquery().select()
         for path in paths
-    ]))
+    ]
+    return nodes.select_entity_from(sa.union_all(*subquery_paths))
