@@ -14,13 +14,13 @@ from .node import (
 )
 #from .node import __fields as ns_fields
 from .node import get_fields
-
 from .transaction import (
     TransactionLogCountField,
     TransactionLogField,
     resolve_transaction_log,
     resolve_transaction_log_count,
 )
+from .traversal import make_graph_traversal_dict
 from .util import (
     set_session_timeout,
 )
