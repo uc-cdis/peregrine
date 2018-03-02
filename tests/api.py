@@ -128,6 +128,7 @@ def app_init(app):
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
+    app.graph_traversals = submission.graphql.make_graph_traversal_dict()
     app.graphql_schema = submission.graphql.get_schema()
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']

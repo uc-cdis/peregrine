@@ -775,7 +775,6 @@ def get_withpathto_type():
     ))
 
 def get_fields():
-    #import pdb; pdb.set_trace()
     __fields = {
         cls: create_node_class_gql_object(cls)
         for cls in psqlgraph.Node.get_subclasses()
