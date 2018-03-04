@@ -589,7 +589,7 @@ def get_node_class_link_attrs(cls):
     if case_cache_enabled():
         attrs['resolve__related_cases'] = resolve__related_cases
         attrs['_related_cases'] = graphene.List(
-            'case',
+            'peregrine.resources.submission.graphql.node.case',
             args=get_node_class_args(md.Case)
         )
 
