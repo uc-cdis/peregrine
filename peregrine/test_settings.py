@@ -1,3 +1,4 @@
+import os
 from collections import OrderedDict
 
 
@@ -59,6 +60,8 @@ OAUTH2 = {
     "oauth_provider": "",
     "redirect_uri": "",
 }
+
+DICTIONARY_URL = os.environ.get('DICTIONARY_URL','https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json')
 
 USER_API = "http://localhost"
 # used by fence.jwt.token.generate_signed_access_token for iss

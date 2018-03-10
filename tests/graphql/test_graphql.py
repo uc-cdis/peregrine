@@ -3,8 +3,8 @@ import os
 
 import pytest
 from flask import g
-from gdcdatamodel import models
-from gdcdatamodel.models.submission import TransactionLog
+from datamodelutils import models
+#from gdcdatamodel.models.submission import TransactionLog
 from psqlgraph import Node
 
 from tests.graphql import utils
@@ -34,7 +34,7 @@ def graphql_client(client, submitter):
 def mock_tx_log(pg_driver_clean):
     utils.reset_transactions(pg_driver_clean)
     with pg_driver_clean.session_scope() as session:
-        return session.merge(TransactionLog(
+        return session.merge(models.submission.TransactionLog(
             is_dry_run=True,
             program='CGCI',
             project='BLGSP',
@@ -365,6 +365,7 @@ def test_with_path_to_any(client, submitter, pg_driver_clean, cgci_blgsp):
         case1.samples = [sample1]
         case2.samples = [sample2]
         s.add_all((case1, case2))
+    import pdb; pdb.set_trace()
 
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test($sampleId1: String, $sampleId2: String) {

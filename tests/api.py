@@ -13,7 +13,7 @@ from cdispyutils.log import get_handler
 from dictionaryutils import DataDictionary, dictionary as dict_init
 import datamodelutils
 from datamodelutils import models, validators
-import gdcdictionary
+#import gdcdictionary
 import gdcdatamodel
 from indexclient.client import IndexClient as SignpostClient
 from userdatamodel.driver import SQLAlchemyDriver
@@ -102,16 +102,16 @@ def cors_init(app):
         }, headers=accepted_headers, expose_headers=['Content-Disposition'])
 
 def dictionary_init(app):
+    import pdb; pdb.set_trace()
     dictionary_url = app.config.get('DICTIONARY_URL')
     if dictionary_url:
         app.logger.info('Initializing dictionary from url')
         d = DataDictionary(url=dictionary_url)
         dict_init.init(d)
         dictionary.init(d)
+        import pdb; pdb.set_trace()
     else:
         app.logger.info('Initializing dictionary from gdcdictionary')
-        from gdcdictionary import gdcdictionary
-        dictionary.init(gdcdictionary)
     from gdcdatamodel import models as md
     from gdcdatamodel import validators as vd
     datamodelutils.validators.init(vd)
