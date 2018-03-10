@@ -4,7 +4,6 @@ import os
 import pytest
 from flask import g
 from datamodelutils import models
-#from gdcdatamodel.models.submission import TransactionLog
 from psqlgraph import Node
 
 from tests.graphql import utils
