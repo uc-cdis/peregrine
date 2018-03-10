@@ -9,7 +9,7 @@ from peregrine.auth import roles
 import os
 from signpost import Signpost
 from multiprocessing import Process
-from gdcdatamodel.models import Edge, Node
+#from datamodelutils.models import Edge, Node
 from peregrine.auth import AuthDriver
 from psqlgraph import PsqlGraphDriver
 import pytest
@@ -30,7 +30,7 @@ import json
 from peregrine.config import LEGACY_MODE
 
 #from sheepdog_api import sheepdog_blueprint
-import gdcdictionary
+#import gdcdictionary
 import gdcdatamodel
 
 import utils
@@ -152,6 +152,7 @@ def app(request, start_signpost):
 
 @pytest.fixture
 def pg_driver_clean(request, pg_driver):
+    from datamodelutils.models import Edge, Node
 
     def tearDown():
         with pg_driver.engine.begin() as conn:
