@@ -364,7 +364,6 @@ def test_with_path_to_any(client, submitter, pg_driver_clean, cgci_blgsp):
         case1.samples = [sample1]
         case2.samples = [sample2]
         s.add_all((case1, case2))
-    import pdb; pdb.set_trace()
 
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test($sampleId1: String, $sampleId2: String) {

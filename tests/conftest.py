@@ -36,7 +36,6 @@ import time
 
 import json
 import requests
-import requests_mock
 import pytest
 from mock import patch
 from psqlgraph import PsqlGraphDriver
@@ -53,6 +52,7 @@ from multiprocessing import Process
 from userdatamodel import models as usermd
 from userdatamodel import Base as usermd_base
 from userdatamodel.driver import SQLAlchemyDriver
+import gdcdatamodel
 import sheepdog
 
 import peregrine
@@ -60,15 +60,6 @@ from peregrine.api import app as _app, app_init
 from peregrine.test_settings import Fernet, HMAC_ENCRYPTION_KEY, PSQL_USER_DB_CONNECTION
 from peregrine.auth import roles
 from fence.jwt.token import generate_signed_access_token
-import utils
-
-
-#from sheepdog_api import sheepdog_blueprint
-#import gdcdictionary
-import gdcdatamodel
-
-import sheepdog
-
 import utils
 
 here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -169,19 +160,11 @@ def start_signpost(request):
 @pytest.fixture(scope='session')
 def app(request, start_signpost):
 
-    # import sheepdog
-    # sheepdog_blueprint = sheepdog.blueprint.create_blueprint(
-    #     gdcdictionary.gdcdictionary, gdcdatamodel.models
-    # )
-
-
     _app.config.from_object("peregrine.test_settings")
     app_init(_app)
 
     sheepdog_blueprint = sheepdog.blueprint.create_blueprint('submission')
-
     _app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
-
 
     _app.logger.info('Initializing Signpost driver')
     _app.signpost = SignpostClient(
