@@ -1,34 +1,3 @@
-
-# from cdispyutils.hmac4 import get_auth
-# import requests
-# from flask.testing import make_test_environ_builder
-# from cdispyutils.hmac4.hmac4_auth_utils import get_request_date
-# import datetime
-# import sys
-# from peregrine.auth import roles
-# import os
-# from signpost import Signpost
-# from multiprocessing import Process
-# #from datamodelutils.models import Edge, Node
-# from peregrine.auth import AuthDriver
-# from psqlgraph import PsqlGraphDriver
-# import pytest
-# import time
-# from peregrine.api import app as _app, app_init
-# from mock import patch
-# from elasticsearch import Elasticsearch
-# from peregrine.test_settings import PSQL_USER_DB_CONNECTION
-# from peregrine.test_settings import Fernet, HMAC_ENCRYPTION_KEY
-# import peregrine.test_settings
-
-# from fence.jwt.token import generate_signed_access_token
-# from userdatamodel import models as usermd
-# from userdatamodel import Base as usermd_base
-# from userdatamodel.driver import SQLAlchemyDriver
-# from cdisutilstest.code.storage_client_mock import get_client
-# import json
-# from peregrine.config import LEGACY_MODE
-
 import os
 import sys
 import datetime
