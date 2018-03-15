@@ -1,38 +1,34 @@
+import os
+import sys
+import datetime
+import time
+
+import json
+import requests
+import pytest
+from mock import patch
+from psqlgraph import PsqlGraphDriver
+from flask.testing import make_test_environ_builder
+from signpost import Signpost
 
 from cdispyutils.hmac4 import get_auth
-import requests
-from flask.testing import make_test_environ_builder
 from cdispyutils.hmac4.hmac4_auth_utils import get_request_date
-import datetime
-import sys
-from peregrine.auth import roles
-import os
-from signpost import Signpost
-from multiprocessing import Process
-from gdcdatamodel.models import Edge, Node
-from peregrine.auth import AuthDriver
-from psqlgraph import PsqlGraphDriver
-import pytest
-import time
-from tests.api import app as _app, app_init
-from mock import patch
-from elasticsearch import Elasticsearch
-from peregrine.test_settings import PSQL_USER_DB_CONNECTION
-from peregrine.test_settings import Fernet, HMAC_ENCRYPTION_KEY
-import peregrine.test_settings
+from dictionaryutils import DataDictionary, dictionary
+from datamodelutils import models, validators
 
-from fence.jwt.token import generate_signed_access_token
+from indexclient.client import IndexClient as SignpostClient
+from multiprocessing import Process
 from userdatamodel import models as usermd
 from userdatamodel import Base as usermd_base
 from userdatamodel.driver import SQLAlchemyDriver
-from cdisutilstest.code.storage_client_mock import get_client
-import json
-from peregrine.config import LEGACY_MODE
-
-#from sheepdog_api import sheepdog_blueprint
-import gdcdictionary
 import gdcdatamodel
+import sheepdog
 
+import peregrine
+from peregrine.api import app as _app, app_init
+from peregrine.test_settings import Fernet, HMAC_ENCRYPTION_KEY, PSQL_USER_DB_CONNECTION
+from peregrine.auth import roles
+from fence.jwt.token import generate_signed_access_token
 import utils
 
 here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -133,15 +129,23 @@ def start_signpost(request):
 @pytest.fixture(scope='session')
 def app(request, start_signpost):
 
-    # import sheepdog
-    # sheepdog_blueprint = sheepdog.blueprint.create_blueprint(
-    #     gdcdictionary.gdcdictionary, gdcdatamodel.models
-    # )
-
-
     _app.config.from_object("peregrine.test_settings")
     app_init(_app)
-    #_app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
+
+    sheepdog_blueprint = sheepdog.blueprint.create_blueprint('submission')
+    _app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
+
+    _app.logger.info('Initializing Signpost driver')
+    _app.signpost = SignpostClient(
+        _app.config['SIGNPOST']['host'],
+        version=_app.config['SIGNPOST']['version'],
+        auth=_app.config['SIGNPOST']['auth'])
+    try:
+        _app.logger.info('Initializing Auth driver')
+        _app.auth = AuthDriver(_app.config["AUTH_ADMIN_CREDS"], _app.config["INTERNAL_AUTH"])
+    except Exception:
+        _app.logger.exception("Couldn't initialize auth, continuing anyway")
+
 
     _app.logger.setLevel(os.environ.get("GDC_LOG_LEVEL", "WARNING"))
     _app.jwt_public_keys = {_app.config['USER_API']: {
@@ -152,6 +156,7 @@ def app(request, start_signpost):
 
 @pytest.fixture
 def pg_driver_clean(request, pg_driver):
+    from datamodelutils.models import Edge, Node
 
     def tearDown():
         with pg_driver.engine.begin() as conn:
