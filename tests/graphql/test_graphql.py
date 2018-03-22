@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 
 import pytest
 from flask import g
@@ -1218,130 +1219,187 @@ def put_cgci_blgsp(client, auth=None):
 #     assert response.status_code == 200, response.data
 #     assert 'errors' not in response.json, response.data
 
-def test_export(client, submitter, monkeypatch):
-    data = json.dumps({'bag_path':'manifest_bag',
-        "export_data":
-            {"data": {
-                "project": [
-                {
-                    "code": "BLGSP",
-                    "experiments": [],
-                    "id": "daa208a7-f57a-562c-a04a-7a7c77542c98",
-                    "name": "Burkitt Lymphoma Genome Sequencing Project",
-                    "programs": [
-                    {
-                        "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
-                        "name": "DEV"
-                    }
-                    ]
-                },
-                {
-                    "code": "test",
-                    "experiments": [
-                    {
-                        "id": "8307c663-af58-4b01-8fd0-9b63f55dac10"
-                    },
-                    {
-                        "id": "f6e00607-7f38-49ea-b64b-c45ccf0ff990"
-                    }
-                    ],
-                    "id": "a77f549b-c74b-563e-80bb-570b5a4dde88",
-                    "name": "test",
-                    "programs": [
-                    {
-                        "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
-                        "name": "DEV"
-                    }
-                    ]
-                },
-                {
-                    "code": "open",
-                    "experiments": [],
-                    "id": "9a2fe4bf-5484-5fe4-b882-0d61ecade7cc",
-                    "name": "Open access Project",
-                    "programs": [
-                    {
-                        "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
-                        "name": "DEV"
-                    }
-                    ]
-                }
-                ]
-            }
-        }
-    })
-    monkeypatch.setattr(
-        peregrine.utils,'contain_node_with_category',
-        lambda x,y: True
-    )
+# def test_export(client, submitter, monkeypatch):
+#     data = json.dumps({'bag_path':'manifest_bag',
+#         "export_data":
+#             {"data": {
+#                 "project": [
+#                 {
+#                     "code": "BLGSP",
+#                     "experiments": [],
+#                     "id": "daa208a7-f57a-562c-a04a-7a7c77542c98",
+#                     "name": "Burkitt Lymphoma Genome Sequencing Project",
+#                     "programs": [
+#                     {
+#                         "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
+#                         "name": "DEV"
+#                     }
+#                     ]
+#                 },
+#                 {
+#                     "code": "test",
+#                     "experiments": [
+#                     {
+#                         "id": "8307c663-af58-4b01-8fd0-9b63f55dac10"
+#                     },
+#                     {
+#                         "id": "f6e00607-7f38-49ea-b64b-c45ccf0ff990"
+#                     }
+#                     ],
+#                     "id": "a77f549b-c74b-563e-80bb-570b5a4dde88",
+#                     "name": "test",
+#                     "programs": [
+#                     {
+#                         "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
+#                         "name": "DEV"
+#                     }
+#                     ]
+#                 },
+#                 {
+#                     "code": "open",
+#                     "experiments": [],
+#                     "id": "9a2fe4bf-5484-5fe4-b882-0d61ecade7cc",
+#                     "name": "Open access Project",
+#                     "programs": [
+#                     {
+#                         "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
+#                         "name": "DEV"
+#                     }
+#                     ]
+#                 }
+#                 ]
+#             }
+#         }
+#     })
+#     monkeypatch.setattr(
+#         peregrine.utils,'contain_node_with_category',
+#         lambda x,y: True
+#     )
 
-    r = client.post(export_path, headers=submitter, data=data)
-    assert r.status_code == 200
+#     r = client.post(export_path, headers=submitter, data=data)
+#     assert r.status_code == 200
 
-    #tear down
-    os.remove('manifest_bag.zip')
-    shutil.rmtree('manifest_bag')
-
-
-def test_export_with_no_data_file_node(client, submitter,monkeypatch):
-
-    data = json.dumps({'bag_path':'manifest_bag',
-        "export_data":
-            {"data": {
-                "a": [{"project_id": "CGCI-BLGSP"}],
-                "b": [],
-                "c": [],
-                "d": [{"project_id": "CGCI-BLGSP"}]
-            }
-        }})
-
-    monkeypatch.setattr(
-        peregrine.utils,'contain_node_with_category',
-        lambda x,y: True
-    )
-
-    r = client.post(export_path, headers=submitter, data=data)
-    assert r.status_code == 400
+#     #tear down
+#     os.remove('manifest_bag.zip')
+#     shutil.rmtree('manifest_bag')
 
 
-def test_export_bagit(monkeypatch,client, submitter, pg_driver_clean, cgci_blgsp):
-    post_example_entities_together(client, pg_driver_clean, submitter)
+# def test_export_with_no_data_file_node(client, submitter,monkeypatch):
+
+#     data = json.dumps({'bag_path':'manifest_bag',
+#         "export_data":
+#             {"data": {
+#                 "a": [{"project_id": "CGCI-BLGSP"}],
+#                 "b": [],
+#                 "c": [],
+#                 "d": [{"project_id": "CGCI-BLGSP"}]
+#             }
+#         }})
+
+#     monkeypatch.setattr(
+#         peregrine.utils,'contain_node_with_category',
+#         lambda x,y: False
+#     )
+
+#     r = client.post(export_path, headers=submitter, data=data)
+#     assert r.status_code == 400
+
+# def test_export_bagit(monkeypatch,client, submitter, pg_driver_clean, cgci_blgsp):
+#     post_example_entities_together(client, pg_driver_clean, submitter)
     
-    r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """{
-        a: project (project_id: "CGCI-BLGSP") { project_id }
-        b: project (project_id: "FAKE") { project_id }
-        c: project (project_id: "FAKE_PROJECT") { project_id }
-        d: project (project_id: ["CGCI-BLGSP", "FAKE", "FAKE-PROJECT"]) {
-          project_id
-        }
-        }"""
-        }))
+#     r = client.post(path, headers=submitter, data=json.dumps({
+#         'query': """{
+#         a: project (project_id: "CGCI-BLGSP") { project_id }
+#         b: project (project_id: "FAKE") { project_id }
+#         c: project (project_id: "FAKE_PROJECT") { project_id }
+#         d: project (project_id: ["CGCI-BLGSP", "FAKE", "FAKE-PROJECT"]) {
+#           project_id
+#         }
+#         }"""
+#         }))
 
-    monkeypatch.setattr(
-        peregrine.utils,'contain_node_with_category',
-        lambda x,y: True
-    )
+#     monkeypatch.setattr(
+#         peregrine.utils,'contain_node_with_category',
+#         lambda x,y: True
+#     )
 
-    ret_data = json.loads(r.data)
+#     ret_data = json.loads(r.data)
 
-    data = json.dumps({'bag_path':'manifest_bag',
-        'export_data': ret_data})
+#     data = json.dumps({'bag_path':'manifest_bag',
+#         'export_data': ret_data})
 
+#     r = client.post(export_path, headers=submitter, data=data)
+#     assert r.status_code == 200
+#     assert os.path.exists('manifest_bag.zip')
+#     assert os.path.exists('manifest_bag/bag-info.txt')
+#     assert os.path.exists('manifest_bag/bagit.txt')
+#     assert os.path.exists('manifest_bag/data/manifest.tsv')
+#     assert os.path.exists('manifest_bag/manifest-sha512.txt')
+#     assert os.path.exists('manifest_bag/tagmanifest-sha512.txt')
+#     assert os.path.exists('manifest_bag/manifest-sha256.txt')
+#     assert os.path.exists('manifest_bag/tagmanifest-sha256.txt')
+
+#     #tear down
+#     os.remove('manifest_bag.zip')
+#     shutil.rmtree('manifest_bag')
+
+
+def test_special_case_project_id(
+        client, submitter, pg_driver_clean, cgci_blgsp, put_tcga_brca):
+    data = json.dumps({
+        'format': 'bdbag',
+        'path': 'manifest_bag',
+        'query': """
+            {
+                valid:   project (project_id: "CGCI-BLGSP") { ...f }
+                invalid: project (project_id: "TCGA-TEST")  { ...f }
+                multiple: project (project_id: ["TCGA-BRCA", "CGCI-BLGSP"]) { ...f }
+            }
+            fragment f on project { project_id code }
+        """
+    })
+    r = client.post(path, headers=submitter, data=data)
+    print r.data
     import pdb; pdb.set_trace()
 
-    r = client.post(export_path, headers=submitter, data=data)
-    assert r.status_code == 200
-    assert os.path.exists('manifest_bag.zip')
-    assert os.path.exists('manifest_bag/bag-info.txt')
-    assert os.path.exists('manifest_bag/bagit.txt')
-    assert os.path.exists('manifest_bag/data/manifest.tsv')
-    assert os.path.exists('manifest_bag/manifest-sha512.txt')
-    assert os.path.exists('manifest_bag/tagmanifest-sha512.txt')
-    assert os.path.exists('manifest_bag/manifest-sha256.txt')
-    assert os.path.exists('manifest_bag/tagmanifest-sha256.txt')
 
-    #tear down
-    os.remove('manifest_bag.zip')
-    shutil.rmtree('manifest_bag')
+
+# def test_export_bagit(monkeypatch,client, submitter, pg_driver_clean, cgci_blgsp):
+#     post_example_entities_together(client, pg_driver_clean, submitter)
+    
+#     r = client.post(path, headers=submitter, data=json.dumps({
+#         'query': """{
+#         a: project (project_id: "CGCI-BLGSP") { project_id }
+#         b: project (project_id: "FAKE") { project_id }
+#         c: project (project_id: "FAKE_PROJECT") { project_id }
+#         d: project (project_id: ["CGCI-BLGSP", "FAKE", "FAKE-PROJECT"]) {
+#           project_id
+#         }
+#         }"""
+#         }))
+
+#     monkeypatch.setattr(
+#         peregrine.utils,'contain_node_with_category',
+#         lambda x,y: True
+#     )
+
+#     ret_data = json.loads(r.data)
+
+#     data = json.dumps({'bag_path':'manifest_bag',
+#         'export_data': ret_data})
+
+#     r = client.post(export_path, headers=submitter, data=data)
+#     assert r.status_code == 200
+#     assert os.path.exists('manifest_bag.zip')
+#     assert os.path.exists('manifest_bag/bag-info.txt')
+#     assert os.path.exists('manifest_bag/bagit.txt')
+#     assert os.path.exists('manifest_bag/data/manifest.tsv')
+#     assert os.path.exists('manifest_bag/manifest-sha512.txt')
+#     assert os.path.exists('manifest_bag/tagmanifest-sha512.txt')
+#     assert os.path.exists('manifest_bag/manifest-sha256.txt')
+#     assert os.path.exists('manifest_bag/tagmanifest-sha256.txt')
+
+#     #tear down
+#     os.remove('manifest_bag.zip')
+#     shutil.rmtree('manifest_bag')
 

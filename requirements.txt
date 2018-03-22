@@ -1,3 +1,4 @@
+bdbag==1.2.3
 defusedxml==0.5.0
 scipy==0.18.1
 SurvivalPy==1.0.2

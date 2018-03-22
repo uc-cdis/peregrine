@@ -14,6 +14,7 @@ import peregrine.blueprints
 from . import graphql
 
 
+
 def get_open_project_ids():
     """
     List project ids corresponding to projects with ``availability_type ==
@@ -65,6 +66,53 @@ def set_read_access_projects():
         flask.g.read_access_projects = flask.g.user.get_project_ids('read')
         open_project_ids = get_open_project_ids()
         flask.g.read_access_projects.extend(open_project_ids)
+
+# @peregrine.blueprints.blueprint.route('/graphql', methods=['POST'])
+# @peregrine.auth.set_global_user
+# def root_graphql_query():
+#     """
+#     Run a graphql query.
+#     """
+#     # Short circuit if user is not recognized. Make sure that the list of
+#     # projects that the user has read access to is set.
+
+#     print("root_graphql_query. Run a graphql query in resource/submission/__init__")
+#     try:
+#         set_read_access_projects()
+#     except peregrine.errors.AuthError:
+#         data = flask.jsonify({'data': {}, 'errors': ['Unauthorized query.']})
+#         return data, 403
+#     payload = peregrine.utils.parse_request_json()
+#     query = payload.get('query')
+#     export_format = payload.get('format')
+#     bag_path = payload.get('path')
+#     variables, errors = peregrine.utils.get_variables(payload)
+#     if errors:
+#         return flask.jsonify({'data': None, 'errors': errors}), 400
+#     return_data = graphql.execute_query(query, variables)
+    
+#     import pdb; pdb.set_trace()
+
+#     if export_format == 'bdbag':
+#         # if peregrine.utils.contain_node_with_category(return_data,'data_file') == False:
+#         #     return flask.jsonify({ 'errors': 'No data_file node'}), 400
+
+#         import pdb; pdb.set_trace()
+        
+#         res = peregrine.utils.json2tbl(json.loads(json.dumps(return_data)),'', "_" )
+#         bag_info = {'organization': 'CDIS',
+#                     'data_type': 'TOPMed',
+#                     'date_created': datetime.date.today().isoformat()}
+#         args = dict(
+#                 bag_path=bag_path,
+#                 bag_info=bag_info,
+#                 payload=res)
+#         peregrine.utils.create_bdbag(**args) # bag is a compressed file
+#         return flask.jsonify({'data': res}), 200
+#     else:
+#         return peregrine.utils.jsonify_check_errors(return_data)
+#         #return flask.jsonify({'data': 'Format not supported !!!'}), 400
+        
 @peregrine.blueprints.blueprint.route('/graphql', methods=['POST'])
 @peregrine.auth.set_global_user
 def root_graphql_query():
@@ -74,7 +122,6 @@ def root_graphql_query():
     # Short circuit if user is not recognized. Make sure that the list of
     # projects that the user has read access to is set.
 
-    import pdb; pdb.set_trace()
     print("root_graphql_query. Run a graphql query in resource/submission/__init__")
     try:
         set_read_access_projects()
@@ -83,12 +130,41 @@ def root_graphql_query():
         return data, 403
     payload = peregrine.utils.parse_request_json()
     query = payload.get('query')
+    export_format = payload.get('format')
+    bag_path = payload.get('path')
     variables, errors = peregrine.utils.get_variables(payload)
     if errors:
         return flask.jsonify({'data': None, 'errors': errors}), 400
-    return peregrine.utils.jsonify_check_errors(
-        graphql.execute_query(query, variables)
-    )
+    
+    return_data= graphql.execute_query(query, variables)
+    import pdb; pdb.set_trace()
+    return_data = peregrine.utils.jsonify_check_errors(return_data)
+
+    data, error = return_data
+
+
+    if export_format == 'bdbag':
+        # if peregrine.utils.contain_node_with_category(return_data,'data_file') == False:
+        #     return flask.jsonify({ 'errors': 'No data_file node'}), 400
+
+       
+        import pdb; pdb.set_trace()
+        
+        res = peregrine.utils.json2tbl(data.json),'', "_" )
+        
+        import pdb; pdb.set_trace()
+        bag_info = {'organization': 'CDIS',
+                    'data_type': 'TOPMed',
+                    'date_created': datetime.date.today().isoformat()}
+        args = dict(
+                bag_path=bag_path,
+                bag_info=bag_info,
+                payload=res)
+        peregrine.utils.create_bdbag(**args) # bag is a compressed file
+        return flask.jsonify({'data': res}), 200
+    else:
+        return return_data
+        #return flask.jsonify({'data': 'Format not supported !!!'}), 400
 
 
 def get_introspection_query():
@@ -129,12 +205,9 @@ def get_manifest():
           description: Filters to be applied when generating the manifest
     :return: A manifest that the user can use to download the files in there
     """
-    import pdb; pdb.set_trace()
     payload = peregrine.utils.parse_request_json()
     export_data = payload.get('export_data')
     bag_path = payload.get('bag_path')
-
-    import pdb; pdb.set_trace()
 
     if(bag_path is None):
         return flask.jsonify({'bag_path': None, 'errors': 'bag_path is required!!!'}), 400

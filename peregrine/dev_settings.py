@@ -57,7 +57,7 @@ PSQL_USER_DB_CONNECTION = "postgresql://{name}:{password}@{host}/{db}".format(
 
 # API server
 PEREGRINE_HOST = os.getenv("PEREGRINE_HOST", "localhost")
-PEREGRINE_PORT = int(os.getenv("PEREGRINE_PORT", "5000"))
+PEREGRINE_PORT = int(os.getenv("PEREGRINE_PORT", "5555"))
 
 # FLASK_SECRET_KEY should be set to a secure random string with an appropriate
 # length; 50 is reasonable. For the random generation to be secure, use

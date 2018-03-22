@@ -28,6 +28,7 @@ from peregrine.resources.submission.constants import (
     SUCCESS_STATE,
 )
 
+from peregrine.resources.submission.graphql.node import get_fields
 
 def get_external_proxies():
     """Get any custom proxies set in the config.
