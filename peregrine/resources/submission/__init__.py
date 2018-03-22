@@ -3,13 +3,16 @@ Construct the blueprint for peregrine submissions, using the blueprint from
 :py:mod:``peregrine``.
 """
 
+import datetime
 import os
 
 import flask
+import json
+
 import datamodelutils.models as models
 import peregrine.blueprints
-
 from . import graphql
+
 
 def get_open_project_ids():
     """
@@ -62,8 +65,6 @@ def set_read_access_projects():
         flask.g.read_access_projects = flask.g.user.get_project_ids('read')
         open_project_ids = get_open_project_ids()
         flask.g.read_access_projects.extend(open_project_ids)
-
-
 @peregrine.blueprints.blueprint.route('/graphql', methods=['POST'])
 @peregrine.auth.set_global_user
 def root_graphql_query():
@@ -72,6 +73,8 @@ def root_graphql_query():
     """
     # Short circuit if user is not recognized. Make sure that the list of
     # projects that the user has read access to is set.
+
+    import pdb; pdb.set_trace()
     print("root_graphql_query. Run a graphql query in resource/submission/__init__")
     try:
         set_read_access_projects()
@@ -114,3 +117,41 @@ def root_graphql_schema_query():
             graphql.execute_query(get_introspection_query())
         )
     )
+
+@peregrine.blueprints.blueprint.route('/export', methods=['POST'])
+def get_manifest():
+    """
+    Creates and returns a manifest based on the filters pased on
+    to this endpoint
+    parameters:
+        - name: filters
+          in: graphql result in json format
+          description: Filters to be applied when generating the manifest
+    :return: A manifest that the user can use to download the files in there
+    """
+    import pdb; pdb.set_trace()
+    payload = peregrine.utils.parse_request_json()
+    export_data = payload.get('export_data')
+    bag_path = payload.get('bag_path')
+
+    import pdb; pdb.set_trace()
+
+    if(bag_path is None):
+        return flask.jsonify({'bag_path': None, 'errors': 'bag_path is required!!!'}), 400
+
+    if peregrine.utils.contain_node_with_category(export_data,'data_file') == False:
+        return flask.jsonify({ 'errors': 'No data_file node'}), 400
+
+
+    res = peregrine.utils.json2tbl(export_data,'', "_" )
+
+    bag_info = {'organization': 'CDIS',
+                'data_type': 'TOPMed',
+                'date_created': datetime.date.today().isoformat()}
+    args = dict(
+            bag_path=bag_path,
+            bag_info=bag_info,
+            payload=res)
+    peregrine.utils.create_bdbag(**args) # bag is a compressed file
+
+    return flask.jsonify({'data': res}), 200

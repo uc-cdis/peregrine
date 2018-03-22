@@ -2,8 +2,8 @@ import json
 
 import flask
 import pytest
-from gdcdatamodel import models
-from gdcdatamodel.models.submission import TransactionLog
+from datamodelutils import models
+#from datamodelutils.models.submission import TransactionLog
 from tests.graphql import utils
 
 from tests.auth_mock import Config as auth_conf

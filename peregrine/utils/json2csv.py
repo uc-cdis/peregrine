@@ -47,3 +47,53 @@ def to_csv(hits, dialect='excel'):
     writer.writerows(rows)
 
     return s.getvalue()
+
+
+def join(table_list, L, index, row):
+    '''
+    Join sub tables to generate a big table
+
+    Args:
+        table_list: list of tables. Each table is represented by a list of dictionary
+        L: joined table that is iteratively updated
+        index: int
+        row: dictionary
+
+    Return: None
+    '''
+    if index == len(table_list):
+        L.append(row)
+    else:
+        for item in table_list[index]:
+            newrow = row.copy()
+            newrow.update(item)
+            join(table_list, L, index + 1, newrow)
+
+def json2tbl(json,prefix,delem):
+    '''
+    Args:
+        json: graphQL output JSON
+        prefix: prefix string
+        delem: delimitter
+    Output: list of dictionary representing a table. Each item in the list represent a row data.
+            each row is a dictionary with column name key and value at that position
+
+    '''
+    L = []
+    if isinstance(json, list) and json != []:
+        for l in json:
+            L += (json2tbl(l,prefix,delem))
+        return L
+    if isinstance(json, dict):
+        #handle dictionary
+        table_list = []
+        for k in json.keys():
+            table = json2tbl(json[k], prefix + delem + k, delem)
+            table_list.append(table)
+
+        join(table_list,L,0,{})
+    else:
+        L.append({prefix: json})
+    return L
+
+

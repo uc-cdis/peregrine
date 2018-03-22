@@ -245,3 +245,38 @@ def get_variables(payload):
         except Exception as e:
             errors = ['Unable to parse variables', str(e)]
     return variables, errors
+
+def contain_node_with_category(json, category):
+    '''
+    Check if JSON object contain `category` keys or not
+    Args:
+        json: JSON object
+    Returns:
+        True: if JSON object contains data_file key
+        False: otherwise
+    '''
+    keys_list=[]
+    get_keys(json, keys_list)
+    ns_field = get_fields()
+
+    dic = {}
+    for (k,v) in ns_field.iteritems():
+        dic[v] = k._dictionary['category']
+
+    for key in keys_list:
+        try:
+            if dic[key] == category:
+                return True
+        except KeyError:
+            pass
+    return False
+
+def get_keys(payload, keys_list):
+    '''
+    Get all keys of JSON object and update to the keys_list
+    '''
+    if isinstance(payload, dict):
+        keys_list += payload.keys()
+        map(lambda x: get_keys(x, keys_list), payload.values())
+    elif isinstance(payload, list):
+        map(lambda x: get_keys(x, keys_list), payload)

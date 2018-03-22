@@ -11,7 +11,6 @@ from peregrine.globals import (
     ERR_ASYNC_SCHEDULING,
 )
 
-
 logger = cdispyutils.log.get_logger("submission.scheduling")
 
 
