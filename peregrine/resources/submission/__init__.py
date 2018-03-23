@@ -79,7 +79,7 @@ def root_graphql_query():
     # Short circuit if user is not recognized. Make sure that the list of
     # projects that the user has read access to is set.
 
-    print("root_graphql_query. Run a graphql query in resource/submission/__init__")
+    print("=====root_graphql_query. Run a graphql query in resource/submission/__init__=====")
     try:
         set_read_access_projects()
     except peregrine.errors.AuthError:
@@ -100,6 +100,8 @@ def root_graphql_query():
         if code == 200:
             # if peregrine.utils.contain_node_with_category(data.json,'data_file') == False:
             #     return flask.jsonify({ 'errors': 'No data_file node'}), 400
+            print("========dir(data)===========")
+            print(dir(data))
             res = peregrine.utils.json2tbl(data.json,'', "_" )
             bag_info = {'organization': 'CDIS',
                         'data_type': 'TOPMed',
