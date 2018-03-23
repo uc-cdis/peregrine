@@ -41,9 +41,6 @@ def create_bdbag(bag_path, bag_info, payload, max_row=10000):
             if nrow >= max_row:
                 break
         
-    import pdb; pdb.set_trace()
-    
-
     bag.save(manifests=True)  # creates checksum manifests
     # Compress bag.
     zip_file_path = os.path.basename(os.path.normpath(str(bag)))

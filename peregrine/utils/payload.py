@@ -260,13 +260,13 @@ def contain_node_with_category(json, category):
     get_keys(json, keys_list)
     ns_field = get_fields()
 
-    dic = {}
+    category_map = {}
     for (k,v) in ns_field.iteritems():
-        dic[v] = k._dictionary['category']
+        category_map[v] = k._dictionary['category']
 
     for key in keys_list:
         try:
-            if dic[key] == category:
+            if category_map[key] == category:
                 return True
         except KeyError:
             pass

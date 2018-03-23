@@ -49,6 +49,37 @@ def to_csv(hits, dialect='excel'):
     return s.getvalue()
 
 
+def dicts2tsv(dict_list):
+    """
+    Convert the list of dictionary to tsv format.
+    Each element of the list represent a row in tsv
+    Args:
+        dict_list: list of dictionary
+    Return:
+        output string
+    """
+    tsv = ""
+    row = []
+    for k in sorted(dict_list[0]):
+        k = k.replace('_data_','')
+        tsv = tsv + "{}\t".format(k)
+    tsv = tsv[:-1] + "\n"
+
+    nrow = 0
+    for dict_row in dict_list:
+        row=[]
+        for k in sorted(dict_row):
+            if dict_row[k]:
+                tsv = tsv + "{}\t".format(dict_row[k])
+            else:
+                tsv = tsv + "None\t"      
+        tsv = tsv[:-1] + "\n"     
+        nrow = nrow + 1
+        if nrow >= 1000:
+            break
+
+    return tsv   
+
 def join(table_list, L, index, row):
     '''
     Join sub tables to generate a big table
@@ -95,5 +126,3 @@ def json2tbl(json,prefix,delem):
     else:
         L.append({prefix: json})
     return L
-
-
