@@ -1,4 +1,5 @@
 import os
+import copy
 import bagit
 import csv
 import zipfile
@@ -22,14 +23,14 @@ def create_bdbag(bag_path, bag_info, payload, max_row=10000):
         for k in payload[0].keys():
             k = k.replace('_data_','')
             row.append(k)
-
+        header = copy.deepcopy(row)
         writer.writerow(row)
         nrow = 1
         for row_dict in payload:
             row=[]
-            for (k,v) in row_dict.iteritems():
-                if v:
-                    row.append(v)
+            for h in header:
+                if row_dict['_data_'+h]:
+                    row.append(row_dict['_data_'+h])
                 else:
                     row.append('None')
             writer.writerow(row)

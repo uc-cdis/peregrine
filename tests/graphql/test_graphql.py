@@ -1304,47 +1304,7 @@ def put_cgci_blgsp(client, auth=None):
 #     r = client.post(export_path, headers=submitter, data=data)
 #     assert r.status_code == 400
 
-# def test_export_bagit(monkeypatch,client, submitter, pg_driver_clean, cgci_blgsp):
-#     post_example_entities_together(client, pg_driver_clean, submitter)
-    
-#     r = client.post(path, headers=submitter, data=json.dumps({
-#         'query': """{
-#         a: project (project_id: "CGCI-BLGSP") { project_id }
-#         b: project (project_id: "FAKE") { project_id }
-#         c: project (project_id: "FAKE_PROJECT") { project_id }
-#         d: project (project_id: ["CGCI-BLGSP", "FAKE", "FAKE-PROJECT"]) {
-#           project_id
-#         }
-#         }"""
-#         }))
-
-#     monkeypatch.setattr(
-#         peregrine.utils,'contain_node_with_category',
-#         lambda x,y: True
-#     )
-
-#     ret_data = json.loads(r.data)
-
-#     data = json.dumps({'bag_path':'manifest_bag',
-#         'export_data': ret_data})
-
-#     r = client.post(export_path, headers=submitter, data=data)
-#     assert r.status_code == 200
-#     assert os.path.exists('manifest_bag.zip')
-#     assert os.path.exists('manifest_bag/bag-info.txt')
-#     assert os.path.exists('manifest_bag/bagit.txt')
-#     assert os.path.exists('manifest_bag/data/manifest.tsv')
-#     assert os.path.exists('manifest_bag/manifest-sha512.txt')
-#     assert os.path.exists('manifest_bag/tagmanifest-sha512.txt')
-#     assert os.path.exists('manifest_bag/manifest-sha256.txt')
-#     assert os.path.exists('manifest_bag/tagmanifest-sha256.txt')
-
-#     #tear down
-#     os.remove('manifest_bag.zip')
-#     shutil.rmtree('manifest_bag')
-
-
-def test_special_case_project_id(
+def test_export_bagit(
         client, submitter, pg_driver_clean, cgci_blgsp, put_tcga_brca):
     data = json.dumps({
         'format': 'bdbag',
@@ -1358,9 +1318,21 @@ def test_special_case_project_id(
             fragment f on project { project_id code }
         """
     })
-    r = client.post(path, headers=submitter, data=data)
-    print r.data
-    import pdb; pdb.set_trace()
+    res = client.post(path, headers=submitter, data=data)
+    print res.data
+    assert res.status_code == 200
+    assert os.path.exists('manifest_bag.zip')
+    assert os.path.exists('manifest_bag/bag-info.txt')
+    assert os.path.exists('manifest_bag/bagit.txt')
+    assert os.path.exists('manifest_bag/data/manifest.tsv')
+    assert os.path.exists('manifest_bag/manifest-sha512.txt')
+    assert os.path.exists('manifest_bag/tagmanifest-sha512.txt')
+    assert os.path.exists('manifest_bag/manifest-sha256.txt')
+    assert os.path.exists('manifest_bag/tagmanifest-sha256.txt')
+
+    #tear down
+    os.remove('manifest_bag.zip')
+    shutil.rmtree('manifest_bag')
 
 
 
