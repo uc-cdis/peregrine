@@ -26,17 +26,23 @@ def create_bdbag(bag_path, bag_info, payload, max_row=10000):
         header = copy.deepcopy(row)
         writer.writerow(row)
         nrow = 1
+        print('==============header==========')
+        print(header)
         for row_dict in payload:
             row=[]
+            print(row_dict)
             for h in header:
-                if row_dict['_data_'+h]:
-                    row.append(row_dict['_data_'+h])
+                if row_dict.get('_data_'+h):
+                    row.append(row_dict.get('_data_'+h))
                 else:
                     row.append('None')
             writer.writerow(row)
             nrow = nrow + 1
             if nrow >= max_row:
                 break
+        
+    import pdb; pdb.set_trace()
+    
 
     bag.save(manifests=True)  # creates checksum manifests
     # Compress bag.
