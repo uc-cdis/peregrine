@@ -59,26 +59,29 @@ def dicts2tsv(dict_list):
         output string
     """
     tsv = ""
-    row = []
-    for k in sorted(dict_list[0]):
-        k = k.replace('_data_','')
-        tsv = tsv + "{}\t".format(k)
-    tsv = tsv[:-1] + "\n"
+    
+    header_set = set()
+
+    for dict_row in dict_list:
+        header_set.update(dict_row.keys())
+
+    for h in sorted(header_set):
+        h = h.replace('_data_', '')
+        tsv = tsv + "{}\t".format(h)
 
     nrow = 0
     for dict_row in dict_list:
-        row=[]
-        for k in sorted(dict_row):
-            if dict_row[k]:
-                tsv = tsv + "{}\t".format(dict_row[k])
+        row = []
+        for h in sorted(header_set):
+            if dict_row[h]:
+                tsv = tsv + "{}\t".format(dict_row[h])
             else:
-                tsv = tsv + "None\t"      
-        tsv = tsv[:-1] + "\n"     
-        nrow = nrow + 1
-        if nrow >= 1000:
-            break
-
-    return tsv   
+                tsv = tsv + "None\t"
+            tsv = tsv[:-1] + "\n"
+            nrow = nrow + 1
+            if nrow >= 1000:
+                break
+    return tsv
 
 def join(table_list, L, index, row):
     '''
@@ -100,7 +103,8 @@ def join(table_list, L, index, row):
             newrow.update(item)
             join(table_list, L, index + 1, newrow)
 
-def json2tbl(json,prefix,delem):
+
+def json2tbl(json, prefix, delem):
     '''
     Args:
         json: graphQL output JSON
@@ -113,16 +117,16 @@ def json2tbl(json,prefix,delem):
     L = []
     if isinstance(json, list) and json != []:
         for l in json:
-            L += (json2tbl(l,prefix,delem))
+            L += (json2tbl(l, prefix, delem))
         return L
     if isinstance(json, dict):
-        #handle dictionary
+        # handle dictionary
         table_list = []
         for k in json.keys():
             table = json2tbl(json[k], prefix + delem + k, delem)
             table_list.append(table)
 
-        join(table_list,L,0,{})
+        join(table_list, L, 0, {})
     else:
         L.append({prefix: json})
     return L

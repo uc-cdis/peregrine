@@ -17,7 +17,6 @@ from . import graphql
 from peregrine.utils import jsonify_check_errors
 
 
-
 def get_open_project_ids():
     """
     List project ids corresponding to projects with ``availability_type ==
@@ -70,7 +69,7 @@ def set_read_access_projects():
         open_project_ids = get_open_project_ids()
         flask.g.read_access_projects.extend(open_project_ids)
 
-        
+
 @peregrine.blueprints.blueprint.route('/graphql', methods=['POST'])
 @peregrine.auth.set_global_user
 def root_graphql_query():
@@ -99,16 +98,17 @@ def root_graphql_query():
     if export_format == 'bdbag':
         data, code = return_data
         if code == 200:
-            if peregrine.utils.contain_node_with_category(data.json,'data_file') == False:
-                return flask.jsonify({ 'errors': 'No data_file node'}), 400
-            res = peregrine.utils.json2tbl(json.loads(data.data),'', "_" )
+            if peregrine.utils.contain_node_with_category(data.json, 'data_file') == False:
+                return flask.jsonify({'errors': 'No data_file node'}), 400
+            res = peregrine.utils.json2tbl(json.loads(data.data), '', "_")
             tsv = peregrine.utils.dicts2tsv(res)
             return flask.Response(tsv, mimetype='text/tab-separated-values'), code
         else:
             return data, code
     else:
         return return_data
-        #return flask.jsonify({'data': 'Format not supported !!!'}), 400
+        # return flask.jsonify({'data': 'Format not supported !!!'}), 400
+
 
 def get_introspection_query():
     """
@@ -137,37 +137,38 @@ def root_graphql_schema_query():
         )
     )
 
-@peregrine.blueprints.blueprint.route('/export', methods=['POST'])
-def get_manifest():
-    """
-    Creates and returns a manifest based on the filters pased on
-    to this endpoint
-    parameters:
-        - name: filters
-          in: graphql result in json format
-          description: Filters to be applied when generating the manifest
-    :return: A manifest that the user can use to download the files in there
-    """
-    payload = peregrine.utils.parse_request_json()
-    export_data = payload.get('export_data')
-    bag_path = payload.get('bag_path')
 
-    if(bag_path is None):
-        return flask.jsonify({'bag_path': None, 'errors': 'bag_path is required!!!'}), 400
+# @peregrine.blueprints.blueprint.route('/export', methods=['POST'])
+# def get_manifest():
+#     """
+#     Creates and returns a manifest based on the filters pased on
+#     to this endpoint
+#     parameters:
+#         - name: filters
+#           in: graphql result in json format
+#           description: Filters to be applied when generating the manifest
+#     :return: A manifest that the user can use to download the files in there
+#     """
+#     payload = peregrine.utils.parse_request_json()
+#     export_data = payload.get('export_data')
+#     bag_path = payload.get('bag_path')
 
-    if peregrine.utils.contain_node_with_category(export_data,'data_file') == False:
-        return flask.jsonify({ 'errors': 'No data_file node'}), 400
+#     if(bag_path is None):
+#         return flask.jsonify({'bag_path': None, 'errors': 'bag_path is required!!!'}), 400
 
-    res = peregrine.utils.json2tbl(export_data,'', "_" )
-    tsv = peregrine.utils.dicts2tsv(res)
+#     if peregrine.utils.contain_node_with_category(export_data, 'data_file') == False:
+#         return flask.jsonify({'errors': 'No data_file node'}), 400
 
-    bag_info = {'organization': 'CDIS',
-                'data_type': 'TOPMed',
-                'date_created': datetime.date.today().isoformat()}
-    args = dict(
-            bag_path=bag_path,
-            bag_info=bag_info,
-            payload=res)
-    peregrine.utils.create_bdbag(**args) # bag is a compressed file
+#     res = peregrine.utils.json2tbl(export_data, '', "_")
+#     tsv = peregrine.utils.dicts2tsv(res)
 
-    return flask.jsonify({'data': res}), 200
+#     bag_info = {'organization': 'CDIS',
+#                 'data_type': 'TOPMed',
+#                 'date_created': datetime.date.today().isoformat()}
+#     args = dict(
+#         bag_path=bag_path,
+#         bag_info=bag_info,
+#         payload=res)
+#     peregrine.utils.create_bdbag(**args)  # bag is a compressed file
+
+#     return flask.jsonify({'data': res}), 200
