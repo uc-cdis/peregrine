@@ -59,29 +59,30 @@ def dicts2tsv(dict_list):
         output string
     """
     tsv = ""
-    
+
     header_set = set()
 
     for dict_row in dict_list:
         header_set.update(dict_row.keys())
 
-    for h in sorted(header_set):
-        words = h.split('_')
+    for h in header_set:
+        words = h.split('-')
         tsv = tsv + "{}\t".format(words[-1])
+    tsv = tsv[:-1] + "\n"
 
     nrow = 0
     for dict_row in dict_list:
-        row = []
-        for h in sorted(header_set):
-            if dict_row[h]:
+        for h in header_set:
+            if dict_row.get(h):
                 tsv = tsv + "{}\t".format(dict_row[h])
             else:
                 tsv = tsv + "None\t"
-            tsv = tsv[:-1] + "\n"
-            nrow = nrow + 1
-            if nrow >= 1000:
-                break
+        tsv = tsv[:-1] + "\n"
+        nrow = nrow + 1
+        if nrow >= 1000:
+            break
     return tsv
+
 
 def join(table_list, L, index, row):
     '''

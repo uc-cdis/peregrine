@@ -8,8 +8,7 @@ import os
 
 import flask
 import json
-from flask import Response
-
+from flask import Response, send_file
 import datamodelutils.models as models
 import peregrine.blueprints
 from . import graphql
@@ -88,23 +87,37 @@ def root_graphql_query():
     payload = peregrine.utils.parse_request_json()
     query = payload.get('query')
     export_format = payload.get('format')
-    bag_path = payload.get('path')
     variables, errors = peregrine.utils.get_variables(payload)
     if errors:
         return flask.jsonify({'data': None, 'errors': errors}), 400
 
     return_data = jsonify_check_errors(graphql.execute_query(query, variables))
+    data, code = return_data
 
-    if export_format == 'bdbag':
-        data, code = return_data
-        if code == 200:
-            if peregrine.utils.contain_node_with_category(data.json, 'data_file') == False:
-                return flask.jsonify({'errors': 'No data_file node'}), 400
-            res = peregrine.utils.json2tbl(json.loads(data.data), '', "_")
-            tsv = peregrine.utils.dicts2tsv(res)
-            return flask.Response(tsv, mimetype='text/tab-separated-values'), code
-        else:
-            return data, code
+    if code != 200:
+        return data, code
+
+    if export_format == 'tsv':
+        # if peregrine.utils.contain_node_with_category(data.data, 'data_file') == False:
+        #     return flask.jsonify({'errors': 'No data_file node'}), 400
+        res = peregrine.utils.json2tbl(json.loads(data.data), '', "-")
+        tsv = peregrine.utils.dicts2tsv(res)
+        return flask.Response(tsv, mimetype='text/tab-separated-values'), 200
+
+    elif export_format == 'bdbag':
+        res = peregrine.utils.json2tbl(json.loads(data.data), '', "-")
+
+        bag_name = 'manifest_bag'
+        bag_path = os.getcwd() + '/' + bag_name
+        bag_info = {'organization': 'CDIS',
+                    'data_type': 'TOPMed',
+                    'date_created': datetime.date.today().isoformat()}
+        args = dict(
+            bag_info=bag_info,
+            payload=res)
+        bag = peregrine.utils.create_bdbag(**args)  # bag is a compressed file
+        print('========bag=======', bag)
+        return send_file(bag, attachment_filename='manifest_bag.zip')
     else:
         return return_data
 
@@ -137,37 +150,38 @@ def root_graphql_schema_query():
     )
 
 
-# @peregrine.blueprints.blueprint.route('/export', methods=['POST'])
-# def get_manifest():
-#     """
-#     Creates and returns a manifest based on the filters pased on
-#     to this endpoint
-#     parameters:
-#         - name: filters
-#           in: graphql result in json format
-#           description: Filters to be applied when generating the manifest
-#     :return: A manifest that the user can use to download the files in there
-#     """
-#     payload = peregrine.utils.parse_request_json()
-#     export_data = payload.get('export_data')
-#     bag_path = payload.get('bag_path')
+@peregrine.blueprints.blueprint.route('/export', methods=['POST'])
+def get_manifest():
+    """
+    Creates and returns a manifest based on the filters pased on
+    to this endpoint
+    parameters:
+        - name: filters
+          in: graphql result in json format
+          description: Filters to be applied when generating the manifest
+    :return: A manifest that the user can use to download the files in there
+    """
+    payload = peregrine.utils.parse_request_json()
+    export_data = payload.get('export_data')
+    bag_path = payload.get('bag_path')
 
-#     if(bag_path is None):
-#         return flask.jsonify({'bag_path': None, 'errors': 'bag_path is required!!!'}), 400
+    if(bag_path is None):
+        return flask.jsonify({'bag_path': None, 'errors': 'bag_path is required!!!'}), 400
 
-#     if peregrine.utils.contain_node_with_category(export_data, 'data_file') == False:
-#         return flask.jsonify({'errors': 'No data_file node'}), 400
+    if peregrine.utils.contain_node_with_category(export_data, 'data_file') == False:
+        return flask.jsonify({'errors': 'No data_file node'}), 400
 
-#     res = peregrine.utils.json2tbl(export_data, '', "_")
-#     tsv = peregrine.utils.dicts2tsv(res)
+    res = peregrine.utils.json2tbl(export_data, '', "_")
+    tsv = peregrine.utils.dicts2tsv(res)
 
-#     bag_info = {'organization': 'CDIS',
-#                 'data_type': 'TOPMed',
-#                 'date_created': datetime.date.today().isoformat()}
-#     args = dict(
-#         bag_path=bag_path,
-#         bag_info=bag_info,
-#         payload=res)
-#     peregrine.utils.create_bdbag(**args)  # bag is a compressed file
+    bag_info = {'organization': 'CDIS',
+                'data_type': 'TOPMed',
+                'date_created': datetime.date.today().isoformat()}
+    args = dict(
+        bag_path=bag_path,
+        bag_info=bag_info,
+        payload=res)
+    # bag is a compressed file
+    return peregrine.utils.create_bdbag(**args), 200
 
-#     return flask.jsonify({'data': res}), 200
+    # return flask.jsonify({'data': res}), 200

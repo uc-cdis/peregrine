@@ -3,52 +3,67 @@ import copy
 import bagit
 import csv
 import zipfile
+import tempfile
+
+from flask import Response
 
 
-def create_bdbag(bag_path, bag_info, payload, max_row=10000):
+def create_bdbag(bag_info, payload, max_row=10000):
     """Modify from https://github.com/BD2KGenomics/dcc-dashboard-service/blob/feature/manifest-handover/webservice.py
     Create compressed BDbag file."""
 
     if len(payload) == 0:
         return
-    if not os.path.exists(bag_path):
-        os.makedirs(bag_path)
+    
+    # if not os.path.exists(bag_path):
+    #     os.makedirs(bag_path)
+    tmp_dir = tempfile.mkdtemp()
+    bag_path = tmp_dir + '/manifest_bag'
+    os.makedirs(bag_path)
     bag = bagit.make_bag(bag_path, bag_info)
     # Add payload in subfolder "data".
 
+    # """Create compressed BDbag file."""
+    # if not os.path.exists(bag_path):
+    #     os.makedirs(bag_path)
+    # bag = bagit.make_bag(bag_path, bag_info)
+
+
+    header_set = set()
+
+    for dict_row in payload:
+        header_set.update(dict_row.keys())
+
     with open(bag_path + '/data/manifest.tsv', 'w') as tsvfile:
         writer = csv.writer(tsvfile, delimiter='\t')
-        #write header
         row = []
-        for k in payload[0].keys():
-            k = k.replace('_data_','')
-            row.append(k)
-        header = copy.deepcopy(row)
+        for h in header_set:
+            words = h.split('-')
+            row = row + [words[-1]]
         writer.writerow(row)
-        nrow = 1
-        print('==============header==========')
-        print(header)
-        for row_dict in payload:
-            row=[]
-            print(row_dict)
-            for h in header:
-                if row_dict.get('_data_'+h):
-                    row.append(row_dict.get('_data_'+h))
+
+        nrow = 0
+        for dict_row in payload:
+            row = []
+            for h in header_set:
+                if dict_row.get(h):
+                    row = row + [dict_row[h]]
                 else:
-                    row.append('None')
-            writer.writerow(row)
+                    row = row + ["None"]
             nrow = nrow + 1
-            if nrow >= max_row:
+            writer.writerow(row)
+            if nrow >= 1000:
                 break
-        
+
     bag.save(manifests=True)  # creates checksum manifests
     # Compress bag.
-    zip_file_path = os.path.basename(os.path.normpath(str(bag)))
-    zip_file_name = 'manifest_bag.zip'
+    #zip_dir = os.path.basename(os.path.normpath(str(bag)))
+    zip_dir = bag_path
+    zip_file_name = tmp_dir + '/manifest_bag.zip'
     zipf = zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_DEFLATED)
-    zipdir(zip_file_path, zipf)
+    print('=====zip_file_path=====', zip_dir)
+    zipdir(zip_dir, zipf)
     zipf.close()
-    #new_zip_path = '/app/' + zip_file_name
     return zip_file_name
 
 
