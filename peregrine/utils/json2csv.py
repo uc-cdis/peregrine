@@ -66,8 +66,8 @@ def dicts2tsv(dict_list):
         header_set.update(dict_row.keys())
 
     for h in sorted(header_set):
-        h = h.replace('_data_', '')
-        tsv = tsv + "{}\t".format(h)
+        words = h.split('_')
+        tsv = tsv + "{}\t".format(words[-1])
 
     nrow = 0
     for dict_row in dict_list:

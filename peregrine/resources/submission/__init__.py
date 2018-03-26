@@ -107,7 +107,6 @@ def root_graphql_query():
             return data, code
     else:
         return return_data
-        # return flask.jsonify({'data': 'Format not supported !!!'}), 400
 
 
 def get_introspection_query():
