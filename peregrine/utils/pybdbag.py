@@ -4,6 +4,7 @@ import bagit
 import csv
 import zipfile
 import tempfile
+import shutil
 
 from flask import Response
 
@@ -62,6 +63,7 @@ def create_bdbag(bag_info, payload, max_row=10000):
     zipf = zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_DEFLATED)
     zipdir(zip_dir, zipf)
     zipf.close()
+    shutil.rmtree(zip_dir)
     return zip_file_name
 
 
