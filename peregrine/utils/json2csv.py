@@ -53,11 +53,14 @@ def dicts2tsv(dict_list):
     """
     Convert the list of dictionary to tsv format.
     Each element of the list represent a row in tsv
+    
     Args:
-        dict_list: list of dictionary
-    Return:
-        output string
+        dict_list(list): list of dictionary
+    
+    Returns:
+        output(str): string in tsv format
     """
+    
     tsv = ""
 
     header_set = set()
@@ -84,58 +87,63 @@ def dicts2tsv(dict_list):
     return tsv
 
 
-def join(table_list, L, index, row):
+def join(tsv_list, L, index, row):
     '''
-    Join sub tables to generate a big table
+    Join list of sub tsv to generate a big tsv
 
     Args:
-        table_list: list of tables. Each table is represented by a list of dictionary
-        L: joined table that is iteratively updated
-        index: int
-        row: dictionary
+        tsv_list(list): list of tables or tvs. Each element is represented by a list of dictionary
+        L(list): joined table that is iteratively updated
+        index(int): the index of the table will be joined
+        row(dict): the current joining row
 
-    Return: None
+    Returns: None
     '''
-    if index == len(table_list):
+    if index == len(tsv_list):
         L.append(row)
     else:
-        for item in table_list[index]:
+        for item in tsv_list[index]:
             newrow = row.copy()
             newrow.update(item)
-            join(table_list, L, index + 1, newrow)
+            join(tsv_list, L, index + 1, newrow)
 
 
-def json2tbl(json, prefix, delem):
+def json2tsv(json, prefix, delem):
     '''
+    Convert json file to tsv format
+
     Args:
-        json: graphQL output JSON
-        prefix: prefix string
-        delem: delimitter
-    Output: list of dictionary representing a table. Each item in the list represent a row data.
-            each row is a dictionary with column name key and value at that position
+        json(json) graphQL output JSON
+        prefix(str) prefix string
+        delem(char): delimitter .e.g '\t'
 
+    Returns: 
+        list of dictionary representing a tsv file. Each item in the list represent a row data.
+        each row is a dictionary with column name key and value at that position
     '''
+
     L = []
     if isinstance(json, list) and json != []:
         for l in json:
-            L += (json2tbl(l, prefix, delem))
+            L += (json2tsv(l, prefix, delem))
         return L
     if isinstance(json, dict):
         # handle dictionary
-        table_list = []
+        tsv_list = []
         for k in json.keys():
-            table = json2tbl(json[k], prefix + delem + k, delem)
-            table_list.append(table)
+            tsv = json2tsv(json[k], prefix + delem + k, delem)
+            tsv_list.append(tsv)
 
-        join(table_list, L, 0, {})
+        join(tsv_list, L, 0, {})
     else:
         L.append({prefix: json})
     return L
+
 
 def flatten_json(json, prefix, delem):
     data = json['data']
     res = {}
     for key, val in data.iteritems():
-        res[key] = json2tbl({key:val}, prefix, delem)
-    
+        res[key] = json2tsv({key: val}, prefix, delem)
+
     return res

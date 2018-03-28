@@ -16,7 +16,7 @@ def create_bdbag(bag_info, payload, max_row=1000):
         bag_info: bdbag info
         payload(json): resutl of graphql given a query
         max_row(int): the row limitation of tsv files
-    Return:
+    Returns:
         the path of bdbag zip file
     """
 
@@ -34,7 +34,7 @@ def create_bdbag(bag_info, payload, max_row=1000):
         for dict_row in json_data:
             header_set.update(dict_row.keys())
 
-        with open(bag_path + '/data/' + node_name+ '.tsv', 'w') as tsvfile:
+        with open(bag_path + '/data/' + node_name + '.tsv', 'w') as tsvfile:
             writer = csv.writer(tsvfile, delimiter='\t')
             row = []
             for h in header_set:

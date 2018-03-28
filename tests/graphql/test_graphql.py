@@ -11,7 +11,7 @@ import peregrine
 from tests.graphql import utils
 from tests.graphql.utils import data_fnames
 
-from peregrine.utils import json2tbl
+from peregrine.utils import json2tsv
 
 BLGSP_PATH = '/v0/submission/CGCI/BLGSP/'
 BRCA_PATH = '/v0/submission/TCGA/BRCA/'
@@ -1228,7 +1228,7 @@ def test_tx_log_comprehensive_query_failed_deletion(
     assert 'errors' not in response.json, response.data
 
 
-def test_json2tbl():
+def test_json2tsv():
 
     data = {"project": [
         {
@@ -1245,7 +1245,7 @@ def test_json2tbl():
         }]
     }
 
-    res = json2tbl(data, '', '_')
+    res = json2tsv(data, '', '_')
 
     assert len(res) == 1
     assert res[0]['_project_programs_id'] == 'f6bd2676-33f6-5671-ac2f-38aa1ceedcd8'
@@ -1255,7 +1255,7 @@ def test_json2tbl():
     assert res[0]['_project_name'] == 'Burkitt Lymphoma Genome Sequencing Project'
 
 
-def test_export(client, submitter, pg_driver_clean):
+def test_json2tsv_multiple_branches(client, submitter, pg_driver_clean):
     data = {"data": {
         "project": [
                     {
@@ -1304,7 +1304,7 @@ def test_export(client, submitter, pg_driver_clean):
         ]
     }
     }
-    res = json2tbl(data, '', '_')
+    res = json2tsv(data, '', '_')
 
     assert len(res) == 4
     assert res[0]['_data_project_programs_name'] == 'DEV'
@@ -1314,58 +1314,21 @@ def test_export(client, submitter, pg_driver_clean):
     assert res[1]['_data_project_name'] == 'test'
 
 
-# def test_export_with_no_data_file_node(client, submitter, monkeypatch):
+def test_bagit_endpoint(
+        client, submitter, monkeypatch):
+    data = json.dumps({
+        'format': 'bdbag',
+        'path': 'manifest_bag',
+        'query': """
+            {
+                valid:   project (project_id: "CGCI-BLGSP") { ...f }
+                invalid: project (project_id: "TCGA-TEST")  { ...f }
+                multiple: project (project_id: ["TCGA-BRCA", "CGCI-BLGSP"]) { ...f }
+            }
+            fragment f on project { project_id code }
+        """
+    })
 
-#     data = json.dumps({'bag_path': 'manifest_bag',
-#                        "export_data":
-#                        {"data": {
-#                            "a": [{"project_id": "CGCI-BLGSP"}],
-#                            "b": [],
-#                            "c": [],
-#                            "d": [{"project_id": "CGCI-BLGSP"}]
-#                        }
-#                        }})
-
-#     monkeypatch.setattr(
-#         peregrine.utils, 'contain_node_with_category',
-#         lambda x, y: False
-#     )
-
-#     r = client.post(export_path, headers=submitter, data=data)
-#     assert r.status_code == 400
-
-
-# def test_export_bagit(
-#         client, submitter, monkeypatch):
-#     data = json.dumps({
-#         'format': 'bdbag',
-#         'bag_path': 'manifest_bag',
-#         'query': """
-#             {
-#                 valid:   project (project_id: "CGCI-BLGSP") { ...f }
-#                 invalid: project (project_id: "TCGA-TEST")  { ...f }
-#                 multiple: project (project_id: ["TCGA-BRCA", "CGCI-BLGSP"]) { ...f }
-#             }
-#             fragment f on project { project_id code }
-#         """
-#     })
-#     monkeypatch.setattr(
-#         peregrine.utils, 'contain_node_with_category',
-#         lambda x, y: True
-#     )
-
-#     res = client.post(export_path, headers=submitter, data=data)
-#     print res.data
-#     assert res.status_code == 200
-#     assert os.path.exists('manifest_bag.zip')
-#     assert os.path.exists('manifest_bag/bag-info.txt')
-#     assert os.path.exists('manifest_bag/bagit.txt')
-#     assert os.path.exists('manifest_bag/data/manifest.tsv')
-#     assert os.path.exists('manifest_bag/manifest-sha512.txt')
-#     assert os.path.exists('manifest_bag/tagmanifest-sha512.txt')
-#     assert os.path.exists('manifest_bag/manifest-sha256.txt')
-#     assert os.path.exists('manifest_bag/tagmanifest-sha256.txt')
-
-#     # tear down
-#     os.remove('manifest_bag.zip')
-#     shutil.rmtree('manifest_bag')
+    res = client.post(path, headers=submitter, data=data)
+    assert res.status_code == 200
+    assert res.data
