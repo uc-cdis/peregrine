@@ -14,7 +14,7 @@ def create_bdbag(bag_info, payload, max_row=10000):
 
     if len(payload) == 0:
         return
-    
+
     # if not os.path.exists(bag_path):
     #     os.makedirs(bag_path)
     tmp_dir = tempfile.mkdtemp()
@@ -27,7 +27,6 @@ def create_bdbag(bag_info, payload, max_row=10000):
     # if not os.path.exists(bag_path):
     #     os.makedirs(bag_path)
     # bag = bagit.make_bag(bag_path, bag_info)
-
 
     header_set = set()
 
@@ -61,15 +60,15 @@ def create_bdbag(bag_info, payload, max_row=10000):
     zip_dir = bag_path
     zip_file_name = tmp_dir + '/manifest_bag.zip'
     zipf = zipfile.ZipFile(zip_file_name, 'w', zipfile.ZIP_DEFLATED)
-    print('=====zip_file_path=====', zip_dir)
     zipdir(zip_dir, zipf)
     zipf.close()
     return zip_file_name
 
 
 def zipdir(path, ziph):
-    """https://github.com/BD2KGenomics/dcc-dashboard-service/blob/feature/manifest-handover/webservice.py"""
+    length = len(path)
     # ziph is zipfile handle
     for root, _, files in os.walk(path):
+        folder = root[length:]  # path without "parent"
         for file in files:
-            ziph.write(os.path.join(root, file))
+            ziph.write(os.path.join(root, file), os.path.join(folder, file))

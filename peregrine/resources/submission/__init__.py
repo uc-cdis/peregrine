@@ -98,8 +98,6 @@ def root_graphql_query():
         return data, code
 
     if export_format == 'tsv':
-        # if peregrine.utils.contain_node_with_category(data.data, 'data_file') == False:
-        #     return flask.jsonify({'errors': 'No data_file node'}), 400
         res = peregrine.utils.json2tbl(json.loads(data.data), '', "-")
         tsv = peregrine.utils.dicts2tsv(res)
         return flask.Response(tsv, mimetype='text/tab-separated-values'), 200
@@ -116,7 +114,6 @@ def root_graphql_query():
             bag_info=bag_info,
             payload=res)
         bag = peregrine.utils.create_bdbag(**args)  # bag is a compressed file
-        print('========bag=======', bag)
         return send_file(bag, attachment_filename='manifest_bag.zip')
     else:
         return return_data
