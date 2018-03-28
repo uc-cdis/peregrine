@@ -10,7 +10,7 @@ import os.path
 import flask
 import json
 import shutil
-from flask import Response, send_file
+from flask import Response, send_file, stream_with_context
 import datamodelutils.models as models
 import peregrine.blueprints
 from . import graphql
@@ -75,7 +75,8 @@ def set_read_access_projects():
 @peregrine.auth.set_global_user
 def root_graphql_query():
     """
-    Run a graphql query.
+    Run a graphql query and export to supported formats(json, bdbag)
+
     """
     # Short circuit if user is not recognized. Make sure that the list of
     # projects that the user has read access to is set.
@@ -99,16 +100,14 @@ def root_graphql_query():
     if code != 200:
         return data, code
 
-    if export_format == 'tsv':
-        res = peregrine.utils.json2tbl(json.loads(data.data), '', "-")
-        tsv = peregrine.utils.dicts2tsv(res)
-        return flask.Response(tsv, mimetype='text/tab-separated-values'), 200
+    # if export_format == 'tsv':
+    #     res = peregrine.utils.json2tbl(json.loads(data.data), '', "-")
+    #     tsv = peregrine.utils.dicts2tsv(res)
+    #     return flask.Response(tsv, mimetype='text/tab-separated-values'), 200
 
-    elif export_format == 'bdbag':
-        res = peregrine.utils.json2tbl(json.loads(data.data), '', "-")
+    if export_format == 'bdbag':
+        res = peregrine.utils.flatten_json(json.loads(data.data), '', "-")
 
-        bag_name = 'manifest_bag'
-        bag_path = os.getcwd() + '/' + bag_name
         bag_info = {'organization': 'CDIS',
                     'data_type': 'TOPMed',
                     'date_created': datetime.date.today().isoformat()}
@@ -118,7 +117,7 @@ def root_graphql_query():
         bag = peregrine.utils.create_bdbag(**args)  # bag is a compressed file
         data = send_file(bag, attachment_filename='manifest_bag.zip')
         shutil.rmtree(os.path.abspath(os.path.join(bag, os.pardir)))
-        return data
+        return data, 200
     else:
         return return_data
 

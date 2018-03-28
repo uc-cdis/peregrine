@@ -131,3 +131,11 @@ def json2tbl(json, prefix, delem):
     else:
         L.append({prefix: json})
     return L
+
+def flatten_json(json, prefix, delem):
+    data = json['data']
+    res = {}
+    for key, val in data.iteritems():
+        res[key] = json2tbl({key:val}, prefix, delem)
+    
+    return res
