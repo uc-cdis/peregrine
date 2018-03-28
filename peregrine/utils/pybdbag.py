@@ -34,7 +34,7 @@ def create_bdbag(bag_info, payload, max_row=1000):
         for dict_row in json_data:
             header_set.update(dict_row.keys())
 
-        with open(bag_path + '/data/manifest_' + node_name+ '.tsv', 'w') as tsvfile:
+        with open(bag_path + '/data/' + node_name+ '.tsv', 'w') as tsvfile:
             writer = csv.writer(tsvfile, delimiter='\t')
             row = []
             for h in header_set:
