@@ -66,7 +66,9 @@ def dicts2tsv(dict_list):
     header_set = set()
 
     for dict_row in dict_list:
-        header_set.update(dict_row.keys())
+        for key in dict_row.keys():
+            if (dict_row[key] is not None and dict_row[key] != []):
+                header_set.update([key])
 
     for h in header_set:
         words = h.split('-')

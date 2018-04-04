@@ -32,7 +32,9 @@ def create_bdbag(bag_info, payload, max_row=1000):
         header_set = set()
 
         for dict_row in json_data:
-            header_set.update(dict_row.keys())
+            for key in dict_row.keys():
+                if (dict_row[key] is not None and dict_row[key] != []):
+                    header_set.update([key])
 
         with open(bag_path + '/data/' + node_name + '.tsv', 'w') as tsvfile:
             writer = csv.writer(tsvfile, delimiter='\t')
@@ -64,7 +66,6 @@ def create_bdbag(bag_info, payload, max_row=1000):
     zipf.close()
     shutil.rmtree(zip_dir)
     return zip_file_name
-
 
 def zipdir(path, ziph):
     length = len(path)
