@@ -6,6 +6,12 @@ from os import environ as env
 AUTH = 'https://gdc-portal.nci.nih.gov/auth/keystone/v3/'
 INTERNAL_AUTH = env.get('INTERNAL_AUTH', 'https://gdc-portal.nci.nih.gov/auth/')
 
+# Signpost
+SIGNPOST = {
+   'host': env.get('SIGNPOST_HOST', 'http://localhost:8888'),
+   'version': 'v0',
+   'auth': None}
+   
 AUTH_ADMIN_CREDS = {
     'domain_name': env.get('KEYSTONE_DOMAIN'),
     'username': env.get('KEYSTONE_USER'),

@@ -11,6 +11,7 @@ import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
 from userdatamodel.driver import SQLAlchemyDriver
 from cdispyutils.log import get_handler
+from indexclient.client import IndexClient
 
 import peregrine
 from peregrine import dictionary
@@ -63,6 +64,12 @@ def db_init(app):
 
     app.userdb = SQLAlchemyDriver(app.config['PSQL_USER_DB_CONNECTION'])
     flask_scoped_session(app.userdb.Session, app)
+
+    app.logger.info('Initializing Indexd driver')
+    app.index_client = IndexClient(
+        app.config['SIGNPOST']['host'],
+        version=app.config['SIGNPOST']['version'],
+        auth=app.config['SIGNPOST']['auth'])
 
     try:
         app.logger.info('Initializing Auth driver')

@@ -104,7 +104,6 @@ def root_graphql_query():
     #     res = peregrine.utils.json2tbl(json.loads(data.data), '', "-")
     #     tsv = peregrine.utils.dicts2tsv(res)
     #     return flask.Response(tsv, mimetype='text/tab-separated-values'), 200
-
     if export_format == 'bdbag':
         res = peregrine.utils.flatten_json(json.loads(data.data), '', "-")
 
