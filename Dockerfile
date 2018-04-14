@@ -24,7 +24,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     python-setuptools \
     sudo \
     vim \
-    && pip install --upgrade pip \
+    && pip install pip==9.0.3 \
     && pip install --upgrade setuptools \
     && pip install uwsgi \
     && mkdir /var/www/peregrine \
