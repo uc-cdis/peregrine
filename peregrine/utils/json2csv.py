@@ -53,14 +53,14 @@ def dicts2tsv(dict_list):
     """
     Convert the list of dictionary to tsv format.
     Each element of the list represent a row in tsv
-    
+
     Args:
         dict_list(list): list of dictionary
-    
+
     Returns:
         output(str): string in tsv format
     """
-    
+
     tsv = ""
 
     header_set = set()
