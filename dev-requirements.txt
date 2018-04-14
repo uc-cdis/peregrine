@@ -9,8 +9,6 @@ codacy-coverage
 moto==0.4.5
 Sphinx==1.3.1
 sphinxcontrib-httpdomain==1.3.0
--e git+https://git@github.com/uc-cdis/indexclient.git@1.0#egg=indexclient
--e git+https://git@github.com/NCI-GDC/signpost.git@c8e2aa5ff572c808cba9b522b64f7b497e79c524#egg=signpost
 -e git+https://git@github.com/uc-cdis/cdisutils-test.git@0.0.1#egg=cdisutilstest
 -e git+https://git@github.com/uc-cdis/flask-postgres-session.git@0.1.1#egg=flask_postgres_session
 # dependency of sheepdog
