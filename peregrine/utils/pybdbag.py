@@ -23,10 +23,10 @@ def get_node_set(nodetype):
 
 
 def is_category(node_name, data_files):
-    if node_name in data_files or (node_name + 's') in data_files:
-        return True
-    else:
-        return False
+    for item in data_files:
+        if node_name.find(item)>=0:
+            return True
+    return False
 
 
 def is_uuid(uuid):
