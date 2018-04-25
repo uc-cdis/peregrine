@@ -7,15 +7,16 @@ import datetime
 import os
 import os.path
 
+import uuid
 import flask
 import json
 import shutil
 from flask import Response, send_file, stream_with_context
+
 import datamodelutils.models as models
 import peregrine.blueprints
-from . import graphql
-
 from peregrine.utils import jsonify_check_errors
+from . import graphql
 
 
 def get_open_project_ids():
@@ -81,7 +82,6 @@ def root_graphql_query():
     # Short circuit if user is not recognized. Make sure that the list of
     # projects that the user has read access to is set.
 
-    print("=====root_graphql_query. Run a graphql query in resource/submission/__init__=====")
     try:
         set_read_access_projects()
     except peregrine.errors.AuthError:
@@ -100,10 +100,6 @@ def root_graphql_query():
     if code != 200:
         return data, code
 
-    # if export_format == 'tsv':
-    #     res = peregrine.utils.json2tbl(json.loads(data.data), '', "-")
-    #     tsv = peregrine.utils.dicts2tsv(res)
-    #     return flask.Response(tsv, mimetype='text/tab-separated-values'), 200
     if export_format == 'bdbag':
         res = peregrine.utils.flatten_json(json.loads(data.data), '', "-")
 
@@ -113,10 +109,15 @@ def root_graphql_query():
         args = dict(
             bag_info=bag_info,
             payload=res)
+
         bag = peregrine.utils.create_bdbag(**args)  # bag is a compressed file
-        data = send_file(bag, attachment_filename='manifest_bag.zip')
+        key_name = str(flask.g.user.id) + "/" + \
+            str(uuid.uuid4()) + '_' + datetime.datetime.now().strftime('%s')
+        peregrine.utils.put_data_to_s3(bag, key_name)
+        url = peregrine.utils.generate_presigned_url(key_name)
         shutil.rmtree(os.path.abspath(os.path.join(bag, os.pardir)))
-        return data, 200
+
+        return flask.Response({'url': url}, mimetype='text/json'), 200
     else:
         return return_data
 

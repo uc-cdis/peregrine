@@ -13,6 +13,14 @@ from tests.graphql.utils import data_fnames
 
 from peregrine.utils import json2tsv
 
+# Python 2 and 3 compatible
+try:
+    from unittest.mock import MagicMock
+    from unittest.mock import patch
+except ImportError:
+    from mock import MagicMock
+    from mock import patch
+
 BLGSP_PATH = '/v0/submission/CGCI/BLGSP/'
 BRCA_PATH = '/v0/submission/TCGA/BRCA/'
 
@@ -1313,8 +1321,10 @@ def test_json2tsv_multiple_branches(client, submitter, pg_driver_clean):
     assert res[1]['_data_project_programs_id'] == 'f6bd2676-33f6-5671-ac2f-38aa1ceedcd8'
     assert res[1]['_data_project_name'] == 'test'
 
-
+@patch('peregrine.utils.s3.put_data_to_s3')
+@patch('peregrine.utils.s3.generate_presigned_url')
 def test_bagit_endpoint(
+        generate_presigned_url, put_data_to_s3,
         client, submitter, monkeypatch):
     data = json.dumps({
         'format': 'bdbag',
@@ -1328,7 +1338,8 @@ def test_bagit_endpoint(
             fragment f on project { project_id code }
         """
     })
-
+    put_data_to_s3.return_value = True
+    generate_presigned_url.return_value = 'http://presignedurl.test'
     res = client.post(path, headers=submitter, data=data)
     assert res.status_code == 200
     assert res.data
