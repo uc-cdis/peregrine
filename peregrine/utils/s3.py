@@ -1,27 +1,10 @@
 import boto3
 import flask
 
-
-def get_s3_client(host):
-    """
-    Get a connection to a given storage host based on configuration in the
-    current app context.
-    """
-    config = flask.current_app.config["STORAGE"]["s3"]
-    return boto3.client(
-        's3',
-        aws_access_key_id=config["keys"][host]["access_key"],
-        aws_secret_access_key=config["keys"][host]["secret_key"]
-    )
-
-
-def get_submission_bucket():
-    conn = get_s3_client(flask.current_app.config['SUBMISSION']['host'])
-    return conn.get_bucket(flask.current_app.config['SUBMISSION']['bucket'])
-
+UPLOAD_SUCCESS = True
+UPLOAD_FAIL = False
 
 def put_data_to_s3(filename, key_name):
-    host = flask.current_app.config['SUBMISSION']['host']
     bucket_name = flask.current_app.config['SUBMISSION']['bucket']
 
     data = open(filename, 'rb')
@@ -29,20 +12,24 @@ def put_data_to_s3(filename, key_name):
 
     try:
         s3 = boto3.resource(
-            's3', 
-            aws_access_key_id=config["keys"][host]["access_key"], 
-            aws_secret_access_key=config["keys"][host]["secret_key"])
+            's3',
+            aws_access_key_id=config["access_key"],
+            aws_secret_access_key=config["secret_key"])
         s3.Bucket(bucket_name).put_object(Key=key_name, Body=data)
-        return True
+        return UPLOAD_SUCCESS
     except Exception:
-        return False
+        return UPLOAD_FAIL
 
 
 def generate_presigned_url(keyname):
-    host = flask.current_app.config['SUBMISSION']['host']
+    config = flask.current_app.config["STORAGE"]["s3"]
     bucket_name = flask.current_app.config['SUBMISSION']['bucket']
 
-    client = get_s3_client(host)
+    client = boto3.client(
+        's3',
+        aws_access_key_id=config["access_key"],
+        aws_secret_access_key=config["secret_key"])
+
     url = client.generate_presigned_url(
         ClientMethod='get_object',
         Params={

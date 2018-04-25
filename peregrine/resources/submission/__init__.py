@@ -117,7 +117,7 @@ def root_graphql_query():
         url = peregrine.utils.generate_presigned_url(key_name)
         shutil.rmtree(os.path.abspath(os.path.join(bag, os.pardir)))
 
-        return flask.Response({'url': url}, mimetype='text/json'), 200
+        return flask.Response(url), 200
     else:
         return return_data
 

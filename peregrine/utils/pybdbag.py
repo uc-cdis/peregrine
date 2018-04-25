@@ -16,7 +16,6 @@ def get_node_set(nodetype):
     ns_field = get_fields()
     data_files = set()
     for (k, v) in ns_field.iteritems():
-        print(v)
         if k._dictionary['category'] == nodetype:
             data_files.update([str(v)])
     return data_files
@@ -24,7 +23,7 @@ def get_node_set(nodetype):
 
 def is_category(node_name, data_files):
     for item in data_files:
-        if node_name.find(item)>=0:
+        if node_name.find(item) >= 0:
             return True
     return False
 

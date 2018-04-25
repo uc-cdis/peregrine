@@ -4,13 +4,14 @@ from os import environ as env
 
 # Auth
 AUTH = 'https://gdc-portal.nci.nih.gov/auth/keystone/v3/'
-INTERNAL_AUTH = env.get('INTERNAL_AUTH', 'https://gdc-portal.nci.nih.gov/auth/')
+INTERNAL_AUTH = env.get(
+    'INTERNAL_AUTH', 'https://gdc-portal.nci.nih.gov/auth/')
 
 # Signpost
 SIGNPOST = {
-   'host': env.get('SIGNPOST_HOST', 'http://localhost:8888'),
-   'version': 'v0',
-   'auth': None}
+    'host': env.get('SIGNPOST_HOST', 'http://localhost:8888'),
+    'version': 'v0',
+    'auth': None}
 
 AUTH_ADMIN_CREDS = {
     'domain_name': env.get('KEYSTONE_DOMAIN'),
@@ -19,31 +20,18 @@ AUTH_ADMIN_CREDS = {
     'auth_url': env.get('KEYSTONE_AUTH_URL'),
     'user_domain_name': env.get('KEYSTONE_DOMAIN')}
 
-# Storage
-CLEVERSAFE_HOST = env.get('CLEVERSAFE_HOST', 'cleversafe.service.consul')
-
-STORAGE = {"s3": {
-    "keys": {
-        "cleversafe.service.consul": {
-            "access_key": os.environ.get('CLEVERSAFE_ACCESS_KEY'),
-            'secret_key': os.environ.get('CLEVERSAFE_SECRET_KEY')},
-        "localhost": {
-            "access_key": os.environ.get('CLEVERSAFE_ACCESS_KEY'),
-            'secret_key': os.environ.get('CLEVERSAFE_SECRET_KEY')},
-    }, "kwargs": {
-        'cleversafe.service.consul': {
-            'host': 'cleversafe.service.consul',
-            "is_secure": False,
-            "calling_format": OrdinaryCallingFormat()},
-        'localhost': {
-            'host': 'localhost',
-            "is_secure": False,
-            "calling_format": OrdinaryCallingFormat()},
-    }}}
-SUBMISSION = {
-    "bucket": 'test_submission',
-    "host": CLEVERSAFE_HOST,
+STORAGE = {
+    "s3":
+    {
+        "access_key": '',
+        'secret_key': ''
+    }
 }
+
+SUBMISSION = {
+    "bucket": ''
+}
+
 # Postgres
 PSQLGRAPH = {
     'host': os.getenv("GDC_PG_HOST", "localhost"),

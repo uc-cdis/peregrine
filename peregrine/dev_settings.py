@@ -4,14 +4,15 @@ from os import environ as env
 
 # Auth
 AUTH = 'https://gdc-portal.nci.nih.gov/auth/keystone/v3/'
-INTERNAL_AUTH = env.get('INTERNAL_AUTH', 'https://gdc-portal.nci.nih.gov/auth/')
+INTERNAL_AUTH = env.get(
+    'INTERNAL_AUTH', 'https://gdc-portal.nci.nih.gov/auth/')
 
 # Signpost
 SIGNPOST = {
-   'host': env.get('SIGNPOST_HOST', 'http://localhost:8888'),
-   'version': 'v0',
-   'auth': None}
-   
+    'host': env.get('SIGNPOST_HOST', 'http://localhost:8888'),
+    'version': 'v0',
+    'auth': None}
+
 AUTH_ADMIN_CREDS = {
     'domain_name': env.get('KEYSTONE_DOMAIN'),
     'username': env.get('KEYSTONE_USER'),
@@ -22,27 +23,17 @@ AUTH_ADMIN_CREDS = {
 # Storage
 CLEVERSAFE_HOST = env.get('CLEVERSAFE_HOST', 'cleversafe.service.consul')
 
-STORAGE = {"s3": {
-    "keys": {
-        "cleversafe.service.consul": {
-            "access_key": os.environ.get('CLEVERSAFE_ACCESS_KEY'),
-            'secret_key': os.environ.get('CLEVERSAFE_SECRET_KEY')},
-        "localhost": {
-            "access_key": os.environ.get('CLEVERSAFE_ACCESS_KEY'),
-            'secret_key': os.environ.get('CLEVERSAFE_SECRET_KEY')},
-    }, "kwargs": {
-        'cleversafe.service.consul': {
-            'host': 'cleversafe.service.consul',
-            "is_secure": False,
-            "calling_format": OrdinaryCallingFormat()},
-        'localhost': {
-            'host': 'localhost',
-            "is_secure": False,
-            "calling_format": OrdinaryCallingFormat()},
-    }}}
+STORAGE = {
+    "s3":
+    {
+        "access_key": '',
+        'secret_key': ''
+    }
+}
+
+
 SUBMISSION = {
-    "bucket": 'test_submission',
-    "host": CLEVERSAFE_HOST,
+    "bucket": 'test_submission'
 }
 # Postgres
 PSQLGRAPH = {
@@ -70,12 +61,13 @@ PEREGRINE_PORT = int(os.getenv("PEREGRINE_PORT", "5555"))
 # ``random.SystemRandom()``
 FLASK_SECRET_KEY = 'eCKJOOw3uQBR5pVDz3WIvYk3RsjORYoPRdzSUNJIeUEkm1Uvtq'
 
-DICTIONARY_URL = os.environ.get('DICTIONARY_URL','https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json')
+DICTIONARY_URL = os.environ.get(
+    'DICTIONARY_URL', 'https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json')
 
 OIDC_ISSUER = 'http://localhost/user'
 
 HMAC_ENCRYPTION_KEY = os.environ.get('CDIS_HMAC_ENCRYPTION_KEY', '')
-#OAUTH2 = {
+# OAUTH2 = {
 #    "client_id": os.environ.get('CDIS_PEREGRINE_CLIENT_ID'),
 #    "client_secret": os.environ.get("CDIS_PEREGRINE_CLIENT_SECRET"),
 #    "oauth_provider": os.environ.get("CDIS_USER_API_OAUTH", 'http://localhost:8000/oauth2/'),
