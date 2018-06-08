@@ -1,42 +1,35 @@
+import os
+import sys
+import datetime
+import time
+
+import json
+import requests
+import pytest
+from mock import patch
+from psqlgraph import PsqlGraphDriver
+from flask.testing import make_test_environ_builder
+from signpost import Signpost
 
 from cdispyutils.hmac4 import get_auth
-import requests
-from flask.testing import make_test_environ_builder
 from cdispyutils.hmac4.hmac4_auth_utils import get_request_date
-import datetime
-import sys
-from peregrine.auth import roles
-import os
-from signpost import Signpost
+from dictionaryutils import DataDictionary, dictionary
+from datamodelutils import models, validators
+
+from indexclient.client import IndexClient as SignpostClient
 from multiprocessing import Process
-from gdcdatamodel.models import Edge, Node
-from peregrine.auth import AuthDriver
-from psqlgraph import PsqlGraphDriver
-import pytest
-import time
-from tests.api import app as _app, app_init
-from auth_mock import patch_auth, auth
-from mock import patch
-import requests
-#from userapi import app as userapi_app
-#from userapi import app_init as userapi_app_init
-#from userapi import utils
-from cdis_oauth2client import OAuth2Client
-from userdatamodel import Base
-from elasticsearch import Elasticsearch
-from peregrine.test_settings import PSQL_USER_DB_CONNECTION
-from peregrine.test_settings import Fernet, HMAC_ENCRYPTION_KEY
 from userdatamodel import models as usermd
 from userdatamodel import Base as usermd_base
 from userdatamodel.driver import SQLAlchemyDriver
-from cdisutilstest.code.storage_client_mock import get_client
-import os
-import json
-from peregrine.config import LEGACY_MODE
-
-#from sheepdog_api import sheepdog_blueprint
-import gdcdictionary
 import gdcdatamodel
+import sheepdog
+
+import peregrine
+from peregrine.api import app as _app, app_init
+from peregrine.test_settings import Fernet, HMAC_ENCRYPTION_KEY, PSQL_USER_DB_CONNECTION
+from peregrine.auth import roles
+from fence.jwt.token import generate_signed_access_token
+import utils
 
 here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, here)
@@ -75,7 +68,6 @@ class UserapiTestSettings(object):
 
     APPLICATION_ROOT = '/'
     DEBUG = True
-    OAUTH2_PROVIDER_ERROR_URI = "/oauth2/errors"
     HOST_NAME = ''
     SHIBBOLETH_HEADER = 'persistent_id'
     SSO_URL = ''
@@ -137,54 +129,34 @@ def start_signpost(request):
 @pytest.fixture(scope='session')
 def app(request, start_signpost):
 
-    # import sheepdog
-    # sheepdog_blueprint = sheepdog.blueprint.create_blueprint(
-    #     gdcdictionary.gdcdictionary, gdcdatamodel.models
-    # )
-
-
     _app.config.from_object("peregrine.test_settings")
     app_init(_app)
-    #_app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
+
+    sheepdog_blueprint = sheepdog.blueprint.create_blueprint('submission')
+    _app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
+
+    _app.logger.info('Initializing Signpost driver')
+    _app.signpost = SignpostClient(
+        _app.config['SIGNPOST']['host'],
+        version=_app.config['SIGNPOST']['version'],
+        auth=_app.config['SIGNPOST']['auth'])
+    try:
+        _app.logger.info('Initializing Auth driver')
+        _app.auth = AuthDriver(_app.config["AUTH_ADMIN_CREDS"], _app.config["INTERNAL_AUTH"])
+    except Exception:
+        _app.logger.exception("Couldn't initialize auth, continuing anyway")
+
 
     _app.logger.setLevel(os.environ.get("GDC_LOG_LEVEL", "WARNING"))
-
+    _app.jwt_public_keys = {_app.config['USER_API']: {
+            'key-test': utils.read_file('resources/keys/test_public_key.pem')
+    }}
     return _app
 
 
 @pytest.fixture
-def userapi_client(app, request):
-    # fixture to setup userapi client
-    patcher = patch(
-        'userapi.resources.storage.get_client',
-        get_client)
-    patcher.start()
-    userapi_app_init(userapi_app, UserapiTestSettings)
-    userapi_app.test = True
-    userapi_client_obj = userapi_app.test_client()
-    oauth_client = utils.create_client(
-        'internal_service',
-        'https://localhost',
-        app.config['PSQL_USER_DB_CONNECTION'],
-        name='peregrine', description='', auto_approve=True, is_admin=True
-    )
-    app.config['OAUTH2'] = {
-        'client_id': oauth_client[0],
-        'client_secret': oauth_client[1],
-        'oauth_provider': '/oauth2/',
-        'redirect_uri': 'https://localhost',
-    }
-    app.config['USER_API'] = '/'
-    app.oauth2 = OAuth2Client(**app.config['OAUTH2'])
-
-    def fin():
-        utils.drop_client('peregrine', app.config['PSQL_USER_DB_CONNECTION'])
-    request.addfinalizer(fin)
-    return userapi_client_obj
-
-
-@pytest.fixture
 def pg_driver_clean(request, pg_driver):
+    from datamodelutils.models import Edge, Node
 
     def tearDown():
         with pg_driver.engine.begin() as conn:
@@ -223,7 +195,7 @@ def user_setup():
     with user_driver.session as s:
         for username in [
                 'admin', 'unauthorized', 'submitter', 'member', 'test']:
-            user = usermd.User(username=username, is_admin=False)
+            user = usermd.User(username=username, is_admin=(username=='admin'))
             keypair = usermd.HMACKeyPair(
                 access_key=username + 'accesskey',
                 secret_key=key.encrypt(username),
@@ -232,7 +204,6 @@ def user_setup():
             s.add(user)
             s.add(keypair)
         users = s.query(usermd.User).all()
-        print(users)
         test_user = s.query(usermd.User).filter(
             usermd.User.username == 'test').first()
         test_user.is_admin =True
@@ -265,17 +236,44 @@ def user_teardown():
             session.execute(table.delete())
 
 
-@pytest.fixture()
-def submitter(app, request):
-    def build_header(path, method, role='submitter'):
-        auth = get_auth(role + 'accesskey', role, 'submission')
-        environ = make_test_environ_builder(app, path=path, method=method)
-        request = environ.get_request()
-        request.headers = dict(request.headers)
-        auth.__call__(request)
-        return request.headers
-    return build_header
+def encoded_jwt(private_key, user):
+    """
+    Return an example JWT containing the claims and encoded with the private
+    key.
 
+    Args:
+        private_key (str): private key
+        user (userdatamodel.models.User): user object
+
+    Return:
+        str: JWT containing claims encoded with private key
+    """
+    kid = peregrine.test_settings.JWT_KEYPAIR_FILES.keys()[0]
+    scopes = ['openid']
+    return generate_signed_access_token(
+        kid, private_key, user, 3600, scopes, forced_exp_time=None)
+
+
+@pytest.fixture()
+def submitter(app, request, pg_driver_clean):
+    private_key = utils.read_file('resources/keys/test_private_key.pem')
+
+    user_driver = SQLAlchemyDriver(PSQL_USER_DB_CONNECTION)
+    with user_driver.session as s:
+        user = s.query(usermd.User).filter_by(username='submitter').first()
+        token = encoded_jwt(private_key, user)
+        return {'Authorization': 'bearer ' + token}
+
+
+@pytest.fixture()
+def admin(app, request, pg_driver_clean):
+    private_key = utils.read_file('resources/keys/test_private_key.pem')
+
+    user_driver = SQLAlchemyDriver(PSQL_USER_DB_CONNECTION)
+    with user_driver.session as s:
+        user = s.query(usermd.User).filter_by(username='admin').first()
+        token = encoded_jwt(private_key, user)
+        return {'Authorization': 'bearer ' + token}
 
 @pytest.fixture(scope='session')
 def es_setup(request):

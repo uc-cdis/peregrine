@@ -4,7 +4,7 @@ import uuid
 
 import indexclient
 
-from gdcdatamodel import models
+from datamodelutils import models
 
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
@@ -32,7 +32,7 @@ def put_entity_from_file(
         client, file_path, submitter, put_path=BLGSP_PATH, validate=True):
     with open(os.path.join(DATA_DIR, file_path), 'r') as f:
         entity = f.read()
-    r = client.put(put_path, headers=submitter(put_path, 'put'), data=entity)
+    r = client.put(put_path, headers=submitter, data=entity)
     if validate:
         assert r.status_code == 200, r.data
     return r

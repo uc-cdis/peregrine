@@ -6,11 +6,10 @@ from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
 from psqlgraph import PsqlGraphDriver
 
+from authutils import AuthError
 import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
 from userdatamodel.driver import SQLAlchemyDriver
-import cdis_oauth2client
-from cdis_oauth2client import OAuth2Client, OAuth2Error
 from cdispyutils.log import get_handler
 
 import peregrine
@@ -33,14 +32,12 @@ def app_register_blueprints(app):
     app.url_map.strict_slashes = False
 
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix=v0+'/submission')
-    app.register_blueprint(cdis_oauth2client.blueprint, url_prefix=v0+'/oauth2')
 
 
 def app_register_duplicate_blueprints(app):
     # TODO: (jsm) deprecate this v0 version under root endpoint.  This
     # root endpoint duplicates /v0 to allow gradual client migration
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix='/submission')
-    app.register_blueprint(cdis_oauth2client.blueprint, url_prefix='/oauth2')
 
 
 def async_pool_init(app):
@@ -66,8 +63,6 @@ def db_init(app):
 
     app.userdb = SQLAlchemyDriver(app.config['PSQL_USER_DB_CONNECTION'])
     flask_scoped_session(app.userdb.Session, app)
-
-    app.oauth2 = OAuth2Client(**app.config['OAUTH2'])
 
     try:
         app.logger.info('Initializing Auth driver')
@@ -115,6 +110,7 @@ def app_init(app):
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
+    app.graph_traversals = submission.graphql.make_graph_traversal_dict()
     app.graphql_schema = submission.graphql.get_schema()
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
@@ -122,7 +118,6 @@ def app_init(app):
         app.logger.error(
             'Secret key not set in config! Authentication will not work'
         )
-    # slicing.v0.config(app)
     async_pool_init(app)
     app.logger.info('Initialization complete.')
 
@@ -186,7 +181,7 @@ app.register_error_handler(APIError, _log_and_jsonify_exception)
 app.register_error_handler(
     peregrine.errors.APIError, _log_and_jsonify_exception
 )
-app.register_error_handler(OAuth2Error, _log_and_jsonify_exception)
+app.register_error_handler(AuthError, _log_and_jsonify_exception)
 
 
 def run_for_development(**kwargs):

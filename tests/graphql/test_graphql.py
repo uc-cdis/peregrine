@@ -3,8 +3,7 @@ import os
 
 import pytest
 from flask import g
-from gdcdatamodel import models
-from gdcdatamodel.models.submission import TransactionLog
+from datamodelutils import models
 from psqlgraph import Node
 
 from tests.graphql import utils
@@ -23,7 +22,7 @@ path = '/v0/submission/graphql'
 @pytest.fixture
 def graphql_client(client, submitter):
     def execute(query, variables={}):
-        return client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+        return client.post(path, headers=submitter, data=json.dumps({
             'query': query,
             'variables': variables,
         }))
@@ -34,7 +33,7 @@ def graphql_client(client, submitter):
 def mock_tx_log(pg_driver_clean):
     utils.reset_transactions(pg_driver_clean)
     with pg_driver_clean.session_scope() as session:
-        return session.merge(TransactionLog(
+        return session.merge(models.submission.TransactionLog(
             is_dry_run=True,
             program='CGCI',
             project='BLGSP',
@@ -58,7 +57,7 @@ def failed_deletion_transaction(client, submitter, pg_driver_clean, populated_bl
     delete_path = '/v0/submission/CGCI/BLGSP/entities/{}'.format(node_id)
     r = client.delete(
         delete_path,
-        headers=submitter(delete_path, 'delete'))
+        headers=submitter)
     assert r.status_code == 400, r.data
     return str(r.json['transaction_id'])
 
@@ -74,7 +73,7 @@ def failed_upload_transaction(client, submitter, pg_driver_clean):
             'sample_type': 'teapot',
             'how_heavy': 'no',
         }),
-        headers=submitter(put_path, 'put'))
+        headers=submitter)
     assert r.status_code == 400, r.data
     return str(r.json['transaction_id'])
 
@@ -88,7 +87,7 @@ def post_example_entities_together(
     for fname in data_fnames:
         with open(os.path.join(DATA_DIR, fname), 'r') as f:
             data.append(json.loads(f.read()))
-    return client.post(path, headers=submitter(path, 'post'), data=json.dumps(data))
+    return client.post(path, headers=submitter, data=json.dumps(data))
 
 
 def put_example_entities_together(client, pg_driver_clean, submitter):
@@ -97,23 +96,20 @@ def put_example_entities_together(client, pg_driver_clean, submitter):
     for fname in data_fnames:
         with open(os.path.join(DATA_DIR, fname), 'r') as f:
             data.append(json.loads(f.read()))
-    return client.put(path, headers=submitter(path, 'put'), data=json.dumps(data))
+    return client.put(path, headers=submitter, data=json.dumps(data))
 
-def put_cgci(client, auth=None, role='admin'):
+def put_cgci(client, auth=None):
     path = '/v0/submission'
-    headers = auth(path, 'put', role) if auth else None
     data = json.dumps({
         'name': 'CGCI', 'type': 'program',
         'dbgap_accession_number': 'phs000235'
     })
-    r = client.put(path, headers=headers, data=data)
-    del g.user
+    r = client.put(path, headers=auth, data=data)
     return r
 
-def put_cgci_blgsp(client, auth=None, role='admin'):
-    put_cgci(client, auth=auth, role=role)
+def put_cgci_blgsp(client, auth=None):
+    put_cgci(client, auth=auth)
     path = '/v0/submission/CGCI/'
-    headers = auth(path, 'put', role) if auth else None
     data = json.dumps({
         "type": "project",
         "code": "BLGSP",
@@ -121,7 +117,7 @@ def put_cgci_blgsp(client, auth=None, role='admin'):
         "name": "Burkitt Lymphoma Genome Sequencing Project",
         "state": "open"
     })
-    r = client.put(path, headers=headers, data=data)
+    r = client.put(path, headers=auth, data=data)
     assert r.status_code == 200, r.data
     del g.user
     return r
@@ -134,7 +130,7 @@ def test_node_subclasses(client, submitter, pg_driver_clean, cgci_blgsp):
         data = json.dumps({
             'query': """query Test {{ {} {{ id }}}}""".format(cls.label)
         })
-        r = client.post(path, headers=submitter(path, 'post'), data=data)
+        r = client.post(path, headers=submitter, data=data)
         print r.data
         assert cls.label in r.json['data'], r.data
 
@@ -144,14 +140,14 @@ def test_alias(client, submitter, pg_driver_clean, cgci_blgsp):
     data = json.dumps({
         'query': """query Test { alias1: case { id } }"""
     })
-    r = client.post(path, headers=submitter(path, 'post'), data=data)
+    r = client.post(path, headers=submitter, data=data)
     assert 'alias1' in r.json.get('data', {}), r.data
 
 
 def test_types(client, submitter, pg_driver_clean, cgci_blgsp):
     post = post_example_entities_together(client, pg_driver_clean, submitter)
     assert post.status_code == 201
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test {
         boolean: sample (first: 1) { is_ffpe }
         float  : aliquot(first: 1) { concentration }
@@ -172,7 +168,7 @@ def test_unauthorized_graphql_query(client, submitter, pg_driver_clean, cgci_blg
 
 def test_fragment(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test {
           case { ... caseFragment  }
@@ -188,7 +184,7 @@ def test_fragment(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_viewer(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test { viewer { case { id type } } }
         """}))
@@ -199,7 +195,7 @@ def test_viewer(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_node_interface(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { node {
         id type project_id created_datetime
         }}"""}))
@@ -216,7 +212,7 @@ def test_quicksearch(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     with pg_driver_clean.session_scope():
         aliquot = pg_driver_clean.nodes(models.Aliquot).first()
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test {
         aliquot(quick_search: "%s") { id type project_id submitter_id  }}
         """ % aliquot.submitter_id[15:]
@@ -233,16 +229,15 @@ def test_quicksearch(client, submitter, pg_driver_clean, cgci_blgsp):
     }
 
 
-def test_node_interface_project_id(client, submitter, pg_driver_clean):
-    assert put_cgci_blgsp(client, auth=submitter).status_code == 200
+def test_node_interface_project_id(client, admin, submitter, pg_driver_clean):
+    assert put_cgci_blgsp(client, auth=admin).status_code == 200
     post = post_example_entities_together(client, pg_driver_clean, submitter)
     assert post.status_code == 201
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test {
         a: node(project_id: "CGCI-BLGSP"  ) { id }
         b: node(project_id: "FAKE-PROJECT") { id }
         }"""}))
-    print r.data
     assert r.json['data']['a']
     assert not r.json['data']['b']
 
@@ -259,7 +254,7 @@ def test_node_interface_of_type(client, submitter, pg_driver_clean, cgci_blgsp):
             }
         """
     })
-    r = client.post(path, headers=submitter(path, 'post'), data=data)
+    r = client.post(path, headers=submitter, data=data)
     print r.data
     types = {d['type'] for d in r.json['data']['node']}
     assert not {'case'}.symmetric_difference(types)
@@ -267,7 +262,7 @@ def test_node_interface_of_type(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_arg_props(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test { sample (project_id: "CGCI-BLGSP") { project_id }}
         """}))
@@ -275,7 +270,7 @@ def test_arg_props(client, submitter, pg_driver_clean, cgci_blgsp):
     assert data, r.data
     assert data['sample'][0]['project_id'] == "CGCI-BLGSP"
 
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test { sample (project_id: "fake-project") { project_id }}
         """}))
@@ -286,7 +281,7 @@ def test_arg_props(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_project_project_id_filter(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test {
         a: project (project_id: "CGCI-BLGSP") { project_id }
@@ -309,7 +304,7 @@ def test_project_project_id_filter(client, submitter, pg_driver_clean, cgci_blgs
 
 def test_arg_first(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """ query Test { case (first: 1) { submitter_id }} """}))
     assert r.json == {
         'data': {
@@ -322,10 +317,10 @@ def test_arg_first(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_arg_offset(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """ query Test { case (first: 5) { id }} """}))
     first = {c['id'] for c in r.json['data']['case']}
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """ query Test { case (offset: 5) { id }} """}))
     data = r.json.get('data')
     assert data, r.data
@@ -350,7 +345,7 @@ def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
             }
         """
     })
-    r = client.post(path, headers=submitter(path, 'post'), data=data)
+    r = client.post(path, headers=submitter, data=data)
     print r.data
     assert len(r.json['data']['case']) == 1
     assert r.json['data']['case'][0]['submitter_id'] == "BLGSP-71-06-00019",\
@@ -370,7 +365,7 @@ def test_with_path_to_any(client, submitter, pg_driver_clean, cgci_blgsp):
         case2.samples = [sample2]
         s.add_all((case1, case2))
 
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test($sampleId1: String, $sampleId2: String) {
         a: _case_count (with_path_to_any: [
           {type: "sample", submitter_id: $sampleId1}
@@ -414,7 +409,7 @@ def test_with_path_to_any(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_with_path_to_invalid_type(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test {
         case (order_by_desc: "created_datetime",
@@ -440,7 +435,7 @@ def test_without_path(client, submitter, pg_driver_clean, cgci_blgsp):
             }
         """
     })
-    r = client.post(path, headers=submitter(path, 'post'), data=data)
+    r = client.post(path, headers=submitter, data=data)
     print r.data
     data = r.json['data']
     assert data['with']
@@ -461,7 +456,7 @@ def test_counts_with_path_filter_multiple_paths(
         aliquot.samples = [sample]
         s.merge(aliquot)
 
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test {
             with: _sample_count(with_path_to: {type: "aliquot"})
@@ -474,7 +469,7 @@ def test_counts_with_path_filter_multiple_paths(
 
 def test_with_path_negative(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
 query Test {
   case (with_path_to: {
@@ -489,7 +484,7 @@ query Test {
 @pytest.mark.skip(reason='test does not conform to latest dictionary')
 def test_with_path_multiple(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
 query Test {
         case (with_path_to: [
@@ -506,7 +501,7 @@ query Test {
 def test_order_by_asc_id(client, submitter, pg_driver_clean, cgci_blgsp):
     utils.reset_transactions(pg_driver_clean)
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { case (order_by_asc: "id") { id }}"""}))
     print r.data
     _original = r.json['data']['case']
@@ -516,7 +511,7 @@ def test_order_by_asc_id(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_order_by_desc_id(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { case (order_by_desc: "id") { id }}"""}))
     print r.data
     _original = r.json['data']['case']
@@ -526,7 +521,7 @@ def test_order_by_desc_id(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_order_by_asc_prop(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { case (order_by_asc: "submitter_id") {
           submitter_id
         }}"""}))
@@ -539,7 +534,7 @@ def test_order_by_asc_prop(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_order_by_desc_prop(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { case (order_by_desc: "submitter_id") {
           submitter_id
         }}"""}))
@@ -556,7 +551,7 @@ def test_auth_node_subclass(client, submitter, pg_driver_clean, cgci_blgsp):
         blgsp = pg_driver_clean.nodes(models.Project).props(code='BLGSP').one()
         blgsp.cases += [models.Case('id1', project_id='CGCI-BLGSP')]
         blgsp.cases += [models.Case('id2', project_id='OTHER-OTHER')]
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { case { project_id }}"""}))
     with pg_driver_clean.session_scope():
         assert len(r.json['data']['case']) == 1
@@ -570,7 +565,7 @@ def test_auth_node_subclass_links(client, submitter, pg_driver_clean, cgci_blgsp
             for sample in case.samples:
                 sample.project_id = 'OTHER-OTHER'
                 s.merge(sample)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { case (with_links: ["samples"]) {
             submitter_id samples { id } _samples_count }}"""}))
     print r.data
@@ -585,7 +580,7 @@ def test_with_links_any(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     with pg_driver_clean.session_scope():
         ncases = pg_driver_clean.nodes(models.Case).count()
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test {
         a: _case_count (with_links_any: [])
         b: _case_count (with_links_any: ["clinicals"])
@@ -616,14 +611,14 @@ def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
         for case in cases:
             case.project_id = 'OTHER-OTHER'
             s.merge(case)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { _case_count }"""}))
     with pg_driver_clean.session_scope():
         assert r.json['data']['_case_count'] == 0
 
 def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { transaction_log(first:1) { project_id, submitter } }"""}))
     assert len(r.json['data']['transaction_log']) == 1, r.data
     assert r.json == {
@@ -642,7 +637,7 @@ def test_auth_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
         log = pg_driver_clean.nodes(models.submission.TransactionLog).one()
         log.program = 'OTHER'
         s.merge(log)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { transaction_log { id } }"""}))
     with pg_driver_clean.session_scope():
         assert len(r.json['data']['transaction_log']) == 0, r.data
@@ -653,7 +648,7 @@ def test_with_path_to(client, submitter, pg_driver_clean, cgci_blgsp):
     with pg_driver_clean.session_scope():
         case_sub_id = pg_driver_clean.nodes(models.Case).path('samples')\
                                               .first().submitter_id
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test {{
           aliquot (with_path_to: {{type: "case", submitter_id: "{}"}}) {{
@@ -667,7 +662,7 @@ def test_variable(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     with pg_driver_clean.session_scope():
         case = pg_driver_clean.nodes(models.Case).path('samples').one()
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test ($caseId: String) {
           a: case (id: $caseId) {
@@ -693,7 +688,7 @@ def test_variable(client, submitter, pg_driver_clean, cgci_blgsp):
 def test_null_variable(client, submitter, pg_driver_clean, cgci_blgsp):
     utils.reset_transactions(pg_driver_clean)
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test ($projectId: [String]) {
           a: _case_count (project_id: $projectId)
@@ -733,7 +728,7 @@ def test_property_lists(client, submitter, pg_driver_clean, cgci_blgsp):
           c3: _transaction_log_count(project_id: "CGCI-BLGSP")
         }""",
     })
-    response = client.post(path, headers=submitter(path, 'post'), data=data)
+    response = client.post(path, headers=submitter, data=data)
     # fix for the unicode artifacts
     expected_json = json.loads(json.dumps({
         "data": {
@@ -758,7 +753,7 @@ def test_not_property(client, submitter, pg_driver_clean, cgci_blgsp):
         s.merge(
             models.Case('case2', submitter_id='s2', project_id='CGCI-BLGSP')
         )
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """{
           case (not: {submitter_id: "s1"}, submitter_id: ["s1", "s2"]) {
             id submitter_id
@@ -775,7 +770,7 @@ def test_not_property(client, submitter, pg_driver_clean, cgci_blgsp):
 
 
 def test_schema(client, submitter, pg_driver_clean):
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
           query IntrospectionQuery {
             __schema {
@@ -862,7 +857,6 @@ def test_schema(client, submitter, pg_driver_clean):
 
 def test_special_case_project_id(
         client, submitter, pg_driver_clean, cgci_blgsp, put_tcga_brca):
-    put_tcga_brca(client, submitter)
     data = json.dumps({
         'query': """
             {
@@ -873,7 +867,7 @@ def test_special_case_project_id(
             fragment f on project { project_id code }
         """
     })
-    r = client.post(path, headers=submitter(path, 'post'), data=data)
+    r = client.post(path, headers=submitter, data=data)
     print r.data
     assert r.json == {
         "data": {
@@ -895,7 +889,7 @@ def test_special_case_project_id(
 
 def test_catch_language_error(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """{ case-1: case (first: 1) { id }} """}))
     assert r.status_code == 400, r.data
     {
@@ -916,7 +910,7 @@ def test_filter_empty_prop_list(
         client, 'submitted_unaligned_reads.json', submitter
     )
 
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """{
         a: _case_count(submitter_id: [])
         b: _submitted_unaligned_reads_count
@@ -951,7 +945,7 @@ def test_submitted_unaligned_reads_with_path_to_read_group(
         rg.submitted_unaligned_reads_files = files
         rg = s.merge(rg)
 
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """{
         read_group(id: "%s") {
            id
@@ -990,7 +984,7 @@ def test_without_path_order(client, submitter, pg_driver_clean, cgci_blgsp):
         c = pg_driver_clean.nodes(models.Case).one()
         c.samples = []
 
-    r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
+    r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test {
         case (
@@ -1020,7 +1014,7 @@ def test_read_group_with_path_to_case(
             }
         """,
     })
-    r = client.post(path, headers=submitter(path, 'post'), data=data)
+    r = client.post(path, headers=submitter, data=data)
     assert r.json == {
         "data": {
             "_read_group_count": 1,

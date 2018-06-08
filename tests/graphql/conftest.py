@@ -2,8 +2,8 @@ import json
 
 import flask
 import pytest
-from gdcdatamodel import models
-from gdcdatamodel.models.submission import TransactionLog
+from datamodelutils import models
+#from datamodelutils.models.submission import TransactionLog
 from tests.graphql import utils
 
 from tests.auth_mock import Config as auth_conf
@@ -47,14 +47,12 @@ def graphql_client(client, submitter):
 
 
 @pytest.fixture
-def cgci_blgsp(client, submitter):
+def cgci_blgsp(client, admin):
     """
     TODO: Docstring for put_cgci_blgsp.
     """
-    role = 'admin'
-    put_cgci(client, auth=submitter, role=role)
+    put_cgci(client, auth=admin)
     path = '/v0/submission/CGCI/'
-    headers = submitter(path, 'put', role)
     data = json.dumps({
         "type": "project",
         "code": "BLGSP",
@@ -62,35 +60,30 @@ def cgci_blgsp(client, submitter):
         "name": "Burkitt Lymphoma Genome Sequencing Project",
         "state": "open"
     })
-    r = client.put(path, headers=headers, data=data)
+    r = client.put(path, headers=admin, data=data)
     assert r.status_code == 200, r.data
     del flask.g.user
     return r
 
 
 @pytest.fixture
-def put_tcga_brca():
-    def wrapped_function(client, submitter=None):
-        headers = submitter('/v0/submission/', 'put', 'admin')
-        data = json.dumps({
-            'name': 'TCGA', 'type': 'program',
-            'dbgap_accession_number': 'phs000178'
-        })
-        r = client.put('/v0/submission/', headers=headers, data=data)
-        assert r.status_code == 200, r.data
-        headers = submitter('/v0/submission/TCGA/', 'put', 'admin')
-        data = json.dumps({
-            "type": "project",
-            "code": "BRCA",
-            "name": "TEST",
-            "dbgap_accession_number": "phs000178",
-            "state": "open"
-        })
-        r = client.put('/v0/submission/TCGA/', headers=headers, data=data)
-        assert r.status_code == 200, r.data
-        del flask.g.user
-        return r
-    return wrapped_function
+def put_tcga_brca(admin, client):
+    data = json.dumps({
+        'name': 'TCGA', 'type': 'program',
+        'dbgap_accession_number': 'phs000178'
+    })
+    r = client.put('/v0/submission/', headers=admin, data=data)
+    assert r.status_code == 200, r.data
+    data = json.dumps({
+        "type": "project",
+        "code": "BRCA",
+        "name": "TEST",
+        "dbgap_accession_number": "phs000178",
+        "state": "open"
+    })
+    r = client.put('/v0/submission/TCGA/', headers=admin, data=data)
+    assert r.status_code == 200, r.data
+    return r
 
 
 @pytest.fixture
