@@ -73,6 +73,8 @@ def create_bdbag(bag_info, payload, max_row=1000):
                 if dict_row.get(h) and is_uuid(dict_row[h]):
                     data_file_uuids.update([dict_row[h]])
 
+        header_set = sorted(header_set)
+
         with open(bag_path + '/data/' + node_name + '.tsv', 'w') as tsvfile:
             writer = csv.writer(tsvfile, delimiter='\t')
             row = []
