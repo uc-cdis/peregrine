@@ -35,6 +35,11 @@ def is_uuid(uuid):
         return True
     return False
 
+def transform_header(header):
+    if header[0] == '_':
+        header = 'entity:' + header[1:]
+
+    return header
 
 def create_bdbag(bag_info, payload, max_row=1000):
     """Modify from https://github.com/BD2KGenomics/dcc-dashboard-service/blob/feature/manifest-handover/webservice.py
@@ -80,7 +85,7 @@ def create_bdbag(bag_info, payload, max_row=1000):
             row = []
             for h in header_set:
                 words = h.split('-')
-                row = row + [words[-1]]
+                row = row + [transform_header(words[-1])]
             writer.writerow(row)
 
             nrow = 0
