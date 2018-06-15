@@ -97,7 +97,10 @@ def create_bdbag(bag_info, payload, max_row=1000):
                 row = []
                 for h in header_set:
                     if dict_row.get(h):
-                        row = row + [dict_row[h]]
+                        value = dict_row[h]
+                        if h.startswith("file_dos"):
+                            value = 'dos://' + value
+                        row = row + [value]
                     else:
                         row = row + ["None"]
                 nrow = nrow + 1
