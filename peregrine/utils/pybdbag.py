@@ -29,11 +29,12 @@ def is_category(node_name, data_files):
 
 
 def is_uuid(uuid):
-    pattern = re.compile(
-        "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
-    if pattern.match(uuid):
-        return True
-    return False
+    #pattern = re.compile(
+    #    "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
+    #if pattern.match(uuid):
+    #    return True
+    
+    return uuid.startswith('dg.')
 
 def transform_header(header):
     if header[0] == '_':
