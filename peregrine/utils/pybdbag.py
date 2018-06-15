@@ -36,6 +36,9 @@ def is_uuid(uuid):
     
     return uuid.startswith('dg.')
 
+def trim_uri(uri):
+    return uri.replace("s3://", "").replace("gs://", "").replace("http://", "").replace("https://", "")
+
 def transform_header(header):
     if header[0] == '_':
         header = 'entity:' + header[1:]
@@ -107,7 +110,7 @@ def create_bdbag(bag_info, payload, max_row=1000):
             document = current_app.index_client.get(item)
             if document:
                 fetch_file.write(
-                    item + '\t' + str(document.size) + '\t' + str(document.urls) + '\n')
+                    'dos://' + item + '\t' + str(document.size) + '\tdata/' + str(trim_uri(document.urls[0])) + '\n')
             else:
                 fetch_file.write(item + '\n')
 
