@@ -46,7 +46,7 @@ PSQLGRAPH = {
     'database': os.getenv("GDC_PG_DBNAME", "automated_test")
 }
 
-PSQL_USER_DB_NAME = 'userapi'
+PSQL_USER_DB_NAME = 'fence'
 PSQL_USER_DB_USERNAME = 'test'
 PSQL_USER_DB_PASSWORD = 'test'
 PSQL_USER_DB_HOST = 'localhost'
@@ -57,7 +57,7 @@ PSQL_USER_DB_CONNECTION = "postgresql://{name}:{password}@{host}/{db}".format(
 
 # API server
 PEREGRINE_HOST = os.getenv("PEREGRINE_HOST", "localhost")
-PEREGRINE_PORT = int(os.getenv("PEREGRINE_PORT", "5000"))
+PEREGRINE_PORT = int(os.getenv("PEREGRINE_PORT", "4000"))
 
 # FLASK_SECRET_KEY should be set to a secure random string with an appropriate
 # length; 50 is reasonable. For the random generation to be secure, use
@@ -74,7 +74,7 @@ OAUTH2 = {
     "redirect_uri": os.environ.get("CDIS_PEREGRINE_OAUTH_REDIRECT", 'localhost:5000/v0/oauth2/authorize'),
 }
 
-USER_API = "http://localhost:8000/"
+USER_API = "http://localhost/user"
 SESSION_COOKIE_NAME = 'PEREGRINE_session'
 # verify project existence in dbgap or not
 VERIFY_PROJECT = False
