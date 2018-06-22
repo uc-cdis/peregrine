@@ -16,6 +16,8 @@ import psqlgraph
 import sqlalchemy as sa
 
 from datamodelutils import models as md  # noqa
+from peregrine import dictionary
+#from gdcdatamodel import models as dictionary
 from .util import (
     apply_arg_limit,
     apply_arg_offset,
@@ -388,8 +390,6 @@ def resolve_node(self, info, **args):
         (not a gdcdatamodel Case)).
 
     """
-
-    #requested_fields = util_get_fields(info)
 
     q = get_authorized_query(psqlgraph.Node)
     if 'project_id' in args:
@@ -787,3 +787,50 @@ def get_fields():
 
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
+
+
+# ======================================================================
+# DataNode
+
+
+def get_shared_fields():
+    for node in dictionary.schema:
+        schema = dictionary.schema[node]
+        if schema['category'].endswith('_file'):
+            if shared_fields is None:
+                shared_fields = set(schema['properties'].keys())
+            else:
+                shared_fields = shared_fields.intersection(schema['properties'].keys())
+
+    print(shared_fields)
+    return shared_fields
+
+
+class DataNode(graphene.Interface):
+    #created_datetime = graphene.String()
+    #file_size = graphene.Int()
+    #id = graphene.ID()
+    #print(util_get_fields(info))
+    _ = graphene.String()
+
+    #get_shared_fields()
+    def add_shared_fiels():
+        for attr_name in get_shared_fields():
+            setattr(_this_module, attr_name, graphene.String())
+
+
+def resolve_datanode(self, info, **args):
+    """The root query for the :class:`Node` node interface.
+
+    :returns:
+        A list of graphene object classes (e.g. a Case query object
+        (not a gdcdatamodel Case)).
+
+    """
+
+    DataNode.add_shared_fiels()
+
+
+DataNodeField = graphene.List(DataNode)#, args=get_node_interface_args())
+#testlist = ['id', 'object_id']
+#DataNodeField = graphene.List(testlist)

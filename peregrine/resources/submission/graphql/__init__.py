@@ -11,6 +11,8 @@ from .node import (
     NodeField,
     create_root_fields,
     resolve_node,
+    DataNodeField,
+    resolve_datanode,
 )
 #from .node import __fields as ns_fields
 from .node import get_fields
@@ -49,6 +51,9 @@ def get_schema():
 
     root_fields['node'] = NodeField
     root_fields['resolve_node'] = resolve_node
+
+    root_fields['datanode'] = DataNodeField
+    root_fields['resolve_datanode'] = resolve_datanode
 
     root_fields['viewer'] = graphene.Field(Viewer)
     root_fields['resolve_viewer'] = lambda *_: Viewer()
