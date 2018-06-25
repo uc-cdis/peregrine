@@ -11,6 +11,7 @@ from .node import (
     NodeField,
     create_root_fields,
     resolve_node,
+    DataNode,
     DataNodeField,
     resolve_datanode,
 )
@@ -52,6 +53,7 @@ def get_schema():
     root_fields['node'] = NodeField
     root_fields['resolve_node'] = resolve_node
 
+    DataNode.init_shared_fiels()
     root_fields['datanode'] = DataNodeField
     root_fields['resolve_datanode'] = resolve_datanode
 
@@ -79,7 +81,7 @@ def execute_query(query, variables=None):
     :returns: a tuple (``data``, ``errors``)
     """
     variables = variables or {}
-
+    #import pdb; pdb.set_trace()
     # Execute query
     try:
         session_scope = flask.current_app.db.session_scope()
@@ -89,6 +91,7 @@ def execute_query(query, variables=None):
             with timer:
                 set_session_timeout(session, GRAPHQL_TIMEOUT)
                 #result = Schema.execute(query, variable_values=variables)
+                #import pdb; pdb.set_trace()
                 result = flask.current_app.graphql_schema.execute(query, variable_values=variables)
     except graphql.error.GraphQLError as e:
         return None, [str(e)]

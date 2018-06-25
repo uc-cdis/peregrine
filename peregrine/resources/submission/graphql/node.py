@@ -793,34 +793,40 @@ NodeField = graphene.List(Node, args=get_node_interface_args())
 # DataNode
 
 
-def get_shared_fields():
-    for node in dictionary.schema:
-        schema = dictionary.schema[node]
-        if schema['category'].endswith('_file'):
-            if shared_fields is None:
-                shared_fields = set(schema['properties'].keys())
-            else:
-                shared_fields = shared_fields.intersection(schema['properties'].keys())
-
-    print(shared_fields)
-    return shared_fields
-
-
 class DataNode(graphene.Interface):
     #created_datetime = graphene.String()
     #file_size = graphene.Int()
-    #id = graphene.ID()
-    #print(util_get_fields(info))
-    _ = graphene.String()
+    id = graphene.ID()
+    #tmp = graphene.String() # TODO: find another way to avoid AssertionError
 
-    #get_shared_fields()
-    def add_shared_fiels():
-        for attr_name in get_shared_fields():
-            setattr(_this_module, attr_name, graphene.String())
+    @classmethod
+    def init_shared_fiels(cls):
+        # find all fields shared by the *_file nodes
+        #import pdb; pdb.set_trace()
+        shared_fields = None
+        for node in dictionary.schema:
+            schema = dictionary.schema[node]
+            if schema['category'].endswith('_file'):
+                fields = schema['properties'].keys()
+                if shared_fields is None:
+                    shared_fields = set(fields)
+                else:
+                    shared_fields = shared_fields.intersection(fields)
+        # add the shared fields to DataNode
+        for field in shared_fields:
+            if field not in vars(cls): # avoid adding "id" again
+                # if field.endswith('_id'):
+                #     setattr(cls, field, graphene.ID())
+                # elif field == 'file_size':
+                #     setattr(cls, field, graphene.Int())
+                # else:
+                setattr(cls, field, graphene.String())
 
+        #print(vars(cls))
+        print(vars(cls))
 
 def resolve_datanode(self, info, **args):
-    """The root query for the :class:`Node` node interface.
+    """The root query for the :class:`DataNode` node interface.
 
     :returns:
         A list of graphene object classes (e.g. a Case query object
@@ -828,9 +834,81 @@ def resolve_datanode(self, info, **args):
 
     """
 
-    DataNode.add_shared_fiels()
+    #DataNode.init_shared_fiels()
+
+    #print(psqlgraph.Node.get_subclasses()[0].label)
+
+    # data_types = set()
+    # for node in dictionary.schema:
+    #     schema = dictionary.schema[node]
+    #     category = schema['category']
+    #     if category.endswith('_file'):
+    #         data_types.add(category)
+    # print(data_types)
+
+    # get the list of categories that are data categories
+    data_types = filter(lambda node: dictionary.schema[node]['category'].endswith('_file'), dictionary.schema)
+
+    #import pdb; pdb.set_trace()
+    # get the subclasses for the data categories
+    data_types = filter(lambda node: node.label in data_types, psqlgraph.Node.get_subclasses())
+    # print(data_types)
+
+    q = get_authorized_query(data_types)
+    if 'project_id' in args:
+        q = q.filter(q.entity()._props['project_id'].astext
+                     == args['project_id'])
+
+    q = apply_query_args(q, args, info)
+
+    if 'of_type' in args:
+        # TODO: (jsm) find a better solution.  currently this filter
+        # will do a subquery for each type AND LOAD THE IDS of all the
+        # nodes, then perform a second query given those ids.  We
+        # cannot do a ``select_from`` because it does not work
+        # properly for the abstract base class with concrete table
+        # inheritance (a.k.a it can't find the colums for Node)
+        of_types = set(args['of_type'])
+        entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
+        entities = [e for e in entities if e]
+
+        ids = []
+        for label in of_types:
+            entity = psqlgraph.Node.get_subclass(label)
+            q = get_authorized_query(entity)
+            q = apply_query_args(q, args, info)
+            try:
+                ids += [n.node_id for n in q.all()]
+            except Exception as e:
+                capp.logger.exception(e)
+                raise
+        q = get_authorized_query(psqlgraph.Node).ids(ids)
+        q = apply_arg_limit(q, args, info)
+        q = apply_arg_offset(q, args, info)
+
+    for n in q.all():
+        print(dir(n))
+
+    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q.all()]
 
 
-DataNodeField = graphene.List(DataNode)#, args=get_node_interface_args())
-#testlist = ['id', 'object_id']
-#DataNodeField = graphene.List(testlist)
+# def get_datanode_interface_args():
+#     #import pdb; pdb.set_trace()
+#     return dict(id=graphene.String(),
+#         of_type=graphene.List(graphene.String),
+#         project_id=graphene.String(),
+#         ids=graphene.List(graphene.String),
+#         quick_search=graphene.String(),
+#         first=graphene.Int(default_value=10),
+#         offset=graphene.Int(),
+#         created_before=graphene.String(),
+#         created_after=graphene.String(),
+#         updated_before=graphene.String(),
+#         updated_after=graphene.String(),
+#         order_by_asc=graphene.String(),
+#         order_by_desc=graphene.String(),
+#     )#,of_type=graphene.List(graphene.String))
+
+
+#DataNodeField = graphene.List(DataNode, args=get_datanode_interface_args())
+DataNodeField = graphene.List(DataNode, args=get_node_interface_args())
