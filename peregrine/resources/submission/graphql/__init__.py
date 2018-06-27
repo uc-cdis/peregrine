@@ -4,6 +4,7 @@ import flask
 import graphene
 import graphql
 
+from peregrine import dictionary
 from peregrine.utils.pyutils import (
     log_duration,
 )
@@ -12,6 +13,8 @@ from .node import (
     create_root_fields,
     resolve_node,
     DataNode,
+    # call_that_returns_fields_dict,
+    get_node_interface_args,
     DataNodeField,
     resolve_datanode,
 )
@@ -53,7 +56,32 @@ def get_schema():
     root_fields['node'] = NodeField
     root_fields['resolve_node'] = resolve_node
 
-    DataNode.init_shared_fiels()
+    # DataNode.init_shared_fiels()
+    # DataNode = type('DataNode', (graphene.Interface,), call_that_returns_fields_dict())
+    # print(vars(DataNode))
+    # flask.current_app.logger.information(vars(DataNode))
+    # DataNodeField = graphene.List(DataNode, args=get_node_interface_args())
+
+    def call_that_returns_fields_dict():
+        shared_fields = None
+        for node in dictionary.schema:
+            schema = dictionary.schema[node]
+            if schema['category'].endswith('_file'):
+                fields = schema['properties'].keys()
+                if shared_fields is None:
+                    shared_fields = set(fields)
+                else:
+                    shared_fields = shared_fields.intersection(fields)
+        result = {}
+        for field in shared_fields:
+            result[field] = graphene.String()
+        return result
+        # return {"object_id": graphene.String(), "testfield": graphene.String()}
+
+    DataNode = type('DataNode', (graphene.ObjectType,), call_that_returns_fields_dict())
+    print(vars(DataNode))
+    DataNodeField = graphene.List(DataNode, args=get_node_interface_args())
+
     root_fields['datanode'] = DataNodeField
     root_fields['resolve_datanode'] = resolve_datanode
 
@@ -81,7 +109,7 @@ def execute_query(query, variables=None):
     :returns: a tuple (``data``, ``errors``)
     """
     variables = variables or {}
-    #import pdb; pdb.set_trace()
+    # import pdb; pdb.set_trace()
     # Execute query
     try:
         session_scope = flask.current_app.db.session_scope()
@@ -92,6 +120,7 @@ def execute_query(query, variables=None):
                 set_session_timeout(session, GRAPHQL_TIMEOUT)
                 #result = Schema.execute(query, variable_values=variables)
                 #import pdb; pdb.set_trace()
+                # print(vars(DataNode))
                 result = flask.current_app.graphql_schema.execute(query, variable_values=variables)
     except graphql.error.GraphQLError as e:
         return None, [str(e)]

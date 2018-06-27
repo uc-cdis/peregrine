@@ -17,7 +17,6 @@ import sqlalchemy as sa
 
 from datamodelutils import models as md  # noqa
 from peregrine import dictionary
-#from gdcdatamodel import models as dictionary
 from .util import (
     apply_arg_limit,
     apply_arg_offset,
@@ -797,10 +796,20 @@ class DataNode(graphene.Interface):
     #created_datetime = graphene.String()
     #file_size = graphene.Int()
     id = graphene.ID()
+    #object_id = graphene.ID()
     #tmp = graphene.String() # TODO: find another way to avoid AssertionError
+
+    # def call_that_returns_fields_dict():
+    # result = {}
+    # for name, field in dynamicfields.items():
+    #     result[name] = graphene.String()
+    #
+    # return result
 
     @classmethod
     def init_shared_fiels(cls):
+        print('init_shared_fiels')
+        # setattr(cls, "object_id", graphene.ID())
         # find all fields shared by the *_file nodes
         #import pdb; pdb.set_trace()
         shared_fields = None
@@ -815,15 +824,14 @@ class DataNode(graphene.Interface):
         # add the shared fields to DataNode
         for field in shared_fields:
             if field not in vars(cls): # avoid adding "id" again
-                # if field.endswith('_id'):
+                # if field.endswith('_id'): # TODO: remove commenting
                 #     setattr(cls, field, graphene.ID())
                 # elif field == 'file_size':
                 #     setattr(cls, field, graphene.Int())
                 # else:
                 setattr(cls, field, graphene.String())
 
-        #print(vars(cls))
-        print(vars(cls))
+        # print(vars(cls))
 
 def resolve_datanode(self, info, **args):
     """The root query for the :class:`DataNode` node interface.
@@ -834,7 +842,7 @@ def resolve_datanode(self, info, **args):
 
     """
 
-    #DataNode.init_shared_fiels()
+    # DataNode.init_shared_fiels()
 
     #print(psqlgraph.Node.get_subclasses()[0].label)
 
@@ -854,42 +862,49 @@ def resolve_datanode(self, info, **args):
     data_types = filter(lambda node: node.label in data_types, psqlgraph.Node.get_subclasses())
     # print(data_types)
 
-    q = get_authorized_query(data_types)
-    if 'project_id' in args:
-        q = q.filter(q.entity()._props['project_id'].astext
-                     == args['project_id'])
+    q_all = []
+    for data_type in data_types:
 
-    q = apply_query_args(q, args, info)
+        q = get_authorized_query(data_type)
+        if 'project_id' in args:
+            q = q.filter(q.entity()._props['project_id'].astext
+                         == args['project_id'])
 
-    if 'of_type' in args:
-        # TODO: (jsm) find a better solution.  currently this filter
-        # will do a subquery for each type AND LOAD THE IDS of all the
-        # nodes, then perform a second query given those ids.  We
-        # cannot do a ``select_from`` because it does not work
-        # properly for the abstract base class with concrete table
-        # inheritance (a.k.a it can't find the colums for Node)
-        of_types = set(args['of_type'])
-        entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
-        entities = [e for e in entities if e]
+        q = apply_query_args(q, args, info)
 
-        ids = []
-        for label in of_types:
-            entity = psqlgraph.Node.get_subclass(label)
-            q = get_authorized_query(entity)
-            q = apply_query_args(q, args, info)
-            try:
-                ids += [n.node_id for n in q.all()]
-            except Exception as e:
-                capp.logger.exception(e)
-                raise
-        q = get_authorized_query(psqlgraph.Node).ids(ids)
-        q = apply_arg_limit(q, args, info)
-        q = apply_arg_offset(q, args, info)
+        if 'of_type' in args:
+            # TODO: (jsm) find a better solution.  currently this filter
+            # will do a subquery for each type AND LOAD THE IDS of all the
+            # nodes, then perform a second query given those ids.  We
+            # cannot do a ``select_from`` because it does not work
+            # properly for the abstract base class with concrete table
+            # inheritance (a.k.a it can't find the colums for Node)
+            of_types = set(args['of_type'])
+            entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
+            entities = [e for e in entities if e]
 
-    for n in q.all():
-        print(dir(n))
+            ids = []
+            for label in of_types:
+                entity = psqlgraph.Node.get_subclass(label)
+                q = get_authorized_query(entity)
+                q = apply_query_args(q, args, info)
+                try:
+                    ids += [n.node_id for n in q.all()]
+                except Exception as e:
+                    capp.logger.exception(e)
+                    raise
+            q = get_authorized_query(psqlgraph.Node).ids(ids)
+            q = apply_arg_limit(q, args, info)
+            q = apply_arg_offset(q, args, info)
 
-    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q.all()]
+        q_all.extend(q.all())
+    # for n in q.all():
+    #     print(n)
+    #     print(type(n))
+    #     print(dir(n))
+    #     print("")
+
+    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
 
 
 # def get_datanode_interface_args():
