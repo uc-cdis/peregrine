@@ -333,6 +333,12 @@ def apply_query_args(q, args, info):
             raise RuntimeError('Cannot order by {} on {}'.format(
                 key, q.entity().label))
 
+    #
+    # if 'object_id' in args:
+    #     cls = q.entity()
+    #     attr = cls._props['object_id'].astext
+    #     q = q.filter(sa.func.lower(attr).equals(args['object_id']))
+
     # first: truncate result list
     q = apply_arg_limit(q.from_self(), args, info)
 
@@ -872,4 +878,8 @@ def resolve_datanode(self, info, **args):
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
 
 
-DataNodeField = graphene.List(DataNode, args=get_node_interface_args())
+def get_datanode_interface_args():
+    to_add = dict(dict(of_type=graphene.List(graphene.String),
+        project_id=graphene.String(),),
+    **get_shared_fields_dict())
+    return dict(get_base_node_args(), **to_add)
