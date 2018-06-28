@@ -13,7 +13,7 @@ from .node import (
     create_root_fields,
     resolve_node,
     DataNode,
-    # call_that_returns_fields_dict,
+    get_shared_fields_dict,
     get_node_interface_args,
     DataNodeField,
     resolve_datanode,
@@ -56,32 +56,8 @@ def get_schema():
     root_fields['node'] = NodeField
     root_fields['resolve_node'] = resolve_node
 
-    # DataNode.init_shared_fiels()
-    # DataNode = type('DataNode', (graphene.Interface,), call_that_returns_fields_dict())
-    # print(vars(DataNode))
-    # flask.current_app.logger.information(vars(DataNode))
-    # DataNodeField = graphene.List(DataNode, args=get_node_interface_args())
-
-    def call_that_returns_fields_dict():
-        shared_fields = None
-        for node in dictionary.schema:
-            schema = dictionary.schema[node]
-            if schema['category'].endswith('_file'):
-                fields = schema['properties'].keys()
-                if shared_fields is None:
-                    shared_fields = set(fields)
-                else:
-                    shared_fields = shared_fields.intersection(fields)
-        result = {}
-        for field in shared_fields:
-            result[field] = graphene.String()
-        return result
-        # return {"object_id": graphene.String(), "testfield": graphene.String()}
-
-    DataNode = type('DataNode', (graphene.ObjectType,), call_that_returns_fields_dict())
-    print(vars(DataNode))
+    DataNode = type('DataNode', (graphene.ObjectType,), get_shared_fields_dict()) # init DataNode attributes
     DataNodeField = graphene.List(DataNode, args=get_node_interface_args())
-
     root_fields['datanode'] = DataNodeField
     root_fields['resolve_datanode'] = resolve_datanode
 
@@ -100,6 +76,27 @@ def get_schema():
 
     return Schema
 
+
+# def get_shared_fields_dict():
+#     shared_fields = None
+#     for node in dictionary.schema:
+#         schema = dictionary.schema[node]
+#         if schema['category'].endswith('_file'):
+#             fields = schema['properties'].keys()
+#             if shared_fields is None:
+#                 shared_fields = set(fields)
+#             else:
+#                 shared_fields = shared_fields.intersection(fields)
+#     result = {}
+#     for field in shared_fields:
+#         if field not in vars(DataNode): # avoid adding "id" again
+#             if field.endswith('_id'):
+#                 result[field] = graphene.ID()
+#             elif field == 'file_size':
+#                 result[field] = graphene.Int()
+#             else:
+#                 result[field] = graphene.String()
+#     return result
 
 
 def execute_query(query, variables=None):

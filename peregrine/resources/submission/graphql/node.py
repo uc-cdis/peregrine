@@ -793,45 +793,29 @@ NodeField = graphene.List(Node, args=get_node_interface_args())
 
 
 class DataNode(graphene.Interface):
-    #created_datetime = graphene.String()
-    #file_size = graphene.Int()
     id = graphene.ID()
-    #object_id = graphene.ID()
-    #tmp = graphene.String() # TODO: find another way to avoid AssertionError
 
-    # def call_that_returns_fields_dict():
-    # result = {}
-    # for name, field in dynamicfields.items():
-    #     result[name] = graphene.String()
-    #
-    # return result
 
-    @classmethod
-    def init_shared_fiels(cls):
-        print('init_shared_fiels')
-        # setattr(cls, "object_id", graphene.ID())
-        # find all fields shared by the *_file nodes
-        #import pdb; pdb.set_trace()
-        shared_fields = None
-        for node in dictionary.schema:
-            schema = dictionary.schema[node]
-            if schema['category'].endswith('_file'):
-                fields = schema['properties'].keys()
-                if shared_fields is None:
-                    shared_fields = set(fields)
-                else:
-                    shared_fields = shared_fields.intersection(fields)
-        # add the shared fields to DataNode
-        for field in shared_fields:
-            if field not in vars(cls): # avoid adding "id" again
-                # if field.endswith('_id'): # TODO: remove commenting
-                #     setattr(cls, field, graphene.ID())
-                # elif field == 'file_size':
-                #     setattr(cls, field, graphene.Int())
-                # else:
-                setattr(cls, field, graphene.String())
+def get_shared_fields_dict():
+    shared_fields = None
+    for node in dictionary.schema:
+        schema = dictionary.schema[node]
+        if schema['category'].endswith('_file'):
+            fields = schema['properties'].keys()
+            if shared_fields is None:
+                shared_fields = set(fields)
+            else:
+                shared_fields = shared_fields.intersection(fields)
+    result = {}
+    for field in shared_fields:
+        if field.endswith('_id'):
+            result[field] = graphene.ID()
+        elif field == 'file_size':
+            result[field] = graphene.Int()
+        else:
+            result[field] = graphene.String()
+    return result
 
-        # print(vars(cls))
 
 def resolve_datanode(self, info, **args):
     """The root query for the :class:`DataNode` node interface.
@@ -842,25 +826,11 @@ def resolve_datanode(self, info, **args):
 
     """
 
-    # DataNode.init_shared_fiels()
-
-    #print(psqlgraph.Node.get_subclasses()[0].label)
-
-    # data_types = set()
-    # for node in dictionary.schema:
-    #     schema = dictionary.schema[node]
-    #     category = schema['category']
-    #     if category.endswith('_file'):
-    #         data_types.add(category)
-    # print(data_types)
-
     # get the list of categories that are data categories
     data_types = filter(lambda node: dictionary.schema[node]['category'].endswith('_file'), dictionary.schema)
 
-    #import pdb; pdb.set_trace()
     # get the subclasses for the data categories
     data_types = filter(lambda node: node.label in data_types, psqlgraph.Node.get_subclasses())
-    # print(data_types)
 
     q_all = []
     for data_type in data_types:
@@ -898,32 +868,8 @@ def resolve_datanode(self, info, **args):
             q = apply_arg_offset(q, args, info)
 
         q_all.extend(q.all())
-    # for n in q.all():
-    #     print(n)
-    #     print(type(n))
-    #     print(dir(n))
-    #     print("")
 
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
 
 
-# def get_datanode_interface_args():
-#     #import pdb; pdb.set_trace()
-#     return dict(id=graphene.String(),
-#         of_type=graphene.List(graphene.String),
-#         project_id=graphene.String(),
-#         ids=graphene.List(graphene.String),
-#         quick_search=graphene.String(),
-#         first=graphene.Int(default_value=10),
-#         offset=graphene.Int(),
-#         created_before=graphene.String(),
-#         created_after=graphene.String(),
-#         updated_before=graphene.String(),
-#         updated_after=graphene.String(),
-#         order_by_asc=graphene.String(),
-#         order_by_desc=graphene.String(),
-#     )#,of_type=graphene.List(graphene.String))
-
-
-#DataNodeField = graphene.List(DataNode, args=get_datanode_interface_args())
 DataNodeField = graphene.List(DataNode, args=get_node_interface_args())
