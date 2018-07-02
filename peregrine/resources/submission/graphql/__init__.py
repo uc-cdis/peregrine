@@ -76,28 +76,6 @@ def get_schema():
     return Schema
 
 
-# def get_shared_fields_dict():
-#     shared_fields = None
-#     for node in dictionary.schema:
-#         schema = dictionary.schema[node]
-#         if schema['category'].endswith('_file'):
-#             fields = schema['properties'].keys()
-#             if shared_fields is None:
-#                 shared_fields = set(fields)
-#             else:
-#                 shared_fields = shared_fields.intersection(fields)
-#     result = {}
-#     for field in shared_fields:
-#         if field not in vars(DataNode): # avoid adding "id" again
-#             if field.endswith('_id'):
-#                 result[field] = graphene.ID()
-#             elif field == 'file_size':
-#                 result[field] = graphene.Int()
-#             else:
-#                 result[field] = graphene.String()
-#     return result
-
-
 def execute_query(query, variables=None):
     """
     Pull required parameters from global request and execute GraphQL query.
@@ -105,7 +83,6 @@ def execute_query(query, variables=None):
     :returns: a tuple (``data``, ``errors``)
     """
     variables = variables or {}
-    # import pdb; pdb.set_trace()
     # Execute query
     try:
         session_scope = flask.current_app.db.session_scope()
@@ -115,8 +92,6 @@ def execute_query(query, variables=None):
             with timer:
                 set_session_timeout(session, GRAPHQL_TIMEOUT)
                 #result = Schema.execute(query, variable_values=variables)
-                #import pdb; pdb.set_trace()
-                # print(vars(DataNode))
                 result = flask.current_app.graphql_schema.execute(query, variable_values=variables)
     except graphql.error.GraphQLError as e:
         return None, [str(e)]

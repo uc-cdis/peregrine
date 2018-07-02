@@ -333,12 +333,6 @@ def apply_query_args(q, args, info):
             raise RuntimeError('Cannot order by {} on {}'.format(
                 key, q.entity().label))
 
-    #
-    # if 'object_id' in args:
-    #     cls = q.entity()
-    #     attr = cls._props['object_id'].astext
-    #     q = q.filter(sa.func.lower(attr).equals(args['object_id']))
-
     # first: truncate result list
     q = apply_arg_limit(q.from_self(), args, info)
 
@@ -800,27 +794,31 @@ NodeField = graphene.List(Node, args=get_node_interface_args())
 
 class DataNode(graphene.Interface):
     id = graphene.ID()
-
-
-def get_shared_fields_dict():
     shared_fields = None
-    for node in dictionary.schema:
-        schema = dictionary.schema[node]
-        if schema['category'].endswith('_file'):
-            fields = schema['properties'].keys()
-            if shared_fields is None:
-                shared_fields = set(fields)
+
+
+# return a dictionary containing the fields shared by all data nodes
+def get_shared_fields_dict():
+    if not DataNode.shared_fields:
+        shd_fields = None
+        for node in dictionary.schema:
+            schema = dictionary.schema[node]
+            if schema['category'].endswith('_file'):
+                fields = schema['properties'].keys()
+                if shd_fields is None:
+                    shd_fields = set(fields)
+                else:
+                    shd_fields = shd_fields.intersection(fields)
+        result = {}
+        for field in shd_fields:
+            if field.endswith('_id'):
+                result[field] = graphene.ID()
+            elif field == 'file_size':
+                result[field] = graphene.Int()
             else:
-                shared_fields = shared_fields.intersection(fields)
-    result = {}
-    for field in shared_fields:
-        if field.endswith('_id'):
-            result[field] = graphene.ID()
-        elif field == 'file_size':
-            result[field] = graphene.Int()
-        else:
-            result[field] = graphene.String()
-    return result
+                result[field] = graphene.String()
+        DataNode.shared_fields = result
+    return DataNode.shared_fields
 
 
 def resolve_datanode(self, info, **args):
