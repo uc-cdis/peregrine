@@ -50,8 +50,6 @@ def get_schema():
     ns_fields = get_fields()
     root_fields.update(create_root_fields(ns_fields))
 
-    Viewer = type('viewer', (graphene.ObjectType,), root_fields)
-
     root_fields['node'] = NodeField
     root_fields['resolve_node'] = resolve_node
 
@@ -59,6 +57,8 @@ def get_schema():
     DataNodeField = graphene.List(DataNode, args=get_datanode_interface_args())
     root_fields['datanode'] = DataNodeField
     root_fields['resolve_datanode'] = resolve_datanode
+
+    Viewer = type('viewer', (graphene.ObjectType,), root_fields)
 
     root_fields['viewer'] = graphene.Field(Viewer)
     root_fields['resolve_viewer'] = lambda *_: Viewer()

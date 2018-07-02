@@ -809,15 +809,15 @@ def get_shared_fields_dict():
                     shd_fields = set(fields)
                 else:
                     shd_fields = shd_fields.intersection(fields)
-        result = {}
+        shd_fields_dict = {}
         for field in shd_fields:
-            if field.endswith('_id'):
-                result[field] = graphene.ID()
-            elif field == 'file_size':
-                result[field] = graphene.Int()
+            if field == 'file_size':
+                shd_fields_dict[field] = graphene.Int()
+            # elif field.endswith('_id'):
+            #     shd_fields_dict[field] = graphene.ID()
             else:
-                result[field] = graphene.String()
-        DataNode.shared_fields = result
+                shd_fields_dict[field] = graphene.String()
+        DataNode.shared_fields = shd_fields_dict
     return DataNode.shared_fields
 
 
@@ -825,8 +825,7 @@ def resolve_datanode(self, info, **args):
     """The root query for the :class:`DataNode` node interface.
 
     :returns:
-        A list of graphene object classes (e.g. a Case query object
-        (not a gdcdatamodel Case)).
+        A list of graphene object classes.
 
     """
 
