@@ -4,6 +4,7 @@ import flask
 import graphene
 import graphql
 
+from peregrine import dictionary
 from peregrine.utils.pyutils import (
     log_duration,
 )
@@ -11,6 +12,10 @@ from .node import (
     NodeField,
     create_root_fields,
     resolve_node,
+    DataNode,
+    get_shared_fields_dict,
+    get_datanode_interface_args,
+    resolve_datanode,
 )
 #from .node import __fields as ns_fields
 from .node import get_fields
@@ -45,10 +50,15 @@ def get_schema():
     ns_fields = get_fields()
     root_fields.update(create_root_fields(ns_fields))
 
-    Viewer = type('viewer', (graphene.ObjectType,), root_fields)
-
     root_fields['node'] = NodeField
     root_fields['resolve_node'] = resolve_node
+
+    DataNode = type('DataNode', (graphene.ObjectType,), get_shared_fields_dict()) # init DataNode attributes
+    DataNodeField = graphene.List(DataNode, args=get_datanode_interface_args())
+    root_fields['datanode'] = DataNodeField
+    root_fields['resolve_datanode'] = resolve_datanode
+
+    Viewer = type('viewer', (graphene.ObjectType,), root_fields)
 
     root_fields['viewer'] = graphene.Field(Viewer)
     root_fields['resolve_viewer'] = lambda *_: Viewer()
@@ -64,7 +74,6 @@ def get_schema():
     Schema = graphene.Schema(query=Root, auto_camelcase=False)
 
     return Schema
-
 
 
 def execute_query(query, variables=None):
