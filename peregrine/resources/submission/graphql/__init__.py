@@ -83,6 +83,7 @@ def execute_query(query, variables=None):
     :returns: a tuple (``data``, ``errors``)
     """
     variables = variables or {}
+
     # Execute query
     try:
         session_scope = flask.current_app.db.session_scope()

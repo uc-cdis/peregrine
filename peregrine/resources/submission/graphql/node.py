@@ -794,30 +794,29 @@ NodeField = graphene.List(Node, args=get_node_interface_args())
 
 class DataNode(graphene.Interface):
     id = graphene.ID()
-    shared_fields = None
+    shared_fields = None # fields shared by all data nodes in the dictionary
 
 
-# return a dictionary containing the fields shared by all data nodes
 def get_shared_fields_dict():
+    """Return a dictionary containing the fields shared by all data nodes."""
+
     if not DataNode.shared_fields:
-        shd_fields = None
-        for node in dictionary.schema:
-            schema = dictionary.schema[node]
-            if schema['category'].endswith('_file'):
-                fields = schema['properties'].keys()
-                if shd_fields is None:
-                    shd_fields = set(fields)
-                else:
-                    shd_fields = shd_fields.intersection(fields)
-        shd_fields_dict = {}
-        for field in shd_fields:
-            if field == 'file_size':
-                shd_fields_dict[field] = graphene.Int()
-            # elif field.endswith('_id'):
-            #     shd_fields_dict[field] = graphene.ID()
-            else:
-                shd_fields_dict[field] = graphene.String()
-        DataNode.shared_fields = shd_fields_dict
+
+        # fields lists the set of node fields, for every data node in the dictionary schema (nodes ending with '_file')
+        fields = [
+            set(schema['properties'].keys())
+            for schema in dictionary.schema.values()
+            if schema['category'].endswith('_file')
+        ]
+
+        # shared_fields takes the intersection of all the data node field sets
+        shared_fields = set.intersection(*fields)
+
+        shared_fields_dict = {field: graphene.String() for field in shared_fields}
+        if 'file_size' in shared_fields:
+            shared_fields_dict['file_size'] = graphene.Int()
+        DataNode.shared_fields = shared_fields_dict
+
     return DataNode.shared_fields
 
 
@@ -830,10 +829,18 @@ def resolve_datanode(self, info, **args):
     """
 
     # get the list of categories that are data categories
-    data_types = filter(lambda node: dictionary.schema[node]['category'].endswith('_file'), dictionary.schema)
+    data_types_labels = [
+        node
+        for node in dictionary.schema
+        if dictionary.schema[node]['category'].endswith('_file')
+    ]
 
     # get the subclasses for the data categories
-    data_types = filter(lambda node: node.label in data_types, psqlgraph.Node.get_subclasses())
+    data_types = [
+        node
+        for node in psqlgraph.Node.get_subclasses()
+        if node.label in data_types_labels
+    ]
 
     q_all = []
     for data_type in data_types:
@@ -846,12 +853,6 @@ def resolve_datanode(self, info, **args):
         q = apply_query_args(q, args, info)
 
         if 'of_type' in args:
-            # TODO: (jsm) find a better solution.  currently this filter
-            # will do a subquery for each type AND LOAD THE IDS of all the
-            # nodes, then perform a second query given those ids.  We
-            # cannot do a ``select_from`` because it does not work
-            # properly for the abstract base class with concrete table
-            # inheritance (a.k.a it can't find the colums for Node)
             of_types = set(args['of_type'])
             entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
             entities = [e for e in entities if e]
@@ -876,7 +877,10 @@ def resolve_datanode(self, info, **args):
 
 
 def get_datanode_interface_args():
-    to_add = dict(dict(of_type=graphene.List(graphene.String),
-        project_id=graphene.String(),),
-    **get_shared_fields_dict())
-    return dict(get_base_node_args(), **to_add)
+    args = get_base_node_args()
+    args.update(get_shared_fields_dict())
+    args.update({
+        'of_type': graphene.List(graphene.String),
+        'project_id': graphene.String(),
+    })
+    return args
