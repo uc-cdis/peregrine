@@ -29,12 +29,13 @@ def is_category(node_name, data_files):
 
 
 def is_uuid(uuid):
-    #pattern = re.compile(
-    #    "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
-    #if pattern.match(uuid):
-    #    return True
-    
-    return uuid.startswith('dg.')
+    if uuid.startswith('dg.'):
+        return True
+    pattern = re.compile(
+        "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
+    if pattern.match(uuid):
+        return True
+    return False    
 
 def trim_uri(uri):
     return uri.replace("s3://", "").replace("gs://", "").replace("http://", "").replace("https://", "")
