@@ -2,6 +2,8 @@
 
 cd /var/www/peregrine
 
+export PYTHONUNBUFFERED=TRUE
+
 (
   # Wait for nginx to create uwsgi.sock
   let count=0
