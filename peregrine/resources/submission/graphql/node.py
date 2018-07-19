@@ -16,6 +16,7 @@ import psqlgraph
 import sqlalchemy as sa
 
 from datamodelutils import models as md  # noqa
+from peregrine import dictionary
 from .util import (
     apply_arg_limit,
     apply_arg_offset,
@@ -388,8 +389,6 @@ def resolve_node(self, info, **args):
         (not a gdcdatamodel Case)).
 
     """
-
-    #requested_fields = util_get_fields(info)
 
     q = get_authorized_query(psqlgraph.Node)
     if 'project_id' in args:
@@ -787,3 +786,101 @@ def get_fields():
 
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
+
+
+# ======================================================================
+# DataNode
+
+
+class DataNode(graphene.Interface):
+    id = graphene.ID()
+    shared_fields = None # fields shared by all data nodes in the dictionary
+
+
+def get_shared_fields_dict():
+    """Return a dictionary containing the fields shared by all data nodes."""
+
+    if not DataNode.shared_fields:
+
+        # fields lists the set of node fields, for every data node in the dictionary schema (nodes ending with '_file')
+        fields = [
+            set(schema['properties'].keys())
+            for schema in dictionary.schema.values()
+            if schema['category'].endswith('_file')
+        ]
+
+        # shared_fields takes the intersection of all the data node field sets
+        shared_fields = set.intersection(*fields)
+
+        shared_fields_dict = {field: graphene.String() for field in shared_fields}
+        if 'file_size' in shared_fields:
+            shared_fields_dict['file_size'] = graphene.Int()
+        DataNode.shared_fields = shared_fields_dict
+
+    return DataNode.shared_fields
+
+
+def resolve_datanode(self, info, **args):
+    """The root query for the :class:`DataNode` node interface.
+
+    :returns:
+        A list of graphene object classes.
+
+    """
+
+    # get the list of categories that are data categories
+    data_types_labels = [
+        node
+        for node in dictionary.schema
+        if dictionary.schema[node]['category'].endswith('_file')
+    ]
+
+    # get the subclasses for the data categories
+    data_types = [
+        node
+        for node in psqlgraph.Node.get_subclasses()
+        if node.label in data_types_labels
+    ]
+
+    q_all = []
+    for data_type in data_types:
+
+        q = get_authorized_query(data_type)
+        if 'project_id' in args:
+            q = q.filter(q.entity()._props['project_id'].astext
+                         == args['project_id'])
+
+        q = apply_query_args(q, args, info)
+
+        if 'of_type' in args:
+            of_types = set(args['of_type'])
+            entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
+            entities = [e for e in entities if e]
+
+            ids = []
+            for label in of_types:
+                entity = psqlgraph.Node.get_subclass(label)
+                q = get_authorized_query(entity)
+                q = apply_query_args(q, args, info)
+                try:
+                    ids += [n.node_id for n in q.all()]
+                except Exception as e:
+                    capp.logger.exception(e)
+                    raise
+            q = get_authorized_query(psqlgraph.Node).ids(ids)
+            q = apply_arg_limit(q, args, info)
+            q = apply_arg_offset(q, args, info)
+
+        q_all.extend(q.all())
+
+    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
+
+
+def get_datanode_interface_args():
+    args = get_base_node_args()
+    args.update(get_shared_fields_dict())
+    args.update({
+        'of_type': graphene.List(graphene.String),
+        'project_id': graphene.String(),
+    })
+    return args
