@@ -318,7 +318,6 @@ def auth(request):
     with mock():
         driver = AuthDriver(test_settings.AUTH_ADMIN_CREDS, test_settings.INTERNAL_AUTH)
     driver.validate = patch_auth(driver.validate)
-    driver.get_keystone_user = patch_auth(driver.get_keystone_user)
     driver.get_user_projects = patch_auth(driver.get_user_projects)
 
     return driver
