@@ -103,3 +103,6 @@ ENV/
 # jwt keys
 keys/*.pem
 tests/resources/keys/*.pem
+
+# graphql schema
+peregrine/resources/submission/graphql/schema.json
