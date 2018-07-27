@@ -884,3 +884,21 @@ def get_datanode_interface_args():
         'project_id': graphene.String(),
     })
     return args
+
+
+# ======================================================================
+# NodeType
+
+
+class NodeType(graphene.Interface):
+    id = graphene.ID()
+
+    def __init__(self):
+        for schema in dictionary.schema.values():
+            print(schema)
+
+def resolve_node_type(self, info, **args):
+    q = get_authorized_query(data_type)
+    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q]
+
+DataNodeField = graphene.List(NodeType, args=get_node_interface_args())

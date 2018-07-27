@@ -16,6 +16,8 @@ from .node import (
     get_shared_fields_dict,
     get_datanode_interface_args,
     resolve_datanode,
+    NodeType,
+    resolve_node_type,
 )
 #from .node import __fields as ns_fields
 from .node import get_fields
@@ -57,6 +59,9 @@ def get_schema():
     DataNodeField = graphene.List(DataNode, args=get_datanode_interface_args())
     root_fields['datanode'] = DataNodeField
     root_fields['resolve_datanode'] = resolve_datanode
+
+    root_fields['_node_type'] = NodeType
+    root_fields['resolve_node_type'] = resolve_node_type
 
     Viewer = type('viewer', (graphene.ObjectType,), root_fields)
 
