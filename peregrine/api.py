@@ -113,7 +113,7 @@ def app_init(app):
     cors_init(app)
     app.graph_traversals = submission.graphql.make_graph_traversal_dict()
     app.graphql_schema = submission.graphql.get_schema()
-    submission.get_schema_file()
+    submission.get_schema_file(app)
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:

@@ -90,7 +90,7 @@ def root_graphql_query():
     )
 
 
-def get_schema_file():
+def get_schema_file(app=None):
     """
     Load the graphql introspection query from its file.
 
@@ -110,7 +110,7 @@ def get_schema_file():
     with open(schema_file, 'w') as f:
         json.dump(
             peregrine.utils.jsonify_check_errors(
-               graphql.execute_query(query)),
+               graphql.execute_query(query, app=app)),
             f
         )
     return schema_file

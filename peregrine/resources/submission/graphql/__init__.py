@@ -76,24 +76,26 @@ def get_schema():
     return Schema
 
 
-def execute_query(query, variables=None):
+def execute_query(query, variables=None, app=None):
     """
     Pull required parameters from global request and execute GraphQL query.
 
     :returns: a tuple (``data``, ``errors``)
     """
     variables = variables or {}
+    if app is None:
+        app = flask.current_app
 
     # Execute query
     try:
-        session_scope = flask.current_app.db.session_scope()
+        session_scope = app.db.session_scope()
         timer = log_duration("GraphQL")
         result = None
         with session_scope as session:
             with timer:
                 set_session_timeout(session, GRAPHQL_TIMEOUT)
-                #result = Schema.execute(query, variable_values=variables)
-                result = flask.current_app.graphql_schema.execute(query, variable_values=variables)
+                # result = Schema.execute(query, variable_values=variables)
+                result = app.graphql_schema.execute(query, variable_values=variables)
     except graphql.error.GraphQLError as e:
         return None, [str(e)]
 
