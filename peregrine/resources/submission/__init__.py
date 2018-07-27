@@ -90,7 +90,7 @@ def root_graphql_query():
     )
 
 
-def get_schema_file(app=None):
+def generate_schema_file(graphql_schema):
     """
     Load the graphql introspection query from its file.
 
@@ -98,9 +98,8 @@ def get_schema_file(app=None):
         str: the graphql introspection query
     """
     current_dir = os.path.dirname(os.path.realpath(__file__))
-    schema_file = os.path.join(current_dir, 'graphql', 'schema.json')
-    if os.path.isfile(schema_file):
-        return schema_file
+    # relative to current running directory
+    schema_file = 'schema.json'
 
     query_file = os.path.join(
         current_dir, 'graphql', 'introspection_query.txt')
@@ -108,12 +107,13 @@ def get_schema_file(app=None):
         query = f.read()
 
     with open(schema_file, 'w') as f:
-        json.dump(
-            peregrine.utils.jsonify_check_errors(
-               graphql.execute_query(query, app=app)),
-            f
-        )
-    return schema_file
+        result = graphql_schema.execute(query)
+        data = {'data': result.data}
+        if result.errors:
+            data['errors'] = [err.message for err in result.errors]
+        json.dump(data, f)
+
+    return os.path.abspath(schema_file)
 
 
 @peregrine.blueprints.blueprint.route('/getschema', methods=['GET'])
@@ -124,4 +124,4 @@ def root_graphql_schema_query():
     Dig up the introspection query string from file, run it through graphql,
     and jsonify the result.
     """
-    return flask.send_file(get_schema_file())
+    return flask.send_file(flask.current_app.schema_file)
