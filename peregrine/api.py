@@ -98,6 +98,7 @@ def dictionary_init(app):
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
 
+
 def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
@@ -112,6 +113,7 @@ def app_init(app):
     cors_init(app)
     app.graph_traversals = submission.graphql.make_graph_traversal_dict()
     app.graphql_schema = submission.graphql.get_schema()
+    app.schema_file = submission.generate_schema_file(app.graphql_schema)
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:
@@ -121,12 +123,14 @@ def app_init(app):
     async_pool_init(app)
     app.logger.info('Initialization complete.')
 
+
 app = Flask(__name__)
 
 # Setup logger
 app.logger.addHandler(get_handler())
 
 setup_default_handlers(app)
+
 
 @app.route('/_status', methods=['GET'])
 def health_check():
