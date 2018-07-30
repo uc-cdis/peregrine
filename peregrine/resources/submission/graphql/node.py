@@ -907,9 +907,11 @@ def get_nodetype_fields_dict():
         ]
 
         # TODO: what if the category doesnt have this field??
-        dictionary_fields = set.union(*fields)
+        all_dictionary_fields = set.union(*fields)
 
-        dictionary_fields_dict = {field: graphene.String() for field in dictionary_fields}
+        all_dictionary_fields = ['id', 'title', 'category'] # TODO remove
+
+        dictionary_fields_dict = {field: graphene.String() for field in all_dictionary_fields}
         NodeType.dictionary_fields = dictionary_fields_dict
 
     return NodeType.dictionary_fields
