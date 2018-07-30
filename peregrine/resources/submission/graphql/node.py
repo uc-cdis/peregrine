@@ -918,8 +918,9 @@ def get_nodetype_fields_dict():
 
 
 def resolve_node_type(self, info, **args):
-    q = get_authorized_query(data_type)
+    q = get_authorized_query(psqlgraph.Node)
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q]
+
 
 def get_nodetype_interface_args():
     args = get_base_node_args()
