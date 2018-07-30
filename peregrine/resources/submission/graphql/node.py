@@ -797,7 +797,7 @@ class DataNode(graphene.Interface):
     shared_fields = None # fields shared by all data nodes in the dictionary
 
 
-def get_shared_fields_dict():
+def get_datanode_fields_dict():
     """Return a dictionary containing the fields shared by all data nodes."""
 
     if not DataNode.shared_fields:
@@ -878,7 +878,7 @@ def resolve_datanode(self, info, **args):
 
 def get_datanode_interface_args():
     args = get_base_node_args()
-    args.update(get_shared_fields_dict())
+    args.update(get_datanode_fields_dict())
     args.update({
         'of_type': graphene.List(graphene.String),
         'project_id': graphene.String(),
@@ -892,13 +892,37 @@ def get_datanode_interface_args():
 
 class NodeType(graphene.Interface):
     id = graphene.ID()
+    dictionary_fields = None
 
-    def __init__(self):
-        for schema in dictionary.schema.values():
-            print(schema)
+
+def get_nodetype_fields_dict():
+    """Return a dictionary containing all the fields in the dictionary."""
+
+    if not NodeType.dictionary_fields:
+
+        # set of node fields
+        fields = [
+            set(schema['properties'].keys())
+            for schema in dictionary.schema.values()
+        ]
+
+        # TODO: what if the category doesnt have this field??
+        dictionary_fields = set.union(*fields)
+
+        dictionary_fields_dict = {field: graphene.String() for field in dictionary_fields}
+        NodeType.dictionary_fields = dictionary_fields_dict
+
+    return NodeType.dictionary_fields
+
 
 def resolve_node_type(self, info, **args):
     q = get_authorized_query(data_type)
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q]
 
-DataNodeField = graphene.List(NodeType, args=get_node_interface_args())
+def get_nodetype_interface_args():
+    args = get_base_node_args()
+    args.update({
+        'of_type': graphene.List(graphene.String),
+        'project_id': graphene.String(),
+    })
+    return args

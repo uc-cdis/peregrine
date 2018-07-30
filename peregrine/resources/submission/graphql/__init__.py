@@ -12,11 +12,15 @@ from .node import (
     NodeField,
     create_root_fields,
     resolve_node,
+
     DataNode,
-    get_shared_fields_dict,
+    get_datanode_fields_dict,
     get_datanode_interface_args,
     resolve_datanode,
+
     NodeType,
+    get_nodetype_fields_dict,
+    get_nodetype_interface_args,
     resolve_node_type,
 )
 #from .node import __fields as ns_fields
@@ -55,12 +59,14 @@ def get_schema():
     root_fields['node'] = NodeField
     root_fields['resolve_node'] = resolve_node
 
-    DataNode = type('DataNode', (graphene.ObjectType,), get_shared_fields_dict()) # init DataNode attributes
+    DataNode = type('DataNode', (graphene.ObjectType,), get_datanode_fields_dict()) # init DataNode attributes
     DataNodeField = graphene.List(DataNode, args=get_datanode_interface_args())
     root_fields['datanode'] = DataNodeField
     root_fields['resolve_datanode'] = resolve_datanode
 
-    root_fields['_node_type'] = NodeType
+    NodeType = type('NodeType', (graphene.ObjectType,), get_nodetype_fields_dict())
+    NodeTypeField = graphene.List(NodeType, args=get_nodetype_interface_args())
+    root_fields['_node_type'] = NodeTypeField
     root_fields['resolve_node_type'] = resolve_node_type
 
     Viewer = type('viewer', (graphene.ObjectType,), root_fields)
