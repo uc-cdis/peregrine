@@ -918,8 +918,60 @@ def get_nodetype_fields_dict():
 
 
 def resolve_node_type(self, info, **args):
-    q = get_authorized_query(psqlgraph.Node)
-    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q]
+    """The root query for the :class:`NodeType` node interface.
+
+    :returns:
+        A list of graphene object classes.
+
+    """
+
+    # get the list of categories queried by the user
+    # if no specified catogory, get the list of all categories
+    subclasses_labels = [
+        node
+        for node in dictionary.schema
+        if (not 'category' in args) or (dictionary.schema[node]['category'] in args['category'])
+    ]
+
+    # get the subclass for each category
+    subclasses = [
+        node
+        for node in psqlgraph.Node.get_subclasses()
+        if node.label in subclasses_labels
+    ]
+
+    q_all = []
+    for subclass in subclasses:
+
+        q = get_authorized_query(subclass)
+        if 'project_id' in args:
+            q = q.filter(q.entity()._props['project_id'].astext
+                         == args['project_id'])
+
+        q = apply_query_args(q, args, info)
+
+        if 'of_type' in args:
+            of_types = set(args['of_type'])
+            entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
+            entities = [e for e in entities if e]
+
+            ids = []
+            for label in of_types:
+                entity = psqlgraph.Node.get_subclass(label)
+                q = get_authorized_query(entity)
+                q = apply_query_args(q, args, info)
+                try:
+                    ids += [n.node_id for n in q.all()]
+                except Exception as e:
+                    capp.logger.exception(e)
+                    raise
+            q = get_authorized_query(psqlgraph.Node).ids(ids)
+            q = apply_arg_limit(q, args, info)
+            q = apply_arg_offset(q, args, info)
+
+        q_all.extend(q.all())
+
+    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
 
 
 def get_nodetype_interface_args():
@@ -927,5 +979,6 @@ def get_nodetype_interface_args():
     args.update({
         'of_type': graphene.List(graphene.String),
         'project_id': graphene.String(),
+        'category': graphene.String(),
     })
     return args
