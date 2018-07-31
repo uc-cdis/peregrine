@@ -919,12 +919,16 @@ def resolve_nodetype(self, info, **args):
         if node.label in subclasses_labels
     ]
 
+    number_of_results =  args['first'] if 'first' in args else None
+
     q_all = []
     for subclass in subclasses:
         q = query_with_args(subclass, args, info)
         q_all.extend(q.all())
+        if number_of_results and len(q_all) >= number_of_results:
+            break
 
-    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
+    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all][:number_of_results]
 
 
 def get_nodetype_interface_args():
