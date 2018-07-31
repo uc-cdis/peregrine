@@ -425,6 +425,9 @@ def resolve_node(self, info, **args):
     return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
 
 
+# TODO: function here to remove code duplication
+
+
 def lookup_graphql_type(T):
     return {
         bool: graphene.Boolean,
@@ -892,7 +895,7 @@ def get_datanode_interface_args():
 
 class NodeType(graphene.Interface):
     id = graphene.ID()
-    dictionary_fields = None
+    dictionary_fields = None # all the fields in the dictionary
 
 
 def get_nodetype_fields_dict():
@@ -900,7 +903,7 @@ def get_nodetype_fields_dict():
 
     if not NodeType.dictionary_fields:
 
-        # set of node fields
+        # all fields for each node in the dictionary
         fields = [
             set(schema['properties'].keys())
             for schema in dictionary.schema.values()
@@ -916,7 +919,7 @@ def get_nodetype_fields_dict():
     return NodeType.dictionary_fields
 
 
-def resolve_node_type(self, info, **args):
+def resolve_nodetype(self, info, **args):
     """The root query for the :class:`NodeType` node interface.
 
     :returns:
@@ -924,15 +927,15 @@ def resolve_node_type(self, info, **args):
 
     """
 
-    # get the list of categories queried by the user
-    # if no specified catogory, get the list of all categories
+    # get the subclass labels for categories queried by the user.
+    # if no specified catogory, get all subclasses
     subclasses_labels = [
         node
         for node in dictionary.schema
         if (not 'category' in args) or (dictionary.schema[node]['category'] in args['category'])
     ]
 
-    # get the subclass for each category
+    # get the actual subclass for each subclass label
     subclasses = [
         node
         for node in psqlgraph.Node.get_subclasses()

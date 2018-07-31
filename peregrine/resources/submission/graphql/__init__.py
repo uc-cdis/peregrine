@@ -21,7 +21,7 @@ from .node import (
     NodeType,
     get_nodetype_fields_dict,
     get_nodetype_interface_args,
-    resolve_node_type,
+    resolve_nodetype,
 )
 #from .node import __fields as ns_fields
 from .node import get_fields
@@ -67,7 +67,7 @@ def get_schema():
     NodeType = type('NodeType', (graphene.ObjectType,), get_nodetype_fields_dict()) # init NodeType fields
     NodeTypeField = graphene.List(NodeType, args=get_nodetype_interface_args())
     root_fields['_node_type'] = NodeTypeField
-    root_fields['resolve__node_type'] = resolve_node_type
+    root_fields['resolve__node_type'] = resolve_nodetype
 
     Viewer = type('viewer', (graphene.ObjectType,), root_fields)
 
