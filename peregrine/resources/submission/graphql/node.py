@@ -389,8 +389,14 @@ def resolve_node(self, info, **args):
         (not a gdcdatamodel Case)).
 
     """
+    q = query_with_args(psqlgraph.Node, args, info)
+    return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
 
-    q = get_authorized_query(psqlgraph.Node)
+
+def query_with_args(cls, args, info):
+    """Sends a query and applies the arguments."""
+
+    q = get_authorized_query(cls)
     if 'project_id' in args:
         q = q.filter(q.entity()._props['project_id'].astext
                      == args['project_id'])
@@ -422,10 +428,7 @@ def resolve_node(self, info, **args):
         q = apply_arg_limit(q, args, info)
         q = apply_arg_offset(q, args, info)
 
-    return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
-
-
-# TODO: function here to remove code duplication
+    return q
 
 
 def lookup_graphql_type(T):
@@ -847,33 +850,7 @@ def resolve_datanode(self, info, **args):
 
     q_all = []
     for data_type in data_types:
-
-        q = get_authorized_query(data_type)
-        if 'project_id' in args:
-            q = q.filter(q.entity()._props['project_id'].astext
-                         == args['project_id'])
-
-        q = apply_query_args(q, args, info)
-
-        if 'of_type' in args:
-            of_types = set(args['of_type'])
-            entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
-            entities = [e for e in entities if e]
-
-            ids = []
-            for label in of_types:
-                entity = psqlgraph.Node.get_subclass(label)
-                q = get_authorized_query(entity)
-                q = apply_query_args(q, args, info)
-                try:
-                    ids += [n.node_id for n in q.all()]
-                except Exception as e:
-                    capp.logger.exception(e)
-                    raise
-            q = get_authorized_query(psqlgraph.Node).ids(ids)
-            q = apply_arg_limit(q, args, info)
-            q = apply_arg_offset(q, args, info)
-
+        q = query_with_args(data_type, args, info)
         q_all.extend(q.all())
 
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
@@ -909,8 +886,8 @@ def get_nodetype_fields_dict():
             for schema in dictionary.schema.values()
         ]
 
-        # what if the category doesnt have this field?
-        # the result for this field will be None, will display null
+        # if a category does not have a field, when querying
+        # this category the result for this field will be None
         all_dictionary_fields = set.union(*fields)
 
         dictionary_fields_dict = {field: graphene.String() for field in all_dictionary_fields}
@@ -944,33 +921,7 @@ def resolve_nodetype(self, info, **args):
 
     q_all = []
     for subclass in subclasses:
-
-        q = get_authorized_query(subclass)
-        if 'project_id' in args:
-            q = q.filter(q.entity()._props['project_id'].astext
-                         == args['project_id'])
-
-        q = apply_query_args(q, args, info)
-
-        if 'of_type' in args:
-            of_types = set(args['of_type'])
-            entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
-            entities = [e for e in entities if e]
-
-            ids = []
-            for label in of_types:
-                entity = psqlgraph.Node.get_subclass(label)
-                q = get_authorized_query(entity)
-                q = apply_query_args(q, args, info)
-                try:
-                    ids += [n.node_id for n in q.all()]
-                except Exception as e:
-                    capp.logger.exception(e)
-                    raise
-            q = get_authorized_query(psqlgraph.Node).ids(ids)
-            q = apply_arg_limit(q, args, info)
-            q = apply_arg_offset(q, args, info)
-
+        q = query_with_args(subclass, args, info)
         q_all.extend(q.all())
 
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
