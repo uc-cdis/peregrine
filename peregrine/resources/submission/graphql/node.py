@@ -13,6 +13,7 @@ import dateutil
 import graphene
 import logging
 import psqlgraph
+import re
 import sqlalchemy as sa
 
 from datamodelutils import models as md  # noqa
@@ -880,17 +881,19 @@ def get_nodetype_fields_dict():
 
     if not NodeType.dictionary_fields:
 
-        # all fields for each node in the dictionary
-        fields = [
-            set(schema['properties'].keys())
-            for schema in dictionary.schema.values()
+        # get common dictionary fields
+        all_dictionary_fields = [
+            set(dictionary.schema[key].keys())
+            for key in dictionary.schema
         ]
+        common_dictionary_fields = set.intersection(*all_dictionary_fields)
 
-        # if a category does not have a field, when querying
-        # this category the result for this field will be None
-        all_dictionary_fields = set.union(*fields)
-
-        dictionary_fields_dict = {field: graphene.String() for field in all_dictionary_fields}
+        dictionary_fields_dict = {
+            field: graphene.String()
+            for field in common_dictionary_fields
+            # regex for field names accepted by graphql -> remove '$schema'
+            if re.match('^[_a-zA-Z][_a-zA-Z0-9]*$', field)
+        }
         NodeType.dictionary_fields = dictionary_fields_dict
 
     return NodeType.dictionary_fields
@@ -904,38 +907,25 @@ def resolve_nodetype(self, info, **args):
 
     """
 
-    # get the subclass labels for categories queried by the user.
-    # if no specified catogory, get all subclasses
-    subclasses_labels = [
-        node
-        for node in dictionary.schema
-        if (not 'category' in args) or (dictionary.schema[node]['category'] in args['category'])
-    ]
+    queried_fields = util_get_fields(info)
 
-    # get the actual subclass for each subclass label
-    subclasses = [
-        node
-        for node in psqlgraph.Node.get_subclasses()
-        if node.label in subclasses_labels
-    ]
+    all_data = {}
+    for node in dictionary.schema:
+        node_data = {
+            field: dictionary.schema[node][field]
+            for field in queried_fields
+        }
+        gql_object = type(node, (graphene.ObjectType, ), node_data)
+        all_data[node] = gql_object
 
-    number_of_results =  args['first'] if 'first' in args else None
-
-    q_all = []
-    for subclass in subclasses:
-        q = query_with_args(subclass, args, info)
-        q_all.extend(q.all())
-        if number_of_results and len(q_all) >= number_of_results:
-            break
-
-    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all][:number_of_results]
+    return [all_data[node] for node in dictionary.schema]
 
 
 def get_nodetype_interface_args():
     args = get_base_node_args()
+    args.update(get_nodetype_fields_dict())
     args.update({
         'of_type': graphene.List(graphene.String),
         'project_id': graphene.String(),
-        'category': graphene.String(),
     })
     return args

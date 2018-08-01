@@ -1218,27 +1218,27 @@ def test_tx_log_comprehensive_query_failed_deletion(
     assert 'errors' not in response.json, response.data
 
 
-def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
-    post_example_entities_together(client, pg_driver_clean, submitter)
-
-    category = dictionary.schema.values()[0]['category']
-    accepted_types = [
-        node
-        for node in dictionary.schema
-        if dictionary.schema[node]['category'] == category
-    ]
-
-    r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """
-        query Test {{
-          _node_type (category: "{}") {{
-            id title type
-          }}
-        }}""".format(category)}))
-
-    results = r.json.get('data', {}).get('_node_type', {})
-    for node in results:
-        assert 'id' in node
-        assert 'title' in node
-        assert 'type' in node
-        assert node['type'] in accepted_types
+# def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
+#     post_example_entities_together(client, pg_driver_clean, submitter)
+#
+#     category = dictionary.schema.values()[0]['category']
+#     accepted_types = [
+#         node
+#         for node in dictionary.schema
+#         if dictionary.schema[node]['category'] == category
+#     ]
+#
+#     r = client.post(path, headers=submitter, data=json.dumps({
+#         'query': """
+#         query Test {{
+#           _node_type (category: "{}") {{
+#             id title type
+#           }}
+#         }}""".format(category)}))
+#
+#     results = r.json.get('data', {}).get('_node_type', {})
+#     for node in results:
+#         assert 'id' in node
+#         assert 'title' in node
+#         assert 'type' in node
+#         assert node['type'] in accepted_types
