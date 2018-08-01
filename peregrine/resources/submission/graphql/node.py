@@ -887,11 +887,8 @@ def get_nodetype_fields_dict():
             for key in dictionary.schema
         ]
         common_dictionary_fields = set.intersection(*all_dictionary_fields)
-# intersection:
-    # ['category', 'properties', 'links', 'title', 'systemProperties', 'uniqueKeys', 'submittable', 'project', 'program', 'validators', 'additionalProperties', '$schema', 'type', 'id']
-# union = intersection +:
-    # 'description', 'required', 'namespace', 'preferred', 'root', 'constraints'
 
+        # convert to graphene types
         dictionary_fields_dict = {
             field: graphene.String()
             for field in common_dictionary_fields
@@ -928,11 +925,11 @@ def resolve_nodetype(self, info, **args):
     # apply the query arguments on the result
     all_data = apply_nodetype_args(all_data, args)
 
+    # convert to graphene objects
     gql_objects = [
         type(node, (graphene.ObjectType, ), data)
         for data in all_data
     ]
-
     return gql_objects
 
 
