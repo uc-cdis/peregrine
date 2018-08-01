@@ -887,6 +887,10 @@ def get_nodetype_fields_dict():
             for key in dictionary.schema
         ]
         common_dictionary_fields = set.intersection(*all_dictionary_fields)
+# intersection:
+    # ['category', 'properties', 'links', 'title', 'systemProperties', 'uniqueKeys', 'submittable', 'project', 'program', 'validators', 'additionalProperties', '$schema', 'type', 'id']
+# union = intersection +:
+    # 'description', 'required', 'namespace', 'preferred', 'root', 'constraints'
 
         dictionary_fields_dict = {
             field: graphene.String()
@@ -909,23 +913,63 @@ def resolve_nodetype(self, info, **args):
 
     queried_fields = util_get_fields(info)
 
-    all_data = {}
+    # query the dictionary
+    all_data = []
     for node in dictionary.schema:
-        node_data = {
-            field: dictionary.schema[node][field]
-            for field in queried_fields
-        }
-        gql_object = type(node, (graphene.ObjectType, ), node_data)
-        all_data[node] = gql_object
+        # apply the query arguments to each node
+        include_node = is_node_in_args(node, args)
+        if include_node:
+            node_data = {
+                field: dictionary.schema[node][field]
+                for field in queried_fields
+            }
+            all_data.append(node_data)
 
-    return [all_data[node] for node in dictionary.schema]
+    # apply the query arguments on the result
+    all_data = apply_nodetype_args(all_data, args)
+
+    gql_objects = [
+        type(node, (graphene.ObjectType, ), data)
+        for data in all_data
+    ]
+
+    return gql_objects
 
 
 def get_nodetype_interface_args():
-    args = get_base_node_args()
+    args = {
+        'first': graphene.Int(default_value=10),
+        'order_by_asc': graphene.String(),
+        'order_by_desc': graphene.String()
+    }
     args.update(get_nodetype_fields_dict())
-    args.update({
-        'of_type': graphene.List(graphene.String),
-        'project_id': graphene.String(),
-    })
     return args
+
+
+def is_node_in_args(node, args):
+    """Return true if the arguments include this node, false otherwise."""
+
+    nodetype_args = get_nodetype_fields_dict()
+    for queried_arg in args:
+        if queried_arg in nodetype_args:
+            # check if the value for this node is in the accepted values
+            if not dictionary.schema[node][queried_arg] in args[queried_arg]:
+                return False
+
+    return True
+
+
+def apply_nodetype_args(data, args):
+    """Apply the query arguments to the data list."""
+
+    l = list(data)
+
+    if 'order_by_asc' in args:
+        l = sorted(l, key=lambda d: d[args['order_by_asc']])
+
+    if 'order_by_desc' in args:
+        l = sorted(l, key=lambda d: d[args['order_by_desc']], reverse=True)
+
+    l = l[:args['first']]
+
+    return l
