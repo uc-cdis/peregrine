@@ -888,17 +888,17 @@ def get_nodetype_fields_dict():
 
     if not NodeType.dictionary_fields:
 
-        # get common dictionary fields
-        all_dictionary_fields = [
+        # get all dictionary fields
+        dictionary_fields = [
             set(dictionary.schema[key].keys())
             for key in dictionary.schema
         ]
-        common_dictionary_fields = set.intersection(*all_dictionary_fields)
+        all_dictionary_fields = set.union(*dictionary_fields)
 
         # convert to graphene types
         dictionary_fields_dict = {
             field: graphene.String()
-            for field in common_dictionary_fields
+            for field in all_dictionary_fields
             # regex for field names accepted by graphql -> remove '$schema'
             if re.match('^[_a-zA-Z][_a-zA-Z0-9]*$', field)
         }
