@@ -861,7 +861,8 @@ def resolve_datanode(self, info, **args):
         q = query_with_args(data_type, args, info)
         q_all.extend(q.all())
 
-    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
+    limit = args['first']
+    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all][:limit]
 
 
 def get_datanode_interface_args():
