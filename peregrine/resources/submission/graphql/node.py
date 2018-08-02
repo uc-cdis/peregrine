@@ -395,7 +395,14 @@ def resolve_node(self, info, **args):
 
 
 def query_with_args(cls, args, info):
-    """Sends a query and applies the arguments."""
+    """
+    Sends a query and applies the arguments.
+
+    Args:
+        cls: psqlgraph class to query.
+        args: dictionary of the arguments passed to the query.
+        info: graphene object that holds the query's arguments, models and requested fields.
+    """
 
     q = get_authorized_query(cls)
     if 'project_id' in args:
