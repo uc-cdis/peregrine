@@ -924,7 +924,8 @@ def resolve_nodetype(self, info, **args):
         include_node = is_node_in_args(node, args)
         if include_node:
             node_data = {
-                field: dictionary.schema[node][field]
+                # if a node does not have a field, this field will be null
+                field: dictionary.schema[node].get(field, None)
                 for field in queried_fields
             }
             all_data.append(node_data)
