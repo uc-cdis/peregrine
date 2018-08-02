@@ -5,6 +5,7 @@ import pytest
 from flask import g
 from datamodelutils import models
 from psqlgraph import Node
+from peregrine import dictionary
 
 from tests.graphql import utils
 from tests.graphql.utils import data_fnames
@@ -628,7 +629,7 @@ def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
             }]
         }
     }
-    
+
 
 def test_auth_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     utils.reset_transactions(pg_driver_clean)
@@ -1215,3 +1216,25 @@ def test_tx_log_comprehensive_query_failed_deletion(
     response = graphql_client(COMPREHENSIVE_TX_LOG_QUERY)
     assert response.status_code == 200, response.data
     assert 'errors' not in response.json, response.data
+
+
+def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    category = dictionary.schema.values()[0]['category']
+
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+        query Test {{
+          _node_type (category: "{}", first: 1) {{
+            id title category
+          }}
+        }}""".format(category)}))
+
+    results = r.json.get('data', {}).get('_node_type', {})
+    assert len(results) == 1
+    for node in results:
+        assert 'id' in node
+        assert 'title' in node
+        assert 'category' in node
+        assert node['category'] == category

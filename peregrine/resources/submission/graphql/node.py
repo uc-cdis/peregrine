@@ -13,6 +13,7 @@ import dateutil
 import graphene
 import logging
 import psqlgraph
+import re
 import sqlalchemy as sa
 
 from datamodelutils import models as md  # noqa
@@ -389,8 +390,21 @@ def resolve_node(self, info, **args):
         (not a gdcdatamodel Case)).
 
     """
+    q = query_with_args(psqlgraph.Node, args, info)
+    return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
 
-    q = get_authorized_query(psqlgraph.Node)
+
+def query_with_args(cls, args, info):
+    """
+    Sends a query and applies the arguments.
+
+    Args:
+        cls: psqlgraph class to query.
+        args: dictionary of the arguments passed to the query.
+        info: graphene object that holds the query's arguments, models and requested fields.
+    """
+
+    q = get_authorized_query(cls)
     if 'project_id' in args:
         q = q.filter(q.entity()._props['project_id'].astext
                      == args['project_id'])
@@ -422,7 +436,7 @@ def resolve_node(self, info, **args):
         q = apply_arg_limit(q, args, info)
         q = apply_arg_offset(q, args, info)
 
-    return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
+    return q
 
 
 def lookup_graphql_type(T):
@@ -797,7 +811,7 @@ class DataNode(graphene.Interface):
     shared_fields = None # fields shared by all data nodes in the dictionary
 
 
-def get_shared_fields_dict():
+def get_datanode_fields_dict():
     """Return a dictionary containing the fields shared by all data nodes."""
 
     if not DataNode.shared_fields:
@@ -844,33 +858,7 @@ def resolve_datanode(self, info, **args):
 
     q_all = []
     for data_type in data_types:
-
-        q = get_authorized_query(data_type)
-        if 'project_id' in args:
-            q = q.filter(q.entity()._props['project_id'].astext
-                         == args['project_id'])
-
-        q = apply_query_args(q, args, info)
-
-        if 'of_type' in args:
-            of_types = set(args['of_type'])
-            entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
-            entities = [e for e in entities if e]
-
-            ids = []
-            for label in of_types:
-                entity = psqlgraph.Node.get_subclass(label)
-                q = get_authorized_query(entity)
-                q = apply_query_args(q, args, info)
-                try:
-                    ids += [n.node_id for n in q.all()]
-                except Exception as e:
-                    capp.logger.exception(e)
-                    raise
-            q = get_authorized_query(psqlgraph.Node).ids(ids)
-            q = apply_arg_limit(q, args, info)
-            q = apply_arg_offset(q, args, info)
-
+        q = query_with_args(data_type, args, info)
         q_all.extend(q.all())
 
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all]
@@ -878,9 +866,114 @@ def resolve_datanode(self, info, **args):
 
 def get_datanode_interface_args():
     args = get_base_node_args()
-    args.update(get_shared_fields_dict())
+    args.update(get_datanode_fields_dict())
     args.update({
         'of_type': graphene.List(graphene.String),
         'project_id': graphene.String(),
     })
     return args
+
+
+# ======================================================================
+# NodeType
+
+
+class NodeType(graphene.Interface):
+    id = graphene.ID()
+    dictionary_fields = None # all the fields in the dictionary
+
+
+def get_nodetype_fields_dict():
+    """Return a dictionary containing all the fields in the dictionary."""
+
+    if not NodeType.dictionary_fields:
+
+        # get common dictionary fields
+        all_dictionary_fields = [
+            set(dictionary.schema[key].keys())
+            for key in dictionary.schema
+        ]
+        common_dictionary_fields = set.intersection(*all_dictionary_fields)
+
+        # convert to graphene types
+        dictionary_fields_dict = {
+            field: graphene.String()
+            for field in common_dictionary_fields
+            # regex for field names accepted by graphql -> remove '$schema'
+            if re.match('^[_a-zA-Z][_a-zA-Z0-9]*$', field)
+        }
+        NodeType.dictionary_fields = dictionary_fields_dict
+
+    return NodeType.dictionary_fields
+
+
+def resolve_nodetype(self, info, **args):
+    """The root query for the :class:`NodeType` node interface.
+
+    :returns:
+        A list of graphene object classes.
+
+    """
+
+    queried_fields = util_get_fields(info)
+
+    # query the dictionary
+    all_data = []
+    for node in dictionary.schema:
+        # apply the query arguments to each node
+        include_node = is_node_in_args(node, args)
+        if include_node:
+            node_data = {
+                field: dictionary.schema[node][field]
+                for field in queried_fields
+            }
+            all_data.append(node_data)
+
+    # apply the query arguments on the result
+    all_data = apply_nodetype_args(all_data, args)
+
+    # convert to graphene objects
+    gql_objects = [
+        type(node, (graphene.ObjectType, ), data)
+        for data in all_data
+    ]
+    return gql_objects
+
+
+def get_nodetype_interface_args():
+    args = {
+        'first': graphene.Int(default_value=10),
+        'order_by_asc': graphene.String(),
+        'order_by_desc': graphene.String()
+    }
+    args.update(get_nodetype_fields_dict())
+    return args
+
+
+def is_node_in_args(node, args):
+    """Return true if the arguments include this node, false otherwise."""
+
+    nodetype_args = get_nodetype_fields_dict()
+    for queried_arg in args:
+        if queried_arg in nodetype_args:
+            # check if the value for this node is in the accepted values
+            if not dictionary.schema[node][queried_arg] in args[queried_arg]:
+                return False
+
+    return True
+
+
+def apply_nodetype_args(data, args):
+    """Apply the query arguments to the data list."""
+
+    l = list(data)
+
+    if 'order_by_asc' in args:
+        l = sorted(l, key=lambda d: d[args['order_by_asc']])
+
+    if 'order_by_desc' in args:
+        l = sorted(l, key=lambda d: d[args['order_by_desc']], reverse=True)
+
+    l = l[:args['first']]
+
+    return l
