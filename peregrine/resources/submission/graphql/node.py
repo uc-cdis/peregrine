@@ -890,17 +890,12 @@ def get_nodetype_fields_dict():
 
     if not NodeType.dictionary_fields:
 
-        # get common dictionary fields
-        all_dictionary_fields = [
-            set(dictionary.schema[key].keys())
-            for key in dictionary.schema
-        ]
-        common_dictionary_fields = set.intersection(*all_dictionary_fields)
+        all_dictionary_fields = set(key for node in dictionary.schema.values() for key in node.keys())
 
         # convert to graphene types
         dictionary_fields_dict = {
             field: graphene.String()
-            for field in common_dictionary_fields
+            for field in all_dictionary_fields
             # regex for field names accepted by graphql -> remove '$schema'
             if re.match('^[_a-zA-Z][_a-zA-Z0-9]*$', field)
         }
@@ -926,7 +921,8 @@ def resolve_nodetype(self, info, **args):
         include_node = is_node_in_args(node, args)
         if include_node:
             node_data = {
-                field: dictionary.schema[node][field]
+                # if a node does not have a field, this field will be null
+                field: dictionary.schema[node].get(field)
                 for field in queried_fields
             }
             all_data.append(node_data)
