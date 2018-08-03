@@ -888,12 +888,7 @@ def get_nodetype_fields_dict():
 
     if not NodeType.dictionary_fields:
 
-        # get all dictionary fields
-        dictionary_fields = [
-            set(dictionary.schema[key].keys())
-            for key in dictionary.schema
-        ]
-        all_dictionary_fields = set.union(*dictionary_fields)
+        all_dictionary_fields = set(key for node in dictionary.schema.values() for key in node.keys())
 
         # convert to graphene types
         dictionary_fields_dict = {
@@ -925,7 +920,7 @@ def resolve_nodetype(self, info, **args):
         if include_node:
             node_data = {
                 # if a node does not have a field, this field will be null
-                field: dictionary.schema[node].get(field, None)
+                field: dictionary.schema[node].get(field)
                 for field in queried_fields
             }
             all_data.append(node_data)
