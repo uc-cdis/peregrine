@@ -23,7 +23,8 @@ from .util import (
     apply_arg_offset,
     get_authorized_query,
     get_fields as util_get_fields,
-    filtered_column_dict
+    filtered_column_dict,
+    DEFAULT_LIMIT
 )
 
 from . import transaction
@@ -478,7 +479,7 @@ def get_base_node_args():
         id=graphene.String(),
         ids=graphene.List(graphene.String),
         quick_search=graphene.String(),
-        first=graphene.Int(default_value=10),
+        first=graphene.Int(default_value=DEFAULT_LIMIT),
         offset=graphene.Int(),
         created_before=graphene.String(),
         created_after=graphene.String(),
@@ -861,7 +862,7 @@ def resolve_datanode(self, info, **args):
         q = query_with_args(data_type, args, info)
         q_all.extend(q.all())
 
-    limit = args['first']
+    limit = args.get('first', DEFAULT_LIMIT)
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all][:limit]
 
 
@@ -943,7 +944,7 @@ def resolve_nodetype(self, info, **args):
 
 def get_nodetype_interface_args():
     args = {
-        'first': graphene.Int(default_value=10),
+        'first': graphene.Int(default_value=DEFAULT_LIMIT),
         'order_by_asc': graphene.String(),
         'order_by_desc': graphene.String()
     }
