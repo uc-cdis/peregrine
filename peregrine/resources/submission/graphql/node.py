@@ -972,6 +972,7 @@ def apply_nodetype_args(data, args):
     if 'order_by_desc' in args:
         l = sorted(l, key=lambda d: d[args['order_by_desc']], reverse=True)
 
-    l = l[:args['first']]
+    limit = args.get('first', DEFAULT_LIMIT)
+    l = l[:limit]
 
     return l
