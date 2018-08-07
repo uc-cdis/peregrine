@@ -10,6 +10,7 @@ Defines utility functions for GraphQL implementation.
 from flask import current_app as capp
 from flask import g as fg
 from peregrine.errors import AuthError, UserError
+import node
 from datamodelutils import models
 from graphql import GraphQLError
 
@@ -119,10 +120,15 @@ def authorization_filter(q):
         ``project_id`` while maintaining filter correctness.
 
     """
- 
+
     cls = q.entity()
+
     if cls == psqlgraph.Node or hasattr(cls, 'project_id'):
         q = q.filter(cls._props['project_id'].astext.in_(fg.read_access_projects))
+
+    if cls.label == 'project':
+        # do not return unauthorized projects
+        q = node.filter_project_project_id(q, fg.read_access_projects, None)
 
     # if FILTER_ACTIVE:
     #     q = active_project_filter(q)
