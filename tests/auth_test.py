@@ -1,5 +1,5 @@
 from auth_mock import Config as conf
-from peregrine.errors import AuthError
+from peregrine.errors import AuthZError
 from peregrine.auth import FederatedUser
 import pytest
 from gdcdatamodel.models import *
@@ -45,7 +45,7 @@ def test_get_user_projects(auth, client):
 
 
 def test_user_role_for_invalid_roles(auth, client):
-    with pytest.raises(AuthError):
+    with pytest.raises(AuthZError):
         auth.get_user_projects('test')
 
 

@@ -6,7 +6,7 @@ from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
 from psqlgraph import PsqlGraphDriver
 
-from authutils import AuthError
+from authutils import AuthNError, AuthZError
 import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
 from userdatamodel.driver import SQLAlchemyDriver
@@ -181,7 +181,9 @@ app.register_error_handler(APIError, _log_and_jsonify_exception)
 app.register_error_handler(
     peregrine.errors.APIError, _log_and_jsonify_exception
 )
-app.register_error_handler(AuthError, _log_and_jsonify_exception)
+app.register_error_handler(AuthNError, _log_and_jsonify_exception)
+app.register_error_handler(AuthZError, _log_and_jsonify_exception)
+
 
 
 def run_for_development(**kwargs):
