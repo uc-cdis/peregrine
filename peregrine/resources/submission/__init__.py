@@ -6,11 +6,13 @@ Construct the blueprint for peregrine submissions, using the blueprint from
 import os
 import json
 
-import flask
+from cdiserrors import AuthZError
 import datamodelutils.models as models
-import peregrine.blueprints
+import flask
 
-from . import graphql
+from peregrine.auth import current_user, get_program_project_roles
+import peregrine.blueprints
+from peregrine.resources.submission import graphql
 
 
 def get_open_project_ids():
@@ -52,32 +54,51 @@ def set_read_access_projects():
         peregrine.errors.AuthError:
             if ``flask.g.user`` does not exist or if the user is not logged in
             (does not have a username), then an InvalidTokenError (inheriting
-            from AuthError) is raised by ``FederatedUser.get_project_ids``
+            from AuthError) is raised by ``CurrentUser.get_project_ids``
 
     Side Effects:
         assigns result from ``get_open_project_ids`` to
         ``flask.g.read_access_projects``.
     """
     if not hasattr(flask.g, 'read_access_projects'):
-        if not hasattr(flask.g, 'user'):
-            raise peregrine.errors.AuthError('user does not exist')
-        flask.g.read_access_projects = flask.g.user.get_project_ids('read')
+        flask.g.read_access_projects = []
+        user_project_ids = current_user.get_project_ids('read')
+        # translate the project IDs from user into {program}-{project}
+        with flask.current_app.db.session_scope():
+            programs = (
+                flask.current_app.db
+                .nodes(models.Program)
+                .prop_in('dbgap_accession_number', user_project_ids)
+                .all()
+            )
+            flask.g.read_access_projects.extend(
+                program.name + '-' + program.projects[0].code
+                for program in programs
+            )
+            projects = (
+                flask.current_app.db
+                .nodes(models.Project)
+                .prop_in('dbgap_accession_number', user_project_ids)
+                .all()
+            )
+            flask.g.read_access_projects.extend(
+                project.programs[0].name + '-' + project.code
+                for project in projects
+            )
         open_project_ids = get_open_project_ids()
         flask.g.read_access_projects.extend(open_project_ids)
 
 
 @peregrine.blueprints.blueprint.route('/graphql', methods=['POST'])
-@peregrine.auth.set_global_user
 def root_graphql_query():
     """
     Run a graphql query.
     """
     # Short circuit if user is not recognized. Make sure that the list of
     # projects that the user has read access to is set.
-    print("root_graphql_query. Run a graphql query in resource/submission/__init__")
     try:
         set_read_access_projects()
-    except peregrine.errors.AuthError:
+    except AuthZError:
         data = flask.jsonify({'data': {}, 'errors': ['Unauthorized query.']})
         return data, 403
     payload = peregrine.utils.parse_request_json()

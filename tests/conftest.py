@@ -27,7 +27,7 @@ import sheepdog
 import peregrine
 from peregrine.api import app as _app, app_init
 from peregrine.test_settings import Fernet, HMAC_ENCRYPTION_KEY, PSQL_USER_DB_CONNECTION
-from peregrine.auth import roles
+from peregrine.auth import ROLES
 from fence.jwt.token import generate_signed_access_token
 import utils
 
@@ -131,7 +131,7 @@ def app(request, start_signpost):
 
     _app.config.from_object("peregrine.test_settings")
     app_init(_app)
-
+    
     sheepdog_blueprint = sheepdog.blueprint.create_blueprint('submission')
     _app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
 
@@ -142,7 +142,6 @@ def app(request, start_signpost):
         auth=_app.config['SIGNPOST']['auth'])
     try:
         _app.logger.info('Initializing Auth driver')
-        _app.auth = AuthDriver(_app.config["AUTH_ADMIN_CREDS"], _app.config["INTERNAL_AUTH"])
     except Exception:
         _app.logger.exception("Couldn't initialize auth, continuing anyway")
 
@@ -179,6 +178,7 @@ def pg_driver_clean(request, pg_driver):
     request.addfinalizer(tearDown)
     return pg_driver
 
+
 @pytest.fixture(scope="session")
 def pg_driver(request):
     pg_driver = PsqlGraphDriver(**pg_config())
@@ -188,6 +188,7 @@ def pg_driver(request):
 
     request.addfinalizer(closeConnection)
     return pg_driver
+
 
 def user_setup():
     key = Fernet(HMAC_ENCRYPTION_KEY)
@@ -219,7 +220,7 @@ def user_setup():
             p = usermd.Project(
                 name=phsid, auth_id=phsid)
             ua = usermd.AccessPrivilege(
-                user=user, project=p, privilege=roles.values())
+                user=user, project=p, privilege=ROLES.values())
             s.add(ua)
             ua = usermd.AccessPrivilege(
                 user=member, project=p, privilege=['_member_'])
@@ -274,6 +275,7 @@ def admin(app, request, pg_driver_clean):
         user = s.query(usermd.User).filter_by(username='admin').first()
         token = encoded_jwt(private_key, user)
         return {'Authorization': 'bearer ' + token}
+
 
 @pytest.fixture(scope='session')
 def es_setup(request):

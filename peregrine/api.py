@@ -14,7 +14,7 @@ from cdispyutils.log import get_handler
 
 import peregrine
 from peregrine import dictionary
-from .auth import AuthDriver
+from peregrine import models
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
 from .resources import submission
 from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
@@ -64,12 +64,6 @@ def db_init(app):
     app.userdb = SQLAlchemyDriver(app.config['PSQL_USER_DB_CONNECTION'])
     flask_scoped_session(app.userdb.Session, app)
 
-    try:
-        app.logger.info('Initializing Auth driver')
-        app.auth = AuthDriver(app.config["AUTH_ADMIN_CREDS"], app.config["INTERNAL_AUTH"])
-    except Exception:
-        app.logger.exception("Couldn't initialize auth, continuing anyway")
-
 
 # Set CORS options on app configuration
 def cors_init(app):
@@ -81,6 +75,7 @@ def cors_init(app):
     CORS(app, resources={
         r"/*": {"origins": '*'},
         }, headers=accepted_headers, expose_headers=['Content-Disposition'])
+
 
 def dictionary_init(app):
     dictionary_url = app.config.get('DICTIONARY_URL')
@@ -103,6 +98,8 @@ def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
+    from gdcdatamodel import models as md
+    models.init(md)
 
     app_register_blueprints(app)
     app_register_duplicate_blueprints(app)
