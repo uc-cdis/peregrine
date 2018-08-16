@@ -393,19 +393,19 @@ def resolve_node(self, info, **args):
     """
 
     # get the list of categories queried by the user
-    # if no specified category, get the list of all categories
-    subclasses_labels = [
-        node
-        for node in dictionary.schema
-        if (not 'category' in args) or (dictionary.schema[node]['category'] in args['category'])
-    ]
-
-    # get the subclass for each category
-    subclasses = [
-        node
-        for node in psqlgraph.Node.get_subclasses()
-        if node.label in subclasses_labels
-    ]
+    if args.get('category'):
+        subclasses_labels = [
+            node
+            for node in dictionary.schema
+            if dictionary.schema[node]['category'] in args['category']
+        ]
+        subclasses = [
+            node
+            for node in psqlgraph.Node.get_subclasses()
+            if node.label in subclasses_labels
+        ]
+    else:
+        subclasses = [psqlgraph.Node]
 
     q_all = []
     for subclass in subclasses:
