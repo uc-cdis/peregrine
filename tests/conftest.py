@@ -1,81 +1,23 @@
 import os
 import sys
-import datetime
-import time
-
-import json
-import requests
-import pytest
-from mock import patch
-from psqlgraph import PsqlGraphDriver
-from flask.testing import make_test_environ_builder
-from signpost import Signpost
-
-from cdispyutils.hmac4 import get_auth
-from cdispyutils.hmac4.hmac4_auth_utils import get_request_date
-from dictionaryutils import DataDictionary, dictionary
-from datamodelutils import models, validators
 
 from indexclient.client import IndexClient as SignpostClient
 from multiprocessing import Process
-from userdatamodel import models as usermd
-from userdatamodel import Base as usermd_base
-from userdatamodel.driver import SQLAlchemyDriver
-import gdcdatamodel
+from psqlgraph import PsqlGraphDriver
+from signpost import Signpost
+import json
+import pytest
+import requests
 import sheepdog
 
 import peregrine
 from peregrine.api import app as _app, app_init
-from peregrine.test_settings import Fernet, HMAC_ENCRYPTION_KEY, PSQL_USER_DB_CONNECTION
 from peregrine.auth import ROLES
 from fence.jwt.token import generate_signed_access_token
 import utils
 
 here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, here)
-
-
-class UserapiTestSettings(object):
-    from boto.s3.connection import OrdinaryCallingFormat
-    MOCK_AUTH = True
-    MOCK_STORAGE = True
-    SHIBBOLETH_HEADER = ''
-    DB = 'postgresql://postgres@localhost:5432/test_userapi'
-    STORAGE_CREDENTIALS = {
-        "cleversafe": {
-            'aws_access_key_id': '',
-            'aws_secret_access_key': '',
-            'host': 'somemanager.osdc.io',
-            'public_host': 'someobjstore.datacommons.io',
-            'port': 443,
-            'is_secure': True,
-            'username': 'someone',
-            'password': 'somepass',
-            "calling_format": OrdinaryCallingFormat(),
-            "is_mocked": True
-        }
-    }
-    CEPH = {
-        'aws_access_key_id': '',
-        'aws_secret_access_key': '',
-        'host': '',
-        'port': 443,
-        'is_secure': True}
-    AWS = {
-        'aws_access_key_id': '',
-        'aws_secret_access_key': '',
-    }
-
-    APPLICATION_ROOT = '/'
-    DEBUG = True
-    HOST_NAME = ''
-    SHIBBOLETH_HEADER = 'persistent_id'
-    SSO_URL = ''
-    SINGLE_LOGOUT = ''
-
-    LOGOUT = ""
-    BIONIMBUS_ACCOUNT_ID = -1
-    ENABLE_CSRF_PROTECTION = False
 
 
 @pytest.fixture(scope='session')
@@ -111,6 +53,7 @@ def wait_for_signpost_not_alive(port):
 def run_signpost(port):
     Signpost({"driver": "inmemory", "layers": ["validator"]}).run(
         host="localhost", port=port, debug=False)
+
 
 @pytest.fixture(scope="session")
 def start_signpost(request):
@@ -171,10 +114,8 @@ def pg_driver_clean(request, pg_driver):
             conn.execute('delete from transaction_snapshots')
             conn.execute('delete from transaction_documents')
             conn.execute('delete from transaction_logs')
-            user_teardown()
 
     tearDown() #cleanup potential last test data
-    user_setup()
     request.addfinalizer(tearDown)
     return pg_driver
 
@@ -190,91 +131,66 @@ def pg_driver(request):
     return pg_driver
 
 
-def user_setup():
-    key = Fernet(HMAC_ENCRYPTION_KEY)
-    user_driver = SQLAlchemyDriver(PSQL_USER_DB_CONNECTION)
-    with user_driver.session as s:
-        for username in [
-                'admin', 'unauthorized', 'submitter', 'member', 'test']:
-            user = usermd.User(username=username, is_admin=(username=='admin'))
-            keypair = usermd.HMACKeyPair(
-                access_key=username + 'accesskey',
-                secret_key=key.encrypt(username),
-                expire=1000000,
-                user=user)
-            s.add(user)
-            s.add(keypair)
-        users = s.query(usermd.User).all()
-        test_user = s.query(usermd.User).filter(
-            usermd.User.username == 'test').first()
-        test_user.is_admin =True
-        projects = ['phs000218', 'phs000235', 'phs000178']
-        admin = s.query(usermd.User).filter(
-            usermd.User.username == 'admin').first()
-        admin.is_admin = True
-        user = s.query(usermd.User).filter(
-            usermd.User.username == 'submitter').first()
-        member = s.query(usermd.User).filter(
-            usermd.User.username == 'member').first()
-        for phsid in projects:
-            p = usermd.Project(
-                name=phsid, auth_id=phsid)
-            ua = usermd.AccessPrivilege(
-                user=user, project=p, privilege=ROLES.values())
-            s.add(ua)
-            ua = usermd.AccessPrivilege(
-                user=member, project=p, privilege=['_member_'])
-            s.add(ua)
+@pytest.fixture(scope='session')
+def encoded_jwt(app):
 
-    return user_driver
+    def encoded_jwt_function(private_key, user):
+        """
+        Return an example JWT containing the claims and encoded with the private
+        key.
+
+        Args:
+            private_key (str): private key
+            user (userdatamodel.models.User): user object
+
+        Return:
+            str: JWT containing claims encoded with private key
+        """
+        kid = peregrine.test_settings.JWT_KEYPAIR_FILES.keys()[0]
+        scopes = ['openid']
+        token = generate_signed_access_token(
+            kid, private_key, user, 3600, scopes, forced_exp_time=None,
+            iss=app.config['USER_API'],
+        )
+        return token.token
+
+    return encoded_jwt_function
 
 
-def user_teardown():
-    user_driver = SQLAlchemyDriver(PSQL_USER_DB_CONNECTION)
-    with user_driver.session as session:
-        meta = usermd_base.metadata
-        for table in reversed(meta.sorted_tables):
-            session.execute(table.delete())
-
-
-def encoded_jwt(private_key, user):
-    """
-    Return an example JWT containing the claims and encoded with the private
-    key.
-
-    Args:
-        private_key (str): private key
-        user (userdatamodel.models.User): user object
-
-    Return:
-        str: JWT containing claims encoded with private key
-    """
-    kid = peregrine.test_settings.JWT_KEYPAIR_FILES.keys()[0]
-    scopes = ['openid']
-    return generate_signed_access_token(
-        kid, private_key, user, 3600, scopes, forced_exp_time=None)
-
-
-@pytest.fixture()
-def submitter(app, request, pg_driver_clean):
+@pytest.fixture(scope='session')
+def submitter(encoded_jwt):
     private_key = utils.read_file('resources/keys/test_private_key.pem')
+    # set up a fake User object which has all the attributes that fence needs
+    # to generate a token
+    project_ids = ['phs000218', 'phs000235', 'phs000178']
+    user_properties = {
+        'id': 1,
+        'username': 'submitter',
+        'is_admin': False,
+        'project_access': {project: ROLES.values() for project in project_ids},
+        'policies': [],
+        'google_proxy_group_id': None,
+    }
+    user = type('User', (object,), user_properties)
+    token = encoded_jwt(private_key, user)
+    return {'Authorization': 'bearer ' + token}
 
-    user_driver = SQLAlchemyDriver(PSQL_USER_DB_CONNECTION)
-    with user_driver.session as s:
-        user = s.query(usermd.User).filter_by(username='submitter').first()
-        token = encoded_jwt(private_key, user)
-        return {'Authorization': 'bearer ' + token}
 
-
-@pytest.fixture()
-def admin(app, request, pg_driver_clean):
+@pytest.fixture(scope='session')
+def admin(encoded_jwt):
     private_key = utils.read_file('resources/keys/test_private_key.pem')
-
-    user_driver = SQLAlchemyDriver(PSQL_USER_DB_CONNECTION)
-    with user_driver.session as s:
-        user = s.query(usermd.User).filter_by(username='admin').first()
-        token = encoded_jwt(private_key, user)
-        return {'Authorization': 'bearer ' + token}
+    project_ids = ['phs000218', 'phs000235', 'phs000178']
+    user_properties = {
+        'id': 2,
+        'username': 'admin',
+        'is_admin': True,
+        'project_access': {project: ROLES.values() for project in project_ids},
+        'policies': [],
+        'google_proxy_group_id': None,
+    }
+    user = type('User', (object,), user_properties)
+    token = encoded_jwt(private_key, user)
+    return {'Authorization': 'bearer ' + token}
 
 
 @pytest.fixture(scope='session')

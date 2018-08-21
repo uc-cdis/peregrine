@@ -61,9 +61,6 @@ def db_init(app):
         set_flush_timestamps=True,
     )
 
-    app.userdb = SQLAlchemyDriver(app.config['PSQL_USER_DB_CONNECTION'])
-    flask_scoped_session(app.userdb.Session, app)
-
 
 # Set CORS options on app configuration
 def cors_init(app):
