@@ -9,7 +9,6 @@ from psqlgraph import PsqlGraphDriver
 from authutils import AuthError
 import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
-from userdatamodel.driver import SQLAlchemyDriver
 from cdispyutils.log import get_handler
 
 import peregrine
