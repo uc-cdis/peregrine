@@ -30,10 +30,10 @@ def get_program_project_roles(program, project):
     # slap this attributes on it
     user = current_user._get_current_object()
 
-    if not hasattr(user, 'sheepdog_roles'):
-        user.sheepdog_roles = dict()
+    if not hasattr(user, 'peregrine_roles'):
+        user.peregrine_roles = dict()
 
-    if not (program, project) in user.sheepdog_roles:
+    if not (program, project) in user.peregrine_roles:
         user_roles = set()
         with flask.current_app.db.session_scope():
             if program:
@@ -58,6 +58,6 @@ def get_program_project_roles(program, project):
                     project_id = project_node.dbgap_accession_number
                     roles = user.projects.get(project_id, set())
                     user_roles.update(set(roles))
-        user.sheepdog_roles[(program, project)] = user_roles
+        user.peregrine_roles[(program, project)] = user_roles
 
-    return user.sheepdog_roles[(program, project)]
+    return user.peregrine_roles[(program, project)]
