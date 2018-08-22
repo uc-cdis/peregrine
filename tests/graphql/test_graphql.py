@@ -160,12 +160,17 @@ def test_types(client, submitter, pg_driver_clean, cgci_blgsp):
     assert isinstance(r.json['data']['float'][0]['concentration'], float)
 
 
-def test_unauthorized_graphql_query(client, submitter, pg_driver_clean, cgci_blgsp):
+def test_unathenticated_graphql_query(
+        client, submitter, pg_driver_clean, cgci_blgsp):
+    """
+    Test that sending a query with no auth header returns a 401.
+    """
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers={}, data=json.dumps({
         'query': """query Test { alias1: case { id } }"""
     }))
-    assert r.status_code == 403, r.data
+    assert r.status_code == 401, r.data
+
 
 def test_fragment(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)

@@ -32,6 +32,7 @@ def set_session_timeout(session, timeout):
         .format(int(float(timeout)*1000))
     )
 
+
 def get_column_names(entity):
     """Returns an iterable of column names the entity has"""
     if hasattr(entity, '__pg_properties__'):
@@ -59,7 +60,6 @@ def filtered_column_dict(row, info, fields_depend_on_columns=None):
         column: getattr(row, column)
         for column in columns
     }
-
 
 
 def get_active_project_ids():
@@ -152,6 +152,7 @@ def apply_arg_offset(q, args, info):
     if offset > 0:
         q = q.offset(offset)
     return q
+
 
 def get_loaded_columns(entity, info, fields_depend_on_columns=None):
     """Returns a set of columns loaded from database

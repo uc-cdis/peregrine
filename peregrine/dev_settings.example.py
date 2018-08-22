@@ -46,15 +46,6 @@ PSQLGRAPH = {
     'database': os.getenv("GDC_PG_DBNAME", "automated_test")
 }
 
-PSQL_USER_DB_NAME = 'userapi'
-PSQL_USER_DB_USERNAME = 'test'
-PSQL_USER_DB_PASSWORD = 'test'
-PSQL_USER_DB_HOST = 'localhost'
-
-PSQL_USER_DB_CONNECTION = "postgresql://{name}:{password}@{host}/{db}".format(
-    name=PSQL_USER_DB_USERNAME, password=PSQL_USER_DB_PASSWORD, host=PSQL_USER_DB_HOST, db=PSQL_USER_DB_NAME
-)
-
 # API server
 PEREGRINE_HOST = os.getenv("PEREGRINE_HOST", "localhost")
 PEREGRINE_PORT = int(os.getenv("PEREGRINE_PORT", "5000"))
