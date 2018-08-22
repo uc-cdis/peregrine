@@ -13,7 +13,6 @@ from cdispyutils.log import get_handler
 
 import peregrine
 from peregrine import dictionary
-from peregrine import models
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
 from .resources import submission
 from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
@@ -94,8 +93,6 @@ def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
-    from gdcdatamodel import models as md
-    models.init(md)
 
     app_register_blueprints(app)
     app_register_duplicate_blueprints(app)

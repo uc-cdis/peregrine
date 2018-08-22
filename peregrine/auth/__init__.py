@@ -13,9 +13,8 @@ from authutils import dbgap
 from authutils import ROLES, AuthError
 from authutils.token import current_token
 from authutils.user import current_user
+from datamodelutils import models
 import flask
-
-from peregrine import models
 
 
 def get_program_project_roles(program, project):
