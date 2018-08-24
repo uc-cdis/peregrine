@@ -35,7 +35,11 @@ def get_open_project_ids():
             .filter(models.Project.availability_type.astext == "Open")
             .all()
         )
-        return [project['programs'][0]['name'] + '-' + project['code'] for project in projects]
+        return [
+            program['name'] + '-' + project['code']
+            for project in projects
+            for program in project['programs']
+        ]
 
 
 def set_read_access_projects():
@@ -82,8 +86,9 @@ def set_read_access_projects():
                 .all()
             )
             flask.g.read_access_projects.extend(
-                project.programs[0].name + '-' + project.code
+                program.name + '-' + project.code
                 for project in projects
+                for program in project.programs
             )
         open_project_ids = get_open_project_ids()
         flask.g.read_access_projects.extend(open_project_ids)
