@@ -76,7 +76,8 @@ def set_read_access_projects():
                 .all()
             )
             flask.g.read_access_projects.extend(
-                program.name + '-' + program.projects[0].code
+                program.name + '-' + project.code
+                for project in program.projects
                 for program in programs
             )
             projects = (
