@@ -77,8 +77,8 @@ def set_read_access_projects():
             )
             flask.g.read_access_projects.extend(
                 program.name + '-' + project.code
-                for project in program.projects
                 for program in programs
+                for project in program.projects
             )
             projects = (
                 flask.current_app.db
