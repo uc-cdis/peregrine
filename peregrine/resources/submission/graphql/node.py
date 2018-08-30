@@ -391,8 +391,28 @@ def resolve_node(self, info, **args):
         (not a gdcdatamodel Case)).
 
     """
-    q = query_with_args(psqlgraph.Node, args, info)
-    return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
+
+    # get the list of categories queried by the user
+    if args.get('category'):
+        subclasses_labels = [
+            node
+            for node in dictionary.schema
+            if dictionary.schema[node]['category'] in args['category']
+        ]
+        subclasses = [
+            node
+            for node in psqlgraph.Node.get_subclasses()
+            if node.label in subclasses_labels
+        ]
+    else:
+        subclasses = [psqlgraph.Node]
+
+    q_all = []
+    for subclass in subclasses:
+        q = query_with_args(subclass, args, info)
+        q_all.extend(q.all())
+
+    return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q_all]
 
 
 def query_with_args(cls, args, info):
@@ -494,6 +514,7 @@ def get_node_interface_args():
     return dict(get_base_node_args(), **dict(
         of_type=graphene.List(graphene.String),
         project_id=graphene.String(),
+        category=graphene.String(),
     ))
 
 

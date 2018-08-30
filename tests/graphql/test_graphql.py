@@ -266,6 +266,53 @@ def test_node_interface_of_type(client, submitter, pg_driver_clean, cgci_blgsp):
     assert not {'case'}.symmetric_difference(types)
 
 
+def test_node_interface_category(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    category = dictionary.schema.values()[0]['category']
+    accepted_types = [
+        node
+        for node in dictionary.schema
+        if dictionary.schema[node]['category'] == category
+    ]
+
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """query Test {{
+          node (category: "{}") {{ id project_id type }}
+        }}""".format(category)}))
+    assert r.status_code == 200, r.data
+
+    results = r.json.get('data', {}).get('node', {})
+    for node in results:
+        assert 'id' in node
+        assert 'project_id' in node
+        assert 'type' in node
+        assert node['type'] in accepted_types
+
+
+def test_node_interface_program_project(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """query Test {
+          node (category: "administrative") { type }
+        }"""}))
+    assert r.status_code == 200, r.data
+
+    results = r.json.get('data', {}).get('node', {})
+    if results:
+        programs = 0
+        projects = 0
+        for node in results:
+            assert 'type' in node
+            if node['type'] == 'program':
+                programs += 1
+            elif node['type'] == 'project':
+                projects += 1
+        assert programs > 0
+        assert projects > 0
+
+
 def test_arg_props(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
