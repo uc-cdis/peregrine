@@ -15,6 +15,7 @@ import logging
 import psqlgraph
 import re
 import sqlalchemy as sa
+from sqlalchemy import func
 
 from datamodelutils import models as md  # noqa
 from peregrine import dictionary
