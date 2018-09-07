@@ -1,3 +1,4 @@
+import sqlalchemy as sa
 from .schema import SchemaQuery
 from psqlgraph import Node
 import base
@@ -16,6 +17,16 @@ from gdcgraphql import (
     Query,
 )
 
+def clean_count(q):
+    """Returns the count from this query without pulling all the columns
+    This gets the count from a query without doing a subquery
+    The subquery would pull all the information from the DB
+    and cause statement timeouts with large numbers of rows
+    Args:
+        q (psqlgraph.query.GraphQuery): The current query object.
+    """
+    query_count = q.options(sa.orm.lazyload('*')).statement.with_only_columns([sa.func.count()]).order_by(None)
+    return q.session.execute(query_count).scalar()
 
 class NodeCountQuery(base.GraphQLQuery):
 
@@ -48,7 +59,7 @@ class NodeCountQuery(base.GraphQLQuery):
         q = self.get_authorized_query(cls)
         for arg in self.top.arguments:
             q = node_query.add_arg_filter(q, arg)
-        self.result = {self.top.key: q.count()}
+        self.result = {self.top.key: clean_count(q)}
 
     @staticmethod
     def _queries():
