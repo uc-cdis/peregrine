@@ -832,7 +832,7 @@ def clean_count(q):
         q (psqlgraph.query.GraphQuery): The current query object.
 
     """
-    query_count = q.options(sqlalchemy.orm.lazyload('*')).statement.with_only_columns([sqlalchemy.func.count()]).order_by(None)
+    query_count = q.options(sa.orm.lazyload('*')).statement.with_only_columns([sa.func.count()]).order_by(None)
     return q.session.execute(query_count).scalar()
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
