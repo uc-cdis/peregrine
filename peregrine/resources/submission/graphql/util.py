@@ -15,6 +15,7 @@ from datamodelutils import models
 from graphql import GraphQLError
 
 from graphql.utils.ast_to_dict import ast_to_dict
+import sqlalchemy as sa
 from sqlalchemy.orm import load_only
 
 import psqlgraph
@@ -235,3 +236,17 @@ def get_fields(info):
         fragments[name] = ast_to_dict(value)
 
     return collect_fields(node, fragments)
+
+def clean_count(q):
+    """Returns the count from this query without pulling all the columns
+
+    This gets the count from a query without doing a subquery
+    The subquery would pull all the information from the DB
+    and cause statement timeouts with large numbers of rows.
+
+    Args:
+        q (psqlgraph.query.GraphQuery): The current query object.
+
+    """
+    query_count = q.options(sa.orm.lazyload('*')).statement.with_only_columns([sa.func.count()]).order_by(None)
+    return q.session.execute(query_count).scalar()

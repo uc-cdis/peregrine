@@ -21,6 +21,7 @@ from peregrine import dictionary
 from .util import (
     apply_arg_limit,
     apply_arg_offset,
+    clean_count,
     get_authorized_query,
     get_fields as util_get_fields,
     filtered_column_dict,
@@ -819,21 +820,6 @@ def get_fields():
         __gql_object_classes[cls.label] = gql_object
 
     return __fields
-
-
-def clean_count(q):
-    """Returns the count from this query without pulling all the columns
-
-    This gets the count from a query without doing a subquery
-    The subquery would pull all the information from the DB
-    and cause statement timeouts with large numbers of rows
-
-    Args:
-        q (psqlgraph.query.GraphQuery): The current query object.
-
-    """
-    query_count = q.options(sa.orm.lazyload('*')).statement.with_only_columns([sa.func.count()]).order_by(None)
-    return q.session.execute(query_count).scalar()
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
 
