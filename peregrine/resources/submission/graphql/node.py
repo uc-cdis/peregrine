@@ -21,6 +21,7 @@ from peregrine import dictionary
 from .util import (
     apply_arg_limit,
     apply_arg_offset,
+    clean_count,
     get_authorized_query,
     get_fields as util_get_fields,
     filtered_column_dict,
@@ -699,7 +700,7 @@ def get_node_class_link_resolver_attrs(cls):
                 q = link_query(self, info, cls=cls, link=link, **args)
                 q = q.with_entities(sa.distinct(link['type'].node_id))
                 q = q.limit(None)
-                return q.count()
+                return clean_count(q)
             except Exception as e:
                 capp.logger.exception(e)
                 raise
@@ -787,7 +788,7 @@ def create_root_fields(fields):
             if 'with_path_to' in args or 'with_path_to_any' in args:
                 q = q.with_entities(sa.distinct(cls.node_id))
             q = q.limit(args.get('first', None))
-            return q.count()
+            return clean_count(q)
 
         count_field = graphene.Field(
             graphene.Int, args=get_node_class_args(cls))
@@ -819,7 +820,6 @@ def get_fields():
         __gql_object_classes[cls.label] = gql_object
 
     return __fields
-
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
 
