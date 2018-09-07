@@ -700,7 +700,7 @@ def get_node_class_link_resolver_attrs(cls):
                 q = link_query(self, info, cls=cls, link=link, **args)
                 q = q.with_entities(sa.distinct(link['type'].node_id))
                 q = q.limit(None)
-                return clean_count(q.count)
+                return clean_count(q)
             except Exception as e:
                 capp.logger.exception(e)
                 raise
@@ -829,8 +829,11 @@ def clean_count(q):
     The subquery would pull all the information from the DB
     and cause statement timeouts with large numbers of rows
 
+    Args:
+        q (psqlgraph.query.GraphQuery): The current query object.
+
     """
-    query_count = q.select().statement.with_only_columns([func.count()]).order_by(None)
+    query_count = q.statement.with_only_columns([func.count()]).order_by(None)
     return q.session.execute(query_count).scalar()
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
