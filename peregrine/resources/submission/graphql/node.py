@@ -699,7 +699,7 @@ def get_node_class_link_resolver_attrs(cls):
                 q = link_query(self, info, cls=cls, link=link, **args)
                 q = q.with_entities(sa.distinct(link['type'].node_id))
                 q = q.limit(None)
-                return q.count()
+                return clean_count(q.count)
             except Exception as e:
                 capp.logger.exception(e)
                 raise
@@ -787,7 +787,7 @@ def create_root_fields(fields):
             if 'with_path_to' in args or 'with_path_to_any' in args:
                 q = q.with_entities(sa.distinct(cls.node_id))
             q = q.limit(args.get('first', None))
-            return q.count()
+            return clean_count(q)
 
         count_field = graphene.Field(
             graphene.Int, args=get_node_class_args(cls))
@@ -820,6 +820,18 @@ def get_fields():
 
     return __fields
 
+
+def clean_count(q):
+    """Returns the count from this query without pulling all the columns
+
+    This gets the count from a query without doing a subquery
+    The subquery would pull all the information from the DB
+    and cause statement timeouts with large numbers of rows
+
+    """
+    query_count = q.statement.with_only_columns([func.count()]).order_by(None)
+    count = q.session.execute(query_count).scalar()
+    return count
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
 
