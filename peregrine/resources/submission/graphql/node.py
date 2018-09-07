@@ -15,7 +15,6 @@ import logging
 import psqlgraph
 import re
 import sqlalchemy as sa
-from sqlalchemy import func
 
 from datamodelutils import models as md  # noqa
 from peregrine import dictionary
@@ -833,7 +832,7 @@ def clean_count(q):
         q (psqlgraph.query.GraphQuery): The current query object.
 
     """
-    query_count = q.statement.with_only_columns([func.count()]).order_by(None)
+    query_count = q.options(sqlalchemy.orm.lazyload('*')).statement.with_only_columns([sqlalchemy.func.count()]).order_by(None)
     return q.session.execute(query_count).scalar()
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
