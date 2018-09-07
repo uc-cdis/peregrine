@@ -73,16 +73,20 @@ def cors_init(app):
 
 
 def dictionary_init(app):
-    dictionary_url = app.config.get('DICTIONARY_URL')
-    if dictionary_url:
+    if ('DICTIONARY_URL' in app.config):
         app.logger.info('Initializing dictionary from url')
-        d = DataDictionary(url=dictionary_url)
+        url = app.config['DICTIONARY_URL']
+        d = DataDictionary(url=url)
         dict_init.init(d)
-        dictionary.init(d)
+    elif ('PATH_TO_SCHEMA_DIR' in app.config):
+        app.logger.info('Initializing dictionary from schema dir')
+        d = DataDictionary(root_dir=app.config['PATH_TO_SCHEMA_DIR'])
+        dict_init.init(d)
     else:
         app.logger.info('Initializing dictionary from gdcdictionary')
-        from gdcdictionary import gdcdictionary
-        dictionary.init(gdcdictionary)
+        import gdcdictionary
+        d = gdcdictionary.gdcdictionary
+    dictionary.init(d)
     from gdcdatamodel import models as md
     from gdcdatamodel import validators as vd
     datamodelutils.validators.init(vd)
