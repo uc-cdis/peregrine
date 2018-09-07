@@ -830,9 +830,8 @@ def clean_count(q):
     and cause statement timeouts with large numbers of rows
 
     """
-    query_count = q.statement.with_only_columns([func.count()]).order_by(None)
-    count = q.session.execute(query_count).scalar()
-    return count
+    query_count = q.query.statement.with_only_columns([func.count()]).order_by(None)
+    return q.session.execute(query_count).scalar()
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
 
