@@ -10,10 +10,12 @@ Defines utility functions for GraphQL implementation.
 from flask import current_app as capp
 from flask import g as fg
 from peregrine.errors import AuthError, UserError
+import node
 from datamodelutils import models
 from graphql import GraphQLError
 
 from graphql.utils.ast_to_dict import ast_to_dict
+import sqlalchemy as sa
 from sqlalchemy.orm import load_only
 
 import psqlgraph
@@ -30,6 +32,7 @@ def set_session_timeout(session, timeout):
         'SET LOCAL statement_timeout = {}'
         .format(int(float(timeout)*1000))
     )
+
 
 def get_column_names(entity):
     """Returns an iterable of column names the entity has"""
@@ -58,7 +61,6 @@ def filtered_column_dict(row, info, fields_depend_on_columns=None):
         column: getattr(row, column)
         for column in columns
     }
-
 
 
 def get_active_project_ids():
@@ -119,10 +121,15 @@ def authorization_filter(q):
         ``project_id`` while maintaining filter correctness.
 
     """
- 
+
     cls = q.entity()
+
     if cls == psqlgraph.Node or hasattr(cls, 'project_id'):
         q = q.filter(cls._props['project_id'].astext.in_(fg.read_access_projects))
+
+    if cls.label == 'project':
+        # do not return unauthorized projects
+        q = node.filter_project_project_id(q, fg.read_access_projects, None)
 
     # if FILTER_ACTIVE:
     #     q = active_project_filter(q)
@@ -146,6 +153,7 @@ def apply_arg_offset(q, args, info):
     if offset > 0:
         q = q.offset(offset)
     return q
+
 
 def get_loaded_columns(entity, info, fields_depend_on_columns=None):
     """Returns a set of columns loaded from database
@@ -228,3 +236,17 @@ def get_fields(info):
         fragments[name] = ast_to_dict(value)
 
     return collect_fields(node, fragments)
+
+def clean_count(q):
+    """Returns the count from this query without pulling all the columns
+
+    This gets the count from a query without doing a subquery
+    The subquery would pull all the information from the DB
+    and cause statement timeouts with large numbers of rows.
+
+    Args:
+        q (psqlgraph.query.GraphQuery): The current query object.
+
+    """
+    query_count = q.options(sa.orm.lazyload('*')).statement.with_only_columns([sa.func.count()]).order_by(None)
+    return q.session.execute(query_count).scalar()

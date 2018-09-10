@@ -9,12 +9,10 @@ from psqlgraph import PsqlGraphDriver
 from authutils import AuthError
 import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
-from userdatamodel.driver import SQLAlchemyDriver
 from cdispyutils.log import get_handler
 
 import peregrine
 from peregrine import dictionary
-from .auth import AuthDriver
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
 from .resources import submission
 from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
@@ -61,15 +59,6 @@ def db_init(app):
         set_flush_timestamps=True,
     )
 
-    app.userdb = SQLAlchemyDriver(app.config['PSQL_USER_DB_CONNECTION'])
-    flask_scoped_session(app.userdb.Session, app)
-
-    try:
-        app.logger.info('Initializing Auth driver')
-        app.auth = AuthDriver(app.config["AUTH_ADMIN_CREDS"], app.config["INTERNAL_AUTH"])
-    except Exception:
-        app.logger.exception("Couldn't initialize auth, continuing anyway")
-
 
 # Set CORS options on app configuration
 def cors_init(app):
@@ -82,21 +71,27 @@ def cors_init(app):
         r"/*": {"origins": '*'},
         }, headers=accepted_headers, expose_headers=['Content-Disposition'])
 
+
 def dictionary_init(app):
-    dictionary_url = app.config.get('DICTIONARY_URL')
-    if dictionary_url:
+    if ('DICTIONARY_URL' in app.config):
         app.logger.info('Initializing dictionary from url')
-        d = DataDictionary(url=dictionary_url)
+        url = app.config['DICTIONARY_URL']
+        d = DataDictionary(url=url)
         dict_init.init(d)
-        dictionary.init(d)
+    elif ('PATH_TO_SCHEMA_DIR' in app.config):
+        app.logger.info('Initializing dictionary from schema dir')
+        d = DataDictionary(root_dir=app.config['PATH_TO_SCHEMA_DIR'])
+        dict_init.init(d)
     else:
         app.logger.info('Initializing dictionary from gdcdictionary')
-        from gdcdictionary import gdcdictionary
-        dictionary.init(gdcdictionary)
+        import gdcdictionary
+        d = gdcdictionary.gdcdictionary
+    dictionary.init(d)
     from gdcdatamodel import models as md
     from gdcdatamodel import validators as vd
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
+
 
 def app_init(app):
     # Register duplicates only at runtime
@@ -112,6 +107,7 @@ def app_init(app):
     cors_init(app)
     app.graph_traversals = submission.graphql.make_graph_traversal_dict()
     app.graphql_schema = submission.graphql.get_schema()
+    app.schema_file = submission.generate_schema_file(app.graphql_schema)
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:
@@ -121,12 +117,14 @@ def app_init(app):
     async_pool_init(app)
     app.logger.info('Initialization complete.')
 
+
 app = Flask(__name__)
 
 # Setup logger
 app.logger.addHandler(get_handler())
 
 setup_default_handlers(app)
+
 
 @app.route('/_status', methods=['GET'])
 def health_check():

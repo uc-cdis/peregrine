@@ -1,11 +1,13 @@
+import datetime
 import json
 import re
 import urlparse
+
 import pytest
-from peregrine.auth import AuthDriver
-from peregrine import test_settings
+
 import httmock
-import datetime
+
+from peregrine import test_settings
 
 
 class Config(object):
@@ -311,20 +313,3 @@ def mock(*args, **kwargs):
         default,
     ]
     return httmock.HTTMock(*endpoints)
-
-
-@pytest.fixture
-def auth(request):
-    with mock():
-        driver = AuthDriver(test_settings.AUTH_ADMIN_CREDS, test_settings.INTERNAL_AUTH)
-    driver.validate = patch_auth(driver.validate)
-    driver.get_user_projects = patch_auth(driver.get_user_projects)
-
-    return driver
-
-
-def patch_auth(f):
-    def wrapper(*args, **kwargs):
-        with mock():
-            return f(*args, **kwargs)
-    return wrapper

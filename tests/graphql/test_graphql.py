@@ -5,6 +5,7 @@ import pytest
 from flask import g
 from datamodelutils import models
 from psqlgraph import Node
+from peregrine import dictionary
 
 from tests.graphql import utils
 from tests.graphql.utils import data_fnames
@@ -159,12 +160,17 @@ def test_types(client, submitter, pg_driver_clean, cgci_blgsp):
     assert isinstance(r.json['data']['float'][0]['concentration'], float)
 
 
-def test_unauthorized_graphql_query(client, submitter, pg_driver_clean, cgci_blgsp):
+def test_unathenticated_graphql_query(
+        client, submitter, pg_driver_clean, cgci_blgsp):
+    """
+    Test that sending a query with no auth header returns a 401.
+    """
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers={}, data=json.dumps({
         'query': """query Test { alias1: case { id } }"""
     }))
-    assert r.status_code == 403, r.data
+    assert r.status_code == 401, r.data
+
 
 def test_fragment(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
@@ -258,6 +264,53 @@ def test_node_interface_of_type(client, submitter, pg_driver_clean, cgci_blgsp):
     print r.data
     types = {d['type'] for d in r.json['data']['node']}
     assert not {'case'}.symmetric_difference(types)
+
+
+def test_node_interface_category(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    category = dictionary.schema.values()[0]['category']
+    accepted_types = [
+        node
+        for node in dictionary.schema
+        if dictionary.schema[node]['category'] == category
+    ]
+
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """query Test {{
+          node (category: "{}") {{ id project_id type }}
+        }}""".format(category)}))
+    assert r.status_code == 200, r.data
+
+    results = r.json.get('data', {}).get('node', {})
+    for node in results:
+        assert 'id' in node
+        assert 'project_id' in node
+        assert 'type' in node
+        assert node['type'] in accepted_types
+
+
+def test_node_interface_program_project(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """query Test {
+          node (category: "administrative") { type }
+        }"""}))
+    assert r.status_code == 200, r.data
+
+    results = r.json.get('data', {}).get('node', {})
+    if results:
+        programs = 0
+        projects = 0
+        for node in results:
+            assert 'type' in node
+            if node['type'] == 'program':
+                programs += 1
+            elif node['type'] == 'project':
+                projects += 1
+        assert programs > 0
+        assert projects > 0
 
 
 def test_arg_props(client, submitter, pg_driver_clean, cgci_blgsp):
@@ -628,7 +681,7 @@ def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
             }]
         }
     }
-    
+
 
 def test_auth_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     utils.reset_transactions(pg_driver_clean)
@@ -1215,3 +1268,25 @@ def test_tx_log_comprehensive_query_failed_deletion(
     response = graphql_client(COMPREHENSIVE_TX_LOG_QUERY)
     assert response.status_code == 200, response.data
     assert 'errors' not in response.json, response.data
+
+
+def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    category = dictionary.schema.values()[0]['category']
+
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+        query Test {{
+          _node_type (category: "{}", first: 1) {{
+            id title category
+          }}
+        }}""".format(category)}))
+
+    results = r.json.get('data', {}).get('_node_type', {})
+    assert len(results) == 1
+    for node in results:
+        assert 'id' in node
+        assert 'title' in node
+        assert 'category' in node
+        assert node['category'] == category

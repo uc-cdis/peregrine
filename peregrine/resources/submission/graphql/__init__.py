@@ -12,10 +12,16 @@ from .node import (
     NodeField,
     create_root_fields,
     resolve_node,
+
     DataNode,
-    get_shared_fields_dict,
+    get_datanode_fields_dict,
     get_datanode_interface_args,
     resolve_datanode,
+
+    NodeType,
+    get_nodetype_fields_dict,
+    get_nodetype_interface_args,
+    resolve_nodetype,
 )
 #from .node import __fields as ns_fields
 from .node import get_fields
@@ -53,10 +59,15 @@ def get_schema():
     root_fields['node'] = NodeField
     root_fields['resolve_node'] = resolve_node
 
-    DataNode = type('DataNode', (graphene.ObjectType,), get_shared_fields_dict()) # init DataNode attributes
+    DataNode = type('DataNode', (graphene.ObjectType,), get_datanode_fields_dict()) # init DataNode fields
     DataNodeField = graphene.List(DataNode, args=get_datanode_interface_args())
     root_fields['datanode'] = DataNodeField
     root_fields['resolve_datanode'] = resolve_datanode
+
+    NodeType = type('NodeType', (graphene.ObjectType,), get_nodetype_fields_dict()) # init NodeType fields
+    NodeTypeField = graphene.List(NodeType, args=get_nodetype_interface_args())
+    root_fields['_node_type'] = NodeTypeField
+    root_fields['resolve__node_type'] = resolve_nodetype
 
     Viewer = type('viewer', (graphene.ObjectType,), root_fields)
 
@@ -76,24 +87,26 @@ def get_schema():
     return Schema
 
 
-def execute_query(query, variables=None):
+def execute_query(query, variables=None, app=None):
     """
     Pull required parameters from global request and execute GraphQL query.
 
     :returns: a tuple (``data``, ``errors``)
     """
     variables = variables or {}
+    if app is None:
+        app = flask.current_app
 
     # Execute query
     try:
-        session_scope = flask.current_app.db.session_scope()
+        session_scope = app.db.session_scope()
         timer = log_duration("GraphQL")
         result = None
         with session_scope as session:
             with timer:
                 set_session_timeout(session, GRAPHQL_TIMEOUT)
-                #result = Schema.execute(query, variable_values=variables)
-                result = flask.current_app.graphql_schema.execute(query, variable_values=variables)
+                # result = Schema.execute(query, variable_values=variables)
+                result = app.graphql_schema.execute(query, variable_values=variables)
     except graphql.error.GraphQLError as e:
         return None, [str(e)]
 
