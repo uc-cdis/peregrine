@@ -7,7 +7,7 @@ from flask import current_app
 from mock import patch, PropertyMock
 
 from psqlgraph import PolyNode as Node
-from peregrine.auth import roles as all_roles
+from peregrine.auth import ROLES as all_roles
 from collections import defaultdict
 import requests
 requests.packages.urllib3.disable_warnings()
