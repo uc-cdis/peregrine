@@ -466,6 +466,7 @@ def lookup_graphql_type(T):
         bool: graphene.Boolean,
         float: graphene.Float,
         int: graphene.Int,
+        list: graphene.List(graphene.String),
     }.get(T, graphene.String)
 
 
