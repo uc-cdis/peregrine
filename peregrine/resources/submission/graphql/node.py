@@ -855,28 +855,20 @@ def get_datanode_fields_dict():
     if not DataNode.shared_fields:
 
         # union of all the data nodes' possible fields
-        shared_fields_dict = {}
-        for node in dictionary.schema.values():
-            # select the data nodes
-            if node['category'].endswith('_file'):
-                # add the fields to the dict of shared fields
-                for field in node['properties']:
-                    field_props = node['properties'][field]
-                    try:
-                        # convert the dictionary field type to a graphene type
-                        t = field_props['type']
-                        shared_fields_dict[field] = {
-                            'boolean': graphene.Boolean(),
-                            'float': graphene.Float(),
-                            'number': graphene.Float(),
-                            'integer': graphene.Int(),
-                        }.get(t, graphene.String())
-                    except:
-                        # handle dates and fields with multiple types
-                        shared_fields_dict[field] = graphene.String()
+        shared_fields_dict = {
+            'id': graphene.String(),
+            'type': graphene.String()
+        }
+        for cls in get_data_subclasses(): # select the data nodes
+            props = cls.__pg_properties__
+            for k in props.keys():
+                types = props[k]
+                if long in types:
+                    shared_fields_dict[k] = lookup_graphql_type(float)()
+                else:
+                    shared_fields_dict[k] = lookup_graphql_type(types[0])()
 
-        # handle the links: remove the links from the shared fields
-        for cls in get_data_subclasses():
+            # handle the links: remove the links from the shared fields
             for link_name in cls._pg_edges.keys():
                 shared_fields_dict.pop(link_name, None)
 
