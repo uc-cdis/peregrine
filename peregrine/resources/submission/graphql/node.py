@@ -833,24 +833,53 @@ class DataNode(graphene.Interface):
     shared_fields = None # fields shared by all data nodes in the dictionary
 
 
+def get_data_subclasses():
+    # get the list of categories that are data categories
+    data_types_labels = [
+        node
+        for node in dictionary.schema
+        if dictionary.schema[node]['category'].endswith('_file')
+    ]
+    # get the subclasses for the data categories
+    data_types = [
+        node
+        for node in psqlgraph.Node.get_subclasses()
+        if node.label in data_types_labels
+    ]
+    return data_types
+
+
 def get_datanode_fields_dict():
     """Return a dictionary containing the fields shared by all data nodes."""
 
     if not DataNode.shared_fields:
 
-        # fields lists the set of node fields, for every data node in the dictionary schema (nodes ending with '_file')
-        fields = [
-            set(schema['properties'].keys())
-            for schema in dictionary.schema.values()
-            if schema['category'].endswith('_file')
-        ]
+        # union of all the data nodes' possible fields
+        shared_fields_dict = {}
+        for node in dictionary.schema.values():
+            # select the data nodes
+            if node['category'].endswith('_file'):
+                # add the fields to the dict of shared fields
+                for field in node['properties']:
+                    field_props = node['properties'][field]
+                    try:
+                        # convert the dictionary field type to a graphene type
+                        t = field_props['type']
+                        shared_fields_dict[field] = {
+                            'boolean': graphene.Boolean(),
+                            'float': graphene.Float(),
+                            'number': graphene.Float(),
+                            'integer': graphene.Int(),
+                        }.get(t, graphene.String())
+                    except:
+                        # handle dates and fields with multiple types
+                        shared_fields_dict[field] = graphene.String()
 
-        # shared_fields takes the intersection of all the data node field sets
-        shared_fields = set.union(*fields)
+        # handle the links: remove the links from the shared fields
+        for cls in get_data_subclasses():
+            for link_name in cls._pg_edges.keys():
+                shared_fields_dict.pop(link_name, None)
 
-        shared_fields_dict = {field: graphene.String() for field in shared_fields}
-        if 'file_size' in shared_fields:
-            shared_fields_dict['file_size'] = graphene.Int()
         DataNode.shared_fields = shared_fields_dict
 
     return DataNode.shared_fields
@@ -863,23 +892,8 @@ def resolve_datanode(self, info, **args):
         A list of graphene object classes.
 
     """
-
-    # get the list of categories that are data categories
-    data_types_labels = [
-        node
-        for node in dictionary.schema
-        if dictionary.schema[node]['category'].endswith('_file')
-    ]
-
-    # get the subclasses for the data categories
-    data_types = [
-        node
-        for node in psqlgraph.Node.get_subclasses()
-        if node.label in data_types_labels
-    ]
-
     q_all = []
-    for data_type in data_types:
+    for data_type in get_data_subclasses():
         q = query_with_args(data_type, args, info)
         q_all.extend(q.all())
 
