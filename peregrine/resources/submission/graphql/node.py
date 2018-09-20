@@ -846,7 +846,7 @@ def get_datanode_fields_dict():
         ]
 
         # shared_fields takes the intersection of all the data node field sets
-        shared_fields = set.intersection(*fields)
+        shared_fields = set.union(*fields)
 
         shared_fields_dict = {field: graphene.String() for field in shared_fields}
         if 'file_size' in shared_fields:
