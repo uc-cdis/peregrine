@@ -108,7 +108,7 @@ def create_bdbag(bag_info, payload, max_row=1000):
                             if 'file_dos' in h:
                                 value = 'dos://' + value
                             row = row + [value]
-                        else if 'file' in h:
+                        elif 'file' in h:
                             # ignoring missing file rows
                             add_row = False
                             break
