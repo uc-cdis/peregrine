@@ -35,16 +35,16 @@ def is_uuid(uuid):
         "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
     if pattern.match(uuid):
         return True
-    return False    
+    return False
 
 def trim_uri(uri):
     return uri.replace("s3://", "").replace("gs://", "").replace("http://", "").replace("https://", "")
 
-def transform_header(header):
-    if header[0] == '_':
-        header = 'entity:' + header[1:]
-
-    return header
+# def transform_header(header):
+#     if header[0] == '_':
+#         header = 'entity:' + header[1:]
+#
+#     return header
 
 def create_bdbag(bag_info, payload, max_row=1000):
     """Modify from https://github.com/BD2KGenomics/dcc-dashboard-service/blob/feature/manifest-handover/webservice.py
@@ -90,12 +90,17 @@ def create_bdbag(bag_info, payload, max_row=1000):
             row = []
             for h in header_set:
                 words = h.split('-')
-                row = row + [transform_header(words[-1])]
+                # row = row + [transform_header(words[-1])]
+                header = words[-1]
+                row += [header]
+                if header[0] == '_':
+                    unique_id_header = 'entity:' + header[1:]
+            row.insert(0, unique_id_header)
             writer.writerow(row)
 
             nrow = 0
             for dict_row in json_data:
-                row = []
+                row = [nrow] # unique id = row number
                 for h in header_set:
                     if dict_row.get(h):
                         value = dict_row[h]
