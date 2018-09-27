@@ -65,13 +65,10 @@ def create_bdbag(bag_info, payload, max_row=1000):
     for node_name, json_data in payload.iteritems():
         header_set = set()
         data_file_headers = set()
-        has_file_header = False
         for dict_row in json_data:
             for key in dict_row.keys():
                 if (dict_row[key] is not None and dict_row[key] != []):
                     header_set.update([key])
-                    if 'file' in key:
-                        has_file_header = True
                     words = key.split('-')
                     if len(words) > 1 and is_category(words[-2], data_files):
                         data_file_headers.update([key])
@@ -95,30 +92,27 @@ def create_bdbag(bag_info, payload, max_row=1000):
             row.insert(0, unique_id_header)
             writer.writerow(row)
 
-            # if there is no 'file' header, all the rows are
-            # missing files so we ignore all the rows
-            if has_file_header:
-                nrow = 0
-                for dict_row in json_data:
-                    row = [str(uuid.uuid4())] # unique id
-                    add_row = True
-                    for h in header_set:
-                        if dict_row.get(h):
-                            value = dict_row[h]
-                            if 'file_dos' in h:
-                                value = 'dos://' + value
-                            row = row + [value]
-                        elif 'file' in h:
-                            # ignoring missing file rows
-                            add_row = False
-                            break
-                        else:
-                            row = row + ["None"]
-                    if add_row:
-                        nrow = nrow + 1
-                        writer.writerow(row)
-                    if nrow >= max_row:
+            nrow = 0
+            for dict_row in json_data:
+                row = [str(uuid.uuid4())] # unique id
+                add_row = True
+                for h in header_set:
+                    if dict_row.get(h):
+                        value = dict_row[h]
+                        if 'file_dos' in h:
+                            value = 'dos://' + value
+                        row = row + [value]
+                    elif 'file' in h:
+                        # ignoring missing file rows
+                        add_row = False
                         break
+                    else:
+                        row = row + ["None"]
+                if add_row:
+                    nrow = nrow + 1
+                    writer.writerow(row)
+                if nrow >= max_row:
+                    break
 
     with open(bag_path + '/fetch.txt', 'w') as fetch_file:
         for item in data_file_uuids:
