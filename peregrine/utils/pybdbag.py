@@ -103,15 +103,10 @@ def create_bdbag(bag_info, payload, max_row=1000):
                         if 'file_dos' in h:
                             value = 'dos://' + value
                         row = row + [value]
-                    elif 'file' in h:
-                        # ignoring missing file rows
-                        add_row = False
-                        break
                     else:
                         row = row + ["None"]
-                if add_row:
-                    nrow = nrow + 1
-                    writer.writerow(row)
+                nrow = nrow + 1
+                writer.writerow(row)
                 if nrow >= max_row:
                     break
 
