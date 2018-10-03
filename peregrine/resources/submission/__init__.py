@@ -132,13 +132,14 @@ def generate_schema_file(graphql_schema):
         current_dir, 'graphql', 'introspection_query.txt')
     with open(query_file, 'r') as f:
         query = f.read()
-
     with open(schema_file, 'w') as f:
+        import fcntl; fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB) # lock file
         result = graphql_schema.execute(query)
         data = {'data': result.data}
         if result.errors:
             data['errors'] = [err.message for err in result.errors]
         json.dump(data, f)
+        fcntl.flock(f, fcntl.LOCK_UN) # unlock file
 
     return os.path.abspath(schema_file)
 
