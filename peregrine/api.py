@@ -2,6 +2,7 @@ import os
 import sys
 
 import time
+from threading import Lock
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
@@ -94,9 +95,21 @@ def dictionary_init(app):
     datamodelutils.models.init(md)
 
 
+app_init_lock = Lock()
 def app_init(app):
-    # Register duplicates only at runtime
     import logging; app.logger.setLevel(logging.INFO)
+    if app_init_lock.acquire(False):
+        app.logger.info('I accessed app_init')
+        try:
+            _app_init(app)
+        finally:
+            app_init_lock.release()
+    else:
+        app.logger.info('I did not access app_init')
+
+
+def _app_init(app):
+    # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
 
