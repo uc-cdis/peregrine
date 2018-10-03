@@ -24,6 +24,9 @@ fragment FullType on __Type {
   fields(includeDeprecated: true) {
     name
     description
+    args {
+      ...InputValue
+    }
     type {
       ...TypeRef
     }

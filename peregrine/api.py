@@ -1,6 +1,7 @@
 import os
 import sys
 
+import time
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
@@ -95,6 +96,7 @@ def dictionary_init(app):
 
 def app_init(app):
     # Register duplicates only at runtime
+    import logging; app.logger.setLevel(logging.INFO)
     app.logger.info('Initializing app')
     dictionary_init(app)
 
@@ -107,7 +109,11 @@ def app_init(app):
     cors_init(app)
     app.graph_traversals = submission.graphql.make_graph_traversal_dict()
     app.graphql_schema = submission.graphql.get_schema()
+
+    start = time.time()
     app.schema_file = submission.generate_schema_file(app.graphql_schema)
+    app.logger.info('I generated the schema in {} sec :)'.format(time.time()-start))
+
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:
