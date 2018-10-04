@@ -137,10 +137,8 @@ def generate_schema_file(graphql_schema, app_logger):
 
     try:
         with open(schema_file, 'w') as f:
-            # open and lock file (prevents several uwsgi processes from generating the schema at the same time)
+            # lock file (prevents several processes from generating the schema at the same time)
             fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            app_logger.info('i am generating the file')
-            start = time.time()
 
             # generate the schema file
             result = graphql_schema.execute(query)
@@ -148,10 +146,7 @@ def generate_schema_file(graphql_schema, app_logger):
             if result.errors:
                 data['errors'] = [err.message for err in result.errors]
             json.dump(data, f)
-
-            app_logger.info('I generated the schema in {} sec :)'.format(time.time()-start))
     except:
-        app_logger.info('i am waiting for the file to be generated')
         # wait for file unlock (end of schema generation) before proceeding
         timeout = time.time() + 60*5 # 5 minutes from now
         while True:
@@ -165,7 +160,7 @@ def generate_schema_file(graphql_schema, app_logger):
                 app_logger.warning('Schema file generation timeout: process proceeding without waiting for end of generation.')
                 break
     finally:
-        # unlock (if locked) and close file
+        # unlock file if it is locked
         try:
             fcntl.flock(f, fcntl.LOCK_UN)
         except:

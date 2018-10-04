@@ -1,7 +1,6 @@
 import os
 import sys
 
-import time
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
@@ -95,7 +94,6 @@ def dictionary_init(app):
 
 
 def app_init(app):
-    import logging; app.logger.setLevel(logging.INFO)
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
