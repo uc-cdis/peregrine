@@ -146,6 +146,9 @@ def generate_schema_file(graphql_schema, app_logger):
             if result.errors:
                 data['errors'] = [err.message for err in result.errors]
             json.dump(data, f)
+
+            # unlock file
+            fcntl.flock(f, fcntl.LOCK_UN)
     except:
         # wait for file unlock (end of schema generation) before proceeding
         timeout = time.time() + 60*5 # 5 minutes from now
@@ -159,12 +162,6 @@ def generate_schema_file(graphql_schema, app_logger):
             if time.time() > timeout:
                 app_logger.warning('Schema file generation timeout: process proceeding without waiting for end of generation.')
                 break
-    finally:
-        # unlock file if it is locked
-        try:
-            fcntl.flock(f, fcntl.LOCK_UN)
-        except:
-            pass
 
     return os.path.abspath(schema_file)
 
