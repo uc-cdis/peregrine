@@ -5,6 +5,7 @@ Construct the blueprint for peregrine submissions, using the blueprint from
 
 import os
 import json
+import fcntl
 
 from cdiserrors import AuthZError
 import datamodelutils.models as models
@@ -133,13 +134,19 @@ def generate_schema_file(graphql_schema):
     with open(query_file, 'r') as f:
         query = f.read()
     with open(schema_file, 'w') as f:
-        import fcntl; fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB) # lock file
-        result = graphql_schema.execute(query)
-        data = {'data': result.data}
-        if result.errors:
-            data['errors'] = [err.message for err in result.errors]
-        json.dump(data, f)
-        fcntl.flock(f, fcntl.LOCK_UN) # unlock file
+        try:
+            # lock file (prevents several uwsgi processes from generating the schema at the same time)
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+
+            # generate the schema file
+            result = graphql_schema.execute(query)
+            data = {'data': result.data}
+            if result.errors:
+                data['errors'] = [err.message for err in result.errors]
+            json.dump(data, f)
+        finally:
+            # unlock file
+            fcntl.flock(f, fcntl.LOCK_UN)
 
     return os.path.abspath(schema_file)
 
