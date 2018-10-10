@@ -157,11 +157,12 @@ def generate_schema_file(graphql_schema, app_logger):
             try:
                 f = open(schema_file, 'w')
                 f.close()
+                break # file is available -> process can proceed
             except IOError:
                 pass
             time.sleep(0.5)
             if time.time() > timeout:
-                app_logger.warning('Schema file generation timeout: process proceeding without waiting for end of generation.')
+                app_logger.warning('{} generation timeout: this process is proceeding without waiting for file generation.'.format(schema_file))
                 break
         app_logger.info('process done waiting')
 
