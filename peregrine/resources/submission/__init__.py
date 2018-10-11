@@ -133,6 +133,21 @@ def generate_schema_file(graphql_schema, app_logger):
     # relative to current running directory
     schema_file = 'schema.json'
 
+    # if the file has already been generated, do not re-generate it
+    if os.path.isfile(schema_file):
+        to_print = 'Schema file {} already exists'.format(schema_file)
+        try:
+            # if we can lock the file, the generation is done -> return
+            # if not, another process is currently generating it -> wait
+            with open(schema_file, 'w') as f:
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            print(to_print + ': process skipping schema generation.')
+            return os.path.abspath(schema_file)
+        except:
+            print(to_print + ' but it is locked: process waiting.')
+            pass
+
     query_file = os.path.join(
         current_dir, 'graphql', 'introspection_query.txt')
     with open(query_file, 'r') as f:
@@ -142,7 +157,7 @@ def generate_schema_file(graphql_schema, app_logger):
         with open(schema_file, 'w') as f:
             # lock file (prevents several processes from generating the schema at the same time)
             fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            print('Generating {} file.'.format(schema_file))
+            print('Generating the graphql schema file {}.'.format(schema_file))
 
             # generate the schema file
             result = graphql_schema.execute(query)
