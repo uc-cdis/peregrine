@@ -157,10 +157,12 @@ def generate_schema_file(graphql_schema, app_logger):
         timeout = time.time() + 60*5 # 5 minutes from now
         while True:
             try:
-                f = open(schema_file, 'w')
+                with open(schema_file, 'w') as f:
+                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB) # try to lock the file
+                    fcntl.flock(f, fcntl.LOCK_UN)
                 app_logger.info('------ process could open file')
-                f.close()
-                break # file is available -> process can proceed
+                # file is available -> schema has been generated -> this process can proceed
+                break
             except IOError:
                 app_logger.info('------ process encountered IOError')
                 pass
