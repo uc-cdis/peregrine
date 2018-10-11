@@ -122,6 +122,9 @@ def root_graphql_query():
 def generate_schema_file(graphql_schema, app_logger):
     """
     Load the graphql introspection query from its file.
+    Because uwsgi launches multiple processes in the same container, processes
+    eat up memory and CPU generating the schema simultaneously. To avoid this,
+    we only give access to schema.json to one process at a time.
 
     Return:
         str: the graphql introspection query
@@ -139,6 +142,7 @@ def generate_schema_file(graphql_schema, app_logger):
         with open(schema_file, 'w') as f:
             # lock file (prevents several processes from generating the schema at the same time)
             fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            print('Generating {} file.'.format(schema_file))
 
             # generate the schema file
             result = graphql_schema.execute(query)
@@ -147,9 +151,11 @@ def generate_schema_file(graphql_schema, app_logger):
                 data['errors'] = [err.message for err in result.errors]
             json.dump(data, f)
 
+            print('{} has been generated.'.format(schema_file))
             fcntl.flock(f, fcntl.LOCK_UN) # unlock file
     except:
         # wait for file unlock (end of schema generation) before proceeding
+        print('Other process waiting for {} generation.'.format(schema_file))
         timeout = time.time() + 60*5 # 5 minutes from now
         while True:
             try:
