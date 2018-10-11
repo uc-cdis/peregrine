@@ -139,7 +139,6 @@ def generate_schema_file(graphql_schema, app_logger):
         with open(schema_file, 'w') as f:
             # lock file (prevents several processes from generating the schema at the same time)
             fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            app_logger.info('-- process locked file')
 
             # generate the schema file
             result = graphql_schema.execute(query)
@@ -148,30 +147,22 @@ def generate_schema_file(graphql_schema, app_logger):
                 data['errors'] = [err.message for err in result.errors]
             json.dump(data, f)
 
-            # unlock file
-            fcntl.flock(f, fcntl.LOCK_UN)
-            app_logger.info('-- process unlocked file')
+            fcntl.flock(f, fcntl.LOCK_UN) # unlock file
     except:
-        import traceback; traceback.print_exc()
         # wait for file unlock (end of schema generation) before proceeding
         timeout = time.time() + 60*5 # 5 minutes from now
         while True:
             try:
-                with open(schema_file, 'w') as f:
-                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB) # try to lock the file
+                with open(schema_file, 'w') as f: # try to access+lock the file
+                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     fcntl.flock(f, fcntl.LOCK_UN)
-                app_logger.info('------ process could open file')
-                # file is available -> schema has been generated -> this process can proceed
-                break
-            except IOError:
-                app_logger.info('------ process encountered IOError')
+                break # file is available -> schema has been generated -> process can proceed
+            except IOError: # file is still unavailable -> process waits
                 pass
-            app_logger.info('------ process is waiting')
-            time.sleep(0.5)
             if time.time() > timeout:
                 app_logger.warning('{} generation timeout: this process is proceeding without waiting for file generation.'.format(schema_file))
                 break
-        app_logger.info('------ process done waiting')
+            time.sleep(0.5)
 
     return os.path.abspath(schema_file)
 
