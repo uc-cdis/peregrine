@@ -5,6 +5,8 @@ Construct the blueprint for peregrine submissions, using the blueprint from
 
 import os
 import json
+import time
+import fcntl
 
 from cdiserrors import AuthZError
 import datamodelutils.models as models
@@ -117,9 +119,12 @@ def root_graphql_query():
     )
 
 
-def generate_schema_file(graphql_schema):
+def generate_schema_file(graphql_schema, app_logger):
     """
     Load the graphql introspection query from its file.
+    Because uwsgi launches multiple processes in the same container, processes
+    eat up memory and CPU generating the schema simultaneously. To avoid this,
+    we only give access to schema.json to one process at a time.
 
     Return:
         str: the graphql introspection query
@@ -128,17 +133,62 @@ def generate_schema_file(graphql_schema):
     # relative to current running directory
     schema_file = 'schema.json'
 
+    try:
+        import uwsgi
+        worker_id = uwsgi.worker_id()
+    except ImportError:
+        worker_id = 1
+
+    # if the file has already been generated, do not re-generate it
+    if os.path.isfile(schema_file):
+        try:
+            # if we can lock the file, the generation is done -> return
+            # if not, another process is currently generating it -> wait
+            with open(schema_file, 'w') as f:
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            print('Process {} is skipping schema generation ({} file already exists).'.format(worker_id, schema_file))
+            return os.path.abspath(schema_file)
+        except IOError:
+            pass
+
     query_file = os.path.join(
         current_dir, 'graphql', 'introspection_query.txt')
     with open(query_file, 'r') as f:
         query = f.read()
 
-    with open(schema_file, 'w') as f:
-        result = graphql_schema.execute(query)
-        data = {'data': result.data}
-        if result.errors:
-            data['errors'] = [err.message for err in result.errors]
-        json.dump(data, f)
+    try:
+        with open(schema_file, 'w') as f:
+            # lock file (prevents several processes from generating the schema at the same time)
+            fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+            print('Process {} is generating the graphql schema file {}.'.format(worker_id, schema_file))
+
+            # generate the schema file
+            result = graphql_schema.execute(query)
+            data = {'data': result.data}
+            if result.errors:
+                data['errors'] = [err.message for err in result.errors]
+            json.dump(data, f)
+
+            print('Process {} is done generating {}.'.format(worker_id, schema_file))
+            fcntl.flock(f, fcntl.LOCK_UN) # unlock file
+    except IOError:
+        # wait for file unlock (end of schema generation) before proceeding
+        print('Process {} is waiting for {} generation.'.format(worker_id, schema_file))
+        timeout_minutes = 5 # 5 minutes from now
+        timeout = time.time() + 60 * timeout_minutes
+        while True:
+            try:
+                with open(schema_file, 'w') as f: # try to access+lock the file
+                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                    fcntl.flock(f, fcntl.LOCK_UN)
+                break # file is available -> schema has been generated -> process can proceed
+            except IOError: # file is still unavailable -> process waits
+                pass
+            if time.time() > timeout:
+                app_logger.warning('Process {} is proceeding without waiting for end of {} generation ({} minutes timeout)'.format(worker_id, schema_file, timeout_minutes))
+                break
+            time.sleep(0.5)
 
     return os.path.abspath(schema_file)
 
