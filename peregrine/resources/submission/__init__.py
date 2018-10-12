@@ -144,7 +144,7 @@ def generate_schema_file(graphql_schema, app_logger):
         try:
             # if we can lock the file, the generation is done -> return
             # if not, another process is currently generating it -> wait
-            with open(schema_file, 'w') as f:
+            with open(schema_file, 'r') as f:
                 fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
             print('Process {} is skipping schema generation ({} file already exists).'.format(worker_id, schema_file))
@@ -164,13 +164,15 @@ def generate_schema_file(graphql_schema, app_logger):
             print('Process {} is generating the graphql schema file {}.'.format(worker_id, schema_file))
 
             # generate the schema file
+            start = time.time()
             result = graphql_schema.execute(query)
             data = {'data': result.data}
             if result.errors:
                 data['errors'] = [err.message for err in result.errors]
             json.dump(data, f)
 
-            print('Process {} is done generating {}.'.format(worker_id, schema_file))
+            end = int(round(time.time() - start))
+            print('Process {} generated {} in {} sec.'.format(worker_id, schema_file, end))
             fcntl.flock(f, fcntl.LOCK_UN) # unlock file
     except IOError:
         # wait for file unlock (end of schema generation) before proceeding
@@ -179,7 +181,7 @@ def generate_schema_file(graphql_schema, app_logger):
         timeout = time.time() + 60 * timeout_minutes
         while True:
             try:
-                with open(schema_file, 'w') as f: # try to access+lock the file
+                with open(schema_file, 'r') as f: # try to access+lock the file
                     fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
                     fcntl.flock(f, fcntl.LOCK_UN)
                 break # file is available -> schema has been generated -> process can proceed
