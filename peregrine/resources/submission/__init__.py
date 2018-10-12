@@ -136,8 +136,8 @@ def generate_schema_file(graphql_schema, app_logger):
     try:
         import uwsgi
         worker_id = uwsgi.worker_id()
-    except:
-        worker_id = ''
+    except ImportError:
+        worker_id = 1
 
     # if the file has already been generated, do not re-generate it
     if os.path.isfile(schema_file):
@@ -147,9 +147,9 @@ def generate_schema_file(graphql_schema, app_logger):
             with open(schema_file, 'w') as f:
                 fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
                 fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            print('Process {} is skipping schema generation ({} file already generated).'.format(worker_id, schema_file))
+            print('Process {} is skipping schema generation ({} file already exists).'.format(worker_id, schema_file))
             return os.path.abspath(schema_file)
-        except:
+        except IOError:
             pass
 
     query_file = os.path.join(
@@ -172,7 +172,7 @@ def generate_schema_file(graphql_schema, app_logger):
 
             print('Process {} is done generating {}.'.format(worker_id, schema_file))
             fcntl.flock(f, fcntl.LOCK_UN) # unlock file
-    except:
+    except IOError:
         # wait for file unlock (end of schema generation) before proceeding
         print('Process {} is waiting for {} generation.'.format(worker_id, schema_file))
         timeout_minutes = 5 # 5 minutes from now
