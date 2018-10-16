@@ -82,9 +82,8 @@ def is_valid_direction(root, node, visited, path):
         return this_level >= last_level
 
 
-def construct_traversals_from_node(root_node, node_label_to_subclass):
+def construct_traversals_from_node(root_node, label_to_subclass):
 
-    # node_subclasses = Node.get_subclasses()
     traversals = {node.label: set() for node in Node.get_subclasses()}
 
     def recursively_construct_traversals(node, visited, path):
@@ -109,24 +108,14 @@ def construct_traversals_from_node(root_node, node_label_to_subclass):
             )
 
         for edge in Edge._get_edges_with_src(node.__name__):
-            # neighbor_singleton = [
-            #     n for n in node_subclasses
-            #     if n.__name__ == edge.__dst_class__
-            # ]
-            # neighbor = neighbor_singleton[0]
-            neighbor = node_label_to_subclass[edge.__dst_class__]
+            neighbor = label_to_subclass[edge.__dst_class__]
             if should_recurse_on(neighbor):
                 recursively_construct_traversals(
                     neighbor, visited + [node], path + [edge.__src_dst_assoc__]
                 )
 
         for edge in Edge._get_edges_with_dst(node.__name__):
-            # neighbor_singleton = [
-            #     n for n in node_subclasses
-            #     if n.__name__ == edge.__src_class__
-            # ]
-            # neighbor = neighbor_singleton[0]
-            neighbor = node_label_to_subclass[edge.__src_class__]
+            neighbor = label_to_subclass[edge.__src_class__]
             if should_recurse_on(neighbor):
                 recursively_construct_traversals(
                     neighbor, visited + [node], path + [edge.__dst_src_assoc__]
@@ -142,12 +131,12 @@ def construct_traversals_from_node(root_node, node_label_to_subclass):
 
 
 def make_graph_traversal_dict():
-    node_label_to_subclass = {
+    label_to_subclass = {
         n.__name__: n
         for n in Node.get_subclasses()
     }
     return {
-        node.label: construct_traversals_from_node(node, node_label_to_subclass)
+        node.label: construct_traversals_from_node(node, label_to_subclass)
         for node in Node.get_subclasses()
     }
 

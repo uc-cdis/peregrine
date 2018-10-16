@@ -104,38 +104,24 @@ def app_init(app):
     except ImportError:
         worker_id = 1
 
-    start = time.time()
+    print('Process {} is initializing the dictionary.'.format(worker_id))
     dictionary_init(app)
-    end = int(round(time.time() - start))
-    print('Process {}: dictionary_init in {} sec.'.format(worker_id, end))
 
-    start = time.time()
     app_register_blueprints(app)
     app_register_duplicate_blueprints(app)
-    end = int(round(time.time() - start))
-    print('Process {}: register_blueprints in {} sec.'.format(worker_id, end))
-
-    start = time.time()
+    
     db_init(app)
-    end = int(round(time.time() - start))
-    print('Process {}: db_init in {} sec.'.format(worker_id, end))
     # exclude es init as it's not used yet
     # es_init(app)
-    start = time.time()
     cors_init(app)
-    end = int(round(time.time() - start))
-    print('Process {}: cors_init in {} sec.'.format(worker_id, end))
 
+    print('Process {} is traversing the graph.'.format(worker_id))
     start = time.time()
     app.graph_traversals = submission.graphql.make_graph_traversal_dict()
     end = int(round(time.time() - start))
-    print('Process {}: graph_traversals in {} sec.'.format(worker_id, end))
+    print('Process {} traversed the graph in {} sec.'.format(worker_id, end))
 
-    start = time.time()
     app.graphql_schema = submission.graphql.get_schema()
-    end = int(round(time.time() - start))
-    print('Process {}: graphql_schema in {} sec.'.format(worker_id, end))
-
     app.schema_file = submission.generate_schema_file(app.graphql_schema, app.logger)
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
