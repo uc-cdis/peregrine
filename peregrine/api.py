@@ -73,36 +73,20 @@ def cors_init(app):
 
 
 def dictionary_init(app):
-    import time
-    try:
-        import uwsgi
-        worker_id = uwsgi.worker_id()
-    except ImportError:
-        worker_id = 1
-    start = time.time()
     if ('DICTIONARY_URL' in app.config):
         app.logger.info('Initializing dictionary from url')
         url = app.config['DICTIONARY_URL']
         d = DataDictionary(url=url)
         dict_init.init(d)
-        end = int(round(time.time() - start))
-        print(' Process {}: dict_init DICTIONARY_URL in {} sec.'.format(worker_id, end))
     elif ('PATH_TO_SCHEMA_DIR' in app.config):
         app.logger.info('Initializing dictionary from schema dir')
         d = DataDictionary(root_dir=app.config['PATH_TO_SCHEMA_DIR'])
         dict_init.init(d)
-        end = int(round(time.time() - start))
-        print(' Process {}: dict_init PATH_TO_SCHEMA_DIR in {} sec.'.format(worker_id, end))
     else:
         app.logger.info('Initializing dictionary from gdcdictionary')
         import gdcdictionary
         d = gdcdictionary.gdcdictionary
-        end = int(round(time.time() - start))
-        print(' Process {}: gdcdictionary in {} sec.'.format(worker_id, end))
-    start = time.time()
     dictionary.init(d)
-    end = int(round(time.time() - start))
-    print(' Process {}: dictionary.init in {} sec.'.format(worker_id, end))
     from gdcdatamodel import models as md
     from gdcdatamodel import validators as vd
     datamodelutils.validators.init(vd)
