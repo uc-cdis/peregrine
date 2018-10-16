@@ -73,20 +73,36 @@ def cors_init(app):
 
 
 def dictionary_init(app):
+    import time
+    try:
+        import uwsgi
+        worker_id = uwsgi.worker_id()
+    except ImportError:
+        worker_id = 1
+    start = time.time()
     if ('DICTIONARY_URL' in app.config):
         app.logger.info('Initializing dictionary from url')
         url = app.config['DICTIONARY_URL']
         d = DataDictionary(url=url)
         dict_init.init(d)
+        end = int(round(time.time() - start))
+        print(' Process {}: dict_init DICTIONARY_URL in {} sec.'.format(worker_id, end))
     elif ('PATH_TO_SCHEMA_DIR' in app.config):
         app.logger.info('Initializing dictionary from schema dir')
         d = DataDictionary(root_dir=app.config['PATH_TO_SCHEMA_DIR'])
         dict_init.init(d)
+        end = int(round(time.time() - start))
+        print(' Process {}: dict_init PATH_TO_SCHEMA_DIR in {} sec.'.format(worker_id, end))
     else:
         app.logger.info('Initializing dictionary from gdcdictionary')
         import gdcdictionary
         d = gdcdictionary.gdcdictionary
+        end = int(round(time.time() - start))
+        print(' Process {}: gdcdictionary in {} sec.'.format(worker_id, end))
+    start = time.time()
     dictionary.init(d)
+    end = int(round(time.time() - start))
+    print(' Process {}: dictionary.init in {} sec.'.format(worker_id, end))
     from gdcdatamodel import models as md
     from gdcdatamodel import validators as vd
     datamodelutils.validators.init(vd)
@@ -96,17 +112,46 @@ def dictionary_init(app):
 def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
-    dictionary_init(app)
 
+    import time
+    try:
+        import uwsgi
+        worker_id = uwsgi.worker_id()
+    except ImportError:
+        worker_id = 1
+
+    start = time.time()
+    dictionary_init(app)
+    end = int(round(time.time() - start))
+    print('Process {}: dictionary_init in {} sec.'.format(worker_id, end))
+
+    start = time.time()
     app_register_blueprints(app)
     app_register_duplicate_blueprints(app)
+    end = int(round(time.time() - start))
+    print('Process {}: register_blueprints in {} sec.'.format(worker_id, end))
 
+    start = time.time()
     db_init(app)
+    end = int(round(time.time() - start))
+    print('Process {}: db_init in {} sec.'.format(worker_id, end))
     # exclude es init as it's not used yet
     # es_init(app)
+    start = time.time()
     cors_init(app)
+    end = int(round(time.time() - start))
+    print('Process {}: cors_init in {} sec.'.format(worker_id, end))
+
+    start = time.time()
     app.graph_traversals = submission.graphql.make_graph_traversal_dict()
+    end = int(round(time.time() - start))
+    print('Process {}: graph_traversals in {} sec.'.format(worker_id, end))
+
+    start = time.time()
     app.graphql_schema = submission.graphql.get_schema()
+    end = int(round(time.time() - start))
+    print('Process {}: graphql_schema in {} sec.'.format(worker_id, end))
+
     app.schema_file = submission.generate_schema_file(app.graphql_schema, app.logger)
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
