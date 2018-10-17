@@ -18,8 +18,6 @@ import sqlalchemy
 from threading import Thread
 import simplejson
 import yaml
-import time
-import fcntl
 
 import datamodelutils.models as models
 from peregrine.errors import UserError
@@ -233,20 +231,3 @@ def get_variables(payload):
         except Exception as e:
             errors = ['Unable to parse variables', str(e)]
     return variables, errors
-
-
-def wait_for_file(worker_id, file_name, timeout_minutes, app_logger):
-    print('Process {} is waiting for {} generation.'.format(worker_id, file_name))
-    timeout = time.time() + 60 * timeout_minutes
-    while True:
-        try:
-            with open(file_name, 'r') as f: # try to access+lock the file
-                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                fcntl.flock(f, fcntl.LOCK_UN)
-            break # file is available -> schema has been generated -> process can proceed
-        except IOError: # file is still unavailable -> process waits
-            pass
-        if time.time() > timeout:
-            app_logger.warning('Process {} is proceeding without waiting for end of {} generation ({} minutes timeout)'.format(worker_id, file_name, timeout_minutes))
-            break
-        time.sleep(0.5)

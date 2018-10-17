@@ -1,5 +1,6 @@
 import os
 import sys
+import time
 import logging
 
 from flask import Flask, jsonify
@@ -74,6 +75,7 @@ def cors_init(app):
 
 
 def dictionary_init(app):
+    start = time.time()
     if ('DICTIONARY_URL' in app.config):
         app.logger.info('Initializing dictionary from url')
         url = app.config['DICTIONARY_URL']
@@ -93,20 +95,15 @@ def dictionary_init(app):
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
 
+    end = int(round(time.time() - start))
+    app.logger.info('Initialized dictionary in {} sec'.format(end))
+
 
 def app_init(app):
     app.logger.setLevel(logging.INFO)
 
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
-
-    try:
-        import uwsgi
-        worker_id = uwsgi.worker_id()
-    except ImportError:
-        worker_id = 1
-
-    print('Process {} is initializing the dictionary.'.format(worker_id))
     dictionary_init(app)
 
     app_register_blueprints(app)
