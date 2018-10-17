@@ -1,5 +1,6 @@
 import os
 import sys
+import logging
 
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
@@ -94,10 +95,11 @@ def dictionary_init(app):
 
 
 def app_init(app):
+    app.logger.setLevel(logging.INFO)
+
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
 
-    import time
     try:
         import uwsgi
         worker_id = uwsgi.worker_id()
@@ -109,18 +111,12 @@ def app_init(app):
 
     app_register_blueprints(app)
     app_register_duplicate_blueprints(app)
-    
+
     db_init(app)
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
-
-    print('Process {} is traversing the graph.'.format(worker_id))
-    start = time.time()
-    app.graph_traversals = submission.graphql.make_graph_traversal_dict()
-    end = int(round(time.time() - start))
-    print('Process {} traversed the graph in {} sec.'.format(worker_id, end))
-
+    app.graph_traversals = submission.graphql.make_graph_traversal_dict(app.logger)
     app.graphql_schema = submission.graphql.get_schema()
     app.schema_file = submission.generate_schema_file(app.graphql_schema, app.logger)
     try:
@@ -130,6 +126,7 @@ def app_init(app):
             'Secret key not set in config! Authentication will not work'
         )
     async_pool_init(app)
+
     app.logger.info('Initialization complete.')
 
 
@@ -198,7 +195,6 @@ app.register_error_handler(AuthError, _log_and_jsonify_exception)
 
 
 def run_for_development(**kwargs):
-    import logging
     app.logger.setLevel(logging.INFO)
 
     for key in ["http_proxy", "https_proxy"]:

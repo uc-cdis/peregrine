@@ -10,6 +10,11 @@ execute those traversal queries in the database
 import flask
 from psqlgraph import Node, Edge
 import sqlalchemy as sa
+import json
+import os
+import time
+import fcntl
+from peregrine.resources.submission.util import wait_for_file
 
 terminal_nodes = [
     'annotations',
@@ -125,20 +130,76 @@ def construct_traversals_from_node(root_node, label_to_subclass):
     recursively_construct_traversals(root_node, [root_node], [])
     # Remove empty entries.
     traversals = {
-        label: paths for label, paths in traversals.iteritems() if bool(paths)
+        label: list(paths) for label, paths in traversals.iteritems() if bool(paths)
     }
     return traversals
 
 
-def make_graph_traversal_dict():
+def make_graph_traversal_dict(app_logger):
+    try:
+        import uwsgi
+        worker_id = uwsgi.worker_id()
+    except ImportError:
+        worker_id = 1
+    start = time.time()
     label_to_subclass = {
         n.__name__: n
         for n in Node.get_subclasses()
     }
-    return {
+    data = {
         node.label: construct_traversals_from_node(node, label_to_subclass)
         for node in Node.get_subclasses()
     }
+    end = int(round(time.time() - start))
+    print('Process {} traversed the graph in {} sec.'.format(worker_id, end))
+    return data
+
+
+def _make_graph_traversal_dict(app_logger):
+    traversal_file = 'graph_traversal.json'
+
+    try:
+        import uwsgi
+        worker_id = uwsgi.worker_id()
+    except ImportError:
+        worker_id = 1
+
+    data = {}
+    if os.path.isfile(traversal_file):
+        try:
+            with open(traversal_file, 'r') as f:
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(f, fcntl.LOCK_UN)
+                print('Process {} is skipping graph traversal ({} file already exists).'.format(worker_id, traversal_file))
+                data = json.load(f)
+        except IOError:
+            pass
+    else:
+        try:
+            with open(traversal_file, 'w') as f:
+                # lock file (prevents several processes from generating the file at the same time)
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                print('Process {} is generating the traversal file {}.'.format(worker_id, traversal_file))
+
+                start = time.time()
+                label_to_subclass = {
+                    n.__name__: n
+                    for n in Node.get_subclasses()
+                }
+                data = {
+                    node.label: construct_traversals_from_node(node, label_to_subclass)
+                    for node in Node.get_subclasses()
+                }
+                json.dump(data, f)
+
+                end = int(round(time.time() - start))
+                print('Process {} traversed the graph in {} sec.'.format(worker_id, end))
+                fcntl.flock(f, fcntl.LOCK_UN) # unlock file
+        except IOError:
+            # wait for file unlock (end of file generation) before proceeding
+            timeout_minutes = 5
+            wait_for_file(worker_id, traversal_file, timeout_minutes, app_logger)
+    return data
 
 
 def union_subq_without_path(q, *args, **kwargs):

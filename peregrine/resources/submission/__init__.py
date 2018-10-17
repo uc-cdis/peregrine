@@ -15,6 +15,7 @@ import flask
 from peregrine.auth import current_user, get_program_project_roles
 import peregrine.blueprints
 from peregrine.resources.submission import graphql
+from peregrine.resources.submission.util import wait_for_file
 
 
 def get_open_project_ids():
@@ -146,7 +147,7 @@ def generate_schema_file(graphql_schema, app_logger):
             # if not, another process is currently generating it -> wait
             with open(schema_file, 'r') as f:
                 fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(f, fcntl.LOCK_UN)
             print('Process {} is skipping schema generation ({} file already exists).'.format(worker_id, schema_file))
             return os.path.abspath(schema_file)
         except IOError:
@@ -176,21 +177,8 @@ def generate_schema_file(graphql_schema, app_logger):
             fcntl.flock(f, fcntl.LOCK_UN) # unlock file
     except IOError:
         # wait for file unlock (end of schema generation) before proceeding
-        print('Process {} is waiting for {} generation.'.format(worker_id, schema_file))
         timeout_minutes = 5 # 5 minutes from now
-        timeout = time.time() + 60 * timeout_minutes
-        while True:
-            try:
-                with open(schema_file, 'r') as f: # try to access+lock the file
-                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    fcntl.flock(f, fcntl.LOCK_UN)
-                break # file is available -> schema has been generated -> process can proceed
-            except IOError: # file is still unavailable -> process waits
-                pass
-            if time.time() > timeout:
-                app_logger.warning('Process {} is proceeding without waiting for end of {} generation ({} minutes timeout)'.format(worker_id, schema_file, timeout_minutes))
-                break
-            time.sleep(0.5)
+        wait_for_file(worker_id, schema_file, timeout_minutes, app_logger)
 
     return os.path.abspath(schema_file)
 
