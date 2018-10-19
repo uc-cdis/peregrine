@@ -465,6 +465,7 @@ def lookup_graphql_type(T):
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
+        long: graphene.Float,
         int: graphene.Int,
     }.get(T, graphene.String)
 
@@ -867,10 +868,7 @@ def get_datanode_fields_dict():
         for cls in get_data_subclasses(): # select the data nodes
             props = cls.__pg_properties__
             for k, types in props.items():
-                if long in types:
-                    shared_fields_dict[k] = lookup_graphql_type(float)()
-                else:
-                    shared_fields_dict[k] = lookup_graphql_type(types[0])()
+                shared_fields_dict[k] = lookup_graphql_type(types[0])()
 
             # handle the links: remove the links from the shared fields
             for link_name in cls._pg_edges.keys():
