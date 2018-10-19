@@ -830,23 +830,28 @@ NodeField = graphene.List(Node, args=get_node_interface_args())
 
 class DataNode(graphene.Interface):
     id = graphene.ID()
+    data_subclasses = None
     shared_fields = None # fields shared by all data nodes in the dictionary
 
 
 def get_data_subclasses():
-    # get the list of categories that are data categories
-    data_types_labels = [
-        node
-        for node in dictionary.schema
-        if dictionary.schema[node]['category'].endswith('_file')
-    ]
-    # get the subclasses for the data categories
-    data_types = [
-        node
-        for node in psqlgraph.Node.get_subclasses()
-        if node.label in data_types_labels
-    ]
-    return data_types
+    """Return a list of the subclasses representing data categories."""
+
+    if not DataNode.data_subclasses:
+        # get the list of categories that are data categories (end with _file)
+        data_subclasses_labels = [
+            node
+            for node in dictionary.schema
+            if dictionary.schema[node]['category'].endswith('_file')
+        ]
+        # get the subclasses for the data categories
+        DataNode.data_subclasses = [
+            node
+            for node in psqlgraph.Node.get_subclasses()
+            if node.label in data_subclasses_labels
+        ]
+
+    return DataNode.data_subclasses
 
 
 def get_datanode_fields_dict():
@@ -861,8 +866,7 @@ def get_datanode_fields_dict():
         }
         for cls in get_data_subclasses(): # select the data nodes
             props = cls.__pg_properties__
-            for k in props.keys():
-                types = props[k]
+            for k, types in props.items():
                 if long in types:
                     shared_fields_dict[k] = lookup_graphql_type(float)()
                 else:
