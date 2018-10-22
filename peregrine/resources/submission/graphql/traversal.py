@@ -10,6 +10,7 @@ execute those traversal queries in the database
 import flask
 from psqlgraph import Node, Edge
 import sqlalchemy as sa
+import time
 
 terminal_nodes = [
     'annotations',
@@ -82,12 +83,11 @@ def is_valid_direction(root, node, visited, path):
         return this_level >= last_level
 
 
-def construct_traversals_from_node(root_node):
+def construct_traversals_from_node(root_node, label_to_subclass):
 
-    node_subclasses = Node.get_subclasses()
-    traversals = {node.label: set() for node in node_subclasses}
+    traversals = {node.label: set() for node in Node.get_subclasses()}
 
-    def recursively_contstruct_traversals(node, visited, path):
+    def recursively_construct_traversals(node, visited, path):
 
         traversals[node.label].add('.'.join(path))
 
@@ -109,41 +109,41 @@ def construct_traversals_from_node(root_node):
             )
 
         for edge in Edge._get_edges_with_src(node.__name__):
-            neighbor_singleton = [
-                n for n in node_subclasses
-                if n.__name__ == edge.__dst_class__
-            ]
-            neighbor = neighbor_singleton[0]
+            neighbor = label_to_subclass[edge.__dst_class__]
             if should_recurse_on(neighbor):
-                recursively_contstruct_traversals(
+                recursively_construct_traversals(
                     neighbor, visited + [node], path + [edge.__src_dst_assoc__]
                 )
 
         for edge in Edge._get_edges_with_dst(node.__name__):
-            neighbor_singleton = [
-                n for n in node_subclasses
-                if n.__name__ == edge.__src_class__
-            ]
-            neighbor = neighbor_singleton[0]
+            neighbor = label_to_subclass[edge.__src_class__]
             if should_recurse_on(neighbor):
-                recursively_contstruct_traversals(
+                recursively_construct_traversals(
                     neighbor, visited + [node], path + [edge.__dst_src_assoc__]
                 )
 
     # Build up the traversals dictionary recursively.
-    recursively_contstruct_traversals(root_node, [root_node], [])
+    recursively_construct_traversals(root_node, [root_node], [])
     # Remove empty entries.
     traversals = {
-        label: paths for label, paths in traversals.iteritems() if bool(paths)
+        label: list(paths) for label, paths in traversals.iteritems() if bool(paths)
     }
     return traversals
 
 
-def make_graph_traversal_dict():
-    return {
-        node.label: construct_traversals_from_node(node)
+def make_graph_traversal_dict(app_logger):
+    start = time.time()
+    label_to_subclass = {
+        n.__name__: n
+        for n in Node.get_subclasses()
+    }
+    data = {
+        node.label: construct_traversals_from_node(node, label_to_subclass)
         for node in Node.get_subclasses()
     }
+    end = int(round(time.time() - start))
+    app_logger.info('Traversed the graph in {} sec'.format(end))
+    return data
 
 
 def union_subq_without_path(q, *args, **kwargs):

@@ -125,6 +125,8 @@ def generate_schema_file(graphql_schema, app_logger):
     Because uwsgi launches multiple processes in the same container, processes
     eat up memory and CPU generating the schema simultaneously. To avoid this,
     we only give access to schema.json to one process at a time.
+    Update: master process now handles app init - leaving the locking system in
+    case it's needed later.
 
     Return:
         str: the graphql introspection query
@@ -133,12 +135,6 @@ def generate_schema_file(graphql_schema, app_logger):
     # relative to current running directory
     schema_file = 'schema.json'
 
-    try:
-        import uwsgi
-        worker_id = uwsgi.worker_id()
-    except ImportError:
-        worker_id = 1
-
     # if the file has already been generated, do not re-generate it
     if os.path.isfile(schema_file):
         try:
@@ -146,8 +142,8 @@ def generate_schema_file(graphql_schema, app_logger):
             # if not, another process is currently generating it -> wait
             with open(schema_file, 'r') as f:
                 fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            print('Process {} is skipping schema generation ({} file already exists).'.format(worker_id, schema_file))
+                fcntl.flock(f, fcntl.LOCK_UN)
+            app_logger.info('Skipping {} generation (file already exists)'.format(schema_file))
             return os.path.abspath(schema_file)
         except IOError:
             pass
@@ -161,7 +157,7 @@ def generate_schema_file(graphql_schema, app_logger):
         with open(schema_file, 'w') as f:
             # lock file (prevents several processes from generating the schema at the same time)
             fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            print('Process {} is generating the graphql schema file {}.'.format(worker_id, schema_file))
+            app_logger.info('Generating the graphql schema file {}'.format(schema_file))
 
             # generate the schema file
             start = time.time()
@@ -172,27 +168,31 @@ def generate_schema_file(graphql_schema, app_logger):
             json.dump(data, f)
 
             end = int(round(time.time() - start))
-            print('Process {} generated {} in {} sec.'.format(worker_id, schema_file, end))
+            app_logger.info('Generated {} in {} sec'.format(schema_file, end))
             fcntl.flock(f, fcntl.LOCK_UN) # unlock file
     except IOError:
         # wait for file unlock (end of schema generation) before proceeding
-        print('Process {} is waiting for {} generation.'.format(worker_id, schema_file))
         timeout_minutes = 5 # 5 minutes from now
-        timeout = time.time() + 60 * timeout_minutes
-        while True:
-            try:
-                with open(schema_file, 'r') as f: # try to access+lock the file
-                    fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
-                    fcntl.flock(f, fcntl.LOCK_UN)
-                break # file is available -> schema has been generated -> process can proceed
-            except IOError: # file is still unavailable -> process waits
-                pass
-            if time.time() > timeout:
-                app_logger.warning('Process {} is proceeding without waiting for end of {} generation ({} minutes timeout)'.format(worker_id, schema_file, timeout_minutes))
-                break
-            time.sleep(0.5)
+        wait_for_file(schema_file, timeout_minutes, app_logger)
 
     return os.path.abspath(schema_file)
+
+
+def wait_for_file(file_name, timeout_minutes, app_logger):
+    print('A process is waiting for {} generation.'.format(file_name))
+    timeout = time.time() + 60 * timeout_minutes
+    while True:
+        try:
+            with open(file_name, 'r') as f: # try to access+lock the file
+                fcntl.flock(f, fcntl.LOCK_EX | fcntl.LOCK_NB)
+                fcntl.flock(f, fcntl.LOCK_UN)
+            break # file is available -> schema has been generated -> process can proceed
+        except IOError: # file is still unavailable -> process waits
+            pass
+        if time.time() > timeout:
+            app_logger.warning('A process is proceeding without waiting for end of {} generation ({} minutes timeout)'.format(file_name, timeout_minutes))
+            break
+        time.sleep(0.5)
 
 
 @peregrine.blueprints.blueprint.route('/getschema', methods=['GET'])
