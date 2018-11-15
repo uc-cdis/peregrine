@@ -42,7 +42,7 @@ CATEGORY_LEVEL = {
 }
 
 
-def is_valid_direction(root, node, visited, path):
+def is_valid_direction(node, visited):
     """Determine if the direction we are traveling is valid.
 
     We've defined category levels (see `CATEGORY_LEVEL`) above. If we
@@ -58,24 +58,21 @@ def is_valid_direction(root, node, visited, path):
     :returns:
         A boolean stating whether the direction we are traveling
         is valid.
-
     """
-
-    last = visited[-1]
-    first = visited[0]
-
-    first_cat = first._dictionary['category']
-    last_cat = last._dictionary['category']
-    this_cat = node._dictionary['category']
-
     max_level = max(CATEGORY_LEVEL.values()) + 1
-
-    first_level = CATEGORY_LEVEL.get(first_cat, max_level)
-    last_level = CATEGORY_LEVEL.get(last_cat, max_level)
-    this_level = CATEGORY_LEVEL.get(this_cat, max_level)
-
-    direction = first_level - last_level
-    if direction > 0:
+    first_level = CATEGORY_LEVEL.get(
+        visited[0]._dictionary['category'],
+        max_level
+    )
+    last_level = CATEGORY_LEVEL.get(
+        visited[-1]._dictionary['category'],
+        max_level
+    )
+    this_level = CATEGORY_LEVEL.get(
+        node._dictionary['category'],
+        max_level
+    )
+    if first_level > last_level:
         # If we are traveling from case out
         return this_level <= last_level
     else:
@@ -84,51 +81,45 @@ def is_valid_direction(root, node, visited, path):
 
 
 def construct_traversals_from_node(root_node, label_to_subclass):
-
     traversals = {node.label: set() for node in Node.get_subclasses()}
-
-    def recursively_construct_traversals(node, visited, path):
-
-        traversals[node.label].add('.'.join(path))
-
-        def should_recurse_on(neighbor):
-            """Check whether to recurse on a path."""
-            return (
-                neighbor
-                # no backtracking:
-                and neighbor not in visited
-                # No 0 length edges:
-                and neighbor != node
-                # Don't walk back up the tree:
-                and is_valid_direction(root_node.label, node, visited, path)
-                # no traveling THROUGH terminal nodes:
+    to_visit = [(root_node, [])]
+    visited = []
+    path = []
+    while to_visit:
+        node, path = to_visit.pop()
+        if path:
+            traversals[node.label].add('.'.join(path))
+        visited.append(node)
+        neighbors_dst = {
+            (label_to_subclass[edge.__dst_class__], edge.__src_dst_assoc__)
+            for edge in Edge._get_edges_with_src(node.__name__)
+            if label_to_subclass[edge.__dst_class__]
+        }
+        neighbors_src = {
+            (label_to_subclass[edge.__src_class__], edge.__dst_src_assoc__)
+            for edge in Edge._get_edges_with_dst(node.__name__)
+            if label_to_subclass[edge.__src_class__]
+        }
+        to_visit.extend([
+            (neighbor, path + [edge])
+            for neighbor, edge in neighbors_dst.union(neighbors_src)
+            if (
+                neighbor not in visited
+                # Don't walk back up the tree
+                and is_valid_direction(neighbor, visited)
+                # no traveling THROUGH terminal nodes
                 and (
-                    (path and path[-1] not in terminal_nodes)
-                    if path else neighbor.label not in terminal_nodes
+                    path[-1] not in terminal_nodes
+                    if path
+                    else neighbor.label not in terminal_nodes
                 )
             )
-
-        for edge in Edge._get_edges_with_src(node.__name__):
-            neighbor = label_to_subclass[edge.__dst_class__]
-            if should_recurse_on(neighbor):
-                recursively_construct_traversals(
-                    neighbor, visited + [node], path + [edge.__src_dst_assoc__]
-                )
-
-        for edge in Edge._get_edges_with_dst(node.__name__):
-            neighbor = label_to_subclass[edge.__src_class__]
-            if should_recurse_on(neighbor):
-                recursively_construct_traversals(
-                    neighbor, visited + [node], path + [edge.__dst_src_assoc__]
-                )
-
-    # Build up the traversals dictionary recursively.
-    recursively_construct_traversals(root_node, [root_node], [])
-    # Remove empty entries.
-    traversals = {
-        label: list(paths) for label, paths in traversals.iteritems() if bool(paths)
+        ])
+    return {
+        label: list(paths)
+        for label, paths in traversals.iteritems()
+        if paths
     }
-    return traversals
 
 
 def make_graph_traversal_dict(app_logger):
