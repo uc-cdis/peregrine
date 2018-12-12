@@ -18,6 +18,8 @@ services:
 before_install:
   # bust only the the part of the cache that we are frequently changing
   - pip uninstall --yes gdcdictionary gdcdatamodel || true
+  # resolve https://github.com/travis-ci/travis-ci/issues/7940
+  - export BOTO_CONFIG=/dev/null
 
 # command to install dependencies
 install:
