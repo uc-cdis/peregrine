@@ -217,15 +217,39 @@ def apply_arg_quicksearch(q, args, info):
 
 
 def apply_query_args(q, args, info):
+    """
+    Args:
+        q: psqlgraph query
+        args: dictionary of the arguments passed to the query.
+        info: graphene object that holds the query's arguments, models and requested fields.
+    """
+
     pg_props = set(getattr(q.entity(), '__pg_properties__', {}).keys())
+
+    print("ARGS DICT: ", args) # TODO remove
 
     # *: filter for those with matching dictionary properties
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
-        val = val if isinstance(val, list) else [val]
+        # val = val if isinstance(val, list) else [val] #<-- OLD VERSION
+        #TODO: Better way to check if list is list of lists? But it is Python
+        # See comment at def get_node_class_args().
+        if (not isinstance(val, list)) \
+           or (not isinstance(val[0], list) \
+              and key != 'not' and key != 'project_id'\
+              and q.entity().__pg_properties__[key][0] == list):
+            val = [val]
+
+        # OLD:
         if val:
             q = q.filter(q.entity()._props[key].astext.in_([
                 str(v) for v in val]))
+        # NEW:  TODO
+        for v in val:
+            if isinstance(v, list):
+                pass
+            else:
+                pass
 
     # not: nest a NOT filter for props, filters out matches
     not_props = args.get('not', {})
@@ -475,6 +499,7 @@ def lookup_graphql_type(T):
 
 
 def get_node_class_property_args(cls, not_props_io={}):
+
     args = {
         name: lookup_graphql_type(types[0])
         for name, types in cls.__pg_properties__.iteritems()
@@ -538,12 +563,36 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
         with_path_to_any=graphene.List(WithPathToInput),
         without_path_to=graphene.List(WithPathToInput),
     ))
-    property_args = {
-        name: graphene.List(val)
-        if not isinstance(val, graphene.List)
-        else val
-        for name, val in get_node_class_property_args(cls).items()
-    }
+
+    """
+    End user can give list of args or a single arg.
+      (List of args is treated like an OR.)
+    In order for GraphQL validation to accept both, we turn single args into lists too.
+    Before, we just had:
+      name: val if isinstance(val, graphene.List) else graphene.List(val)
+    But now we have arguments that can themselves be lists.
+    The following logic is analogous:
+      if val is scalar, then wrap in list;
+      if val is a list of scalars and expected argtype is list of scalars, then wrap in list;
+      In all other cases (val is list of scalars and expected argtype is scalar,
+      val is list of lists and expected argtype is list of scalars, etc), leave it alone.
+      Essentially, if val is of same type as expected, then wrap in list.
+    One problem though: Can't check if expected argtype is list of scalars or list of lists.
+    Currently only checks whether expected argtype is a list, and if so,
+    assumes list of scalars.
+    """
+    graphene_scalar_types = [graphene.String, graphene.Int, graphene.Float, graphene.Boolean, graphene.ID]
+    graphene_scalar_list_types = [graphene.List(t) for t in graphene_scalar_types]
+
+    property_args = {}
+    for name, val in get_node_class_property_args(cls).items():
+        if (not isinstance(val, graphene.List)) \
+           or (val in graphene_scalar_list_types \
+              and name != 'not' and name != 'project_id'\
+              and cls.__pg_properties__[name][0] == list):
+            property_args[name] = graphene.List(val)
+        else:
+            property_args[name] = val
     args.update(property_args)
 
     for key in args:
@@ -849,6 +898,7 @@ def get_datanode_fields_dict():
         # shared_fields takes the intersection of all the data node field sets
         shared_fields = set.intersection(*fields)
 
+        # TODO: "DataNode type interface shoud be fixed to handle non-string type fields"--PT
         shared_fields_dict = {field: graphene.String() for field in shared_fields}
         if 'file_size' in shared_fields:
             shared_fields_dict['file_size'] = graphene.Int()

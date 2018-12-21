@@ -1290,3 +1290,44 @@ def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
         assert 'title' in node
         assert 'category' in node
         assert node['category'] == category
+
+# TODO
+def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            query Test {
+                case0: case (project_id: "CGCI-BLGSP") { project_id }
+                case1: case (project_id: ["list of scalar args", "CGCI-BLGSP"]) {
+                    project_id
+                }
+                case2: case (consent_codes: ["cc1"]) { consent_codes }
+                case3: case (consent_codes: [["cc1", "nonexistent"], ["cc2"]]) {
+                    consent_codes
+                }
+            }
+        """}))
+    print("RESPONSE JSON: ", r.json)
+    assert r.json == {
+        "data": {
+            "case0": [{"project_id": "CGCI-BLGSP"}],
+            "case1": [{"project_id": "CGCI-BLGSP"}],
+            "case2": [], # TODO: Make some actual consent_codes to test with
+            "case3": [], # and rewrite sqlalchemy queries to handle lists
+        }
+    }
+
+# TODO
+def test_invalid_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+    r = client.post(path, headers=submitter, data=json.dumps({
+       'query': """
+           query Test {
+               case0: case (project_id : [["list", "of"], ["lists"]]) { id }
+               case1: case (consent_codes: "a") { consent_codes }
+           }
+       """
+    }))
+    assert True
+    # TODO: These should return errors because arguments of wrong type.
+    # Will probably have to split into two tests...?
