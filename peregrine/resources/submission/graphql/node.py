@@ -15,6 +15,7 @@ import logging
 import psqlgraph
 import re
 import sqlalchemy as sa
+from functools import reduce
 
 from datamodelutils import models as md  # noqa
 from peregrine import dictionary
@@ -216,6 +217,14 @@ def apply_arg_quicksearch(q, args, info):
     return q
 
 
+def is_list_of_scalars(ls):
+    return reduce(lambda x, y: x and not isinstance(y, list), ls, True)
+
+
+def is_list_of_lists(ls):
+    return reduce(lambda x, y: x and isinstance(y, list), ls, True)
+
+
 def apply_query_args(q, args, info):
     """
     Args:
@@ -226,30 +235,31 @@ def apply_query_args(q, args, info):
 
     pg_props = set(getattr(q.entity(), '__pg_properties__', {}).keys())
 
-    print("ARGS DICT: ", args) # TODO remove
-
     # *: filter for those with matching dictionary properties
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
-        # val = val if isinstance(val, list) else [val] #<-- OLD VERSION
-        #TODO: Better way to check if list is list of lists? But it is Python
         # See comment at def get_node_class_args().
         if (not isinstance(val, list)) \
-           or (not isinstance(val[0], list) \
+           or (is_list_of_scalars(val) \
               and key != 'not' and key != 'project_id'\
               and q.entity().__pg_properties__[key][0] == list):
             val = [val]
 
-        # OLD:
-        if val:
+        if is_list_of_lists(val):
+            # Assumes list of lists of scalars
+            or_q = q
+            and_q = q
+            for l in val:
+                for item in l: 
+                    # For properties of type list, individual query args should be 
+                    # of type list, and results should be supersets of query
+                    and_q = and_q.filter(q.entity()._props[key].astext.in_([item]))
+                # Take union of results of each individual query
+                or_q = or_q.union(and_q)
+        else:
+            # Assumes list of scalars
             q = q.filter(q.entity()._props[key].astext.in_([
                 str(v) for v in val]))
-        # NEW:  TODO
-        for v in val:
-            if isinstance(v, list):
-                pass
-            else:
-                pass
 
     # not: nest a NOT filter for props, filters out matches
     not_props = args.get('not', {})
@@ -564,23 +574,23 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
         without_path_to=graphene.List(WithPathToInput),
     ))
 
-    """
-    End user can give list of args or a single arg.
-      (List of args is treated like an OR.)
-    In order for GraphQL validation to accept both, we turn single args into lists too.
-    Before, we just had:
-      name: val if isinstance(val, graphene.List) else graphene.List(val)
-    But now we have arguments that can themselves be lists.
-    The following logic is analogous:
-      if val is scalar, then wrap in list;
-      if val is a list of scalars and expected argtype is list of scalars, then wrap in list;
-      In all other cases (val is list of scalars and expected argtype is scalar,
-      val is list of lists and expected argtype is list of scalars, etc), leave it alone.
-      Essentially, if val is of same type as expected, then wrap in list.
-    One problem though: Can't check if expected argtype is list of scalars or list of lists.
-    Currently only checks whether expected argtype is a list, and if so,
-    assumes list of scalars.
-    """
+    
+    # End user can give list of args or a single arg.
+    #   (List of args is treated like an OR.)
+    # In order for GraphQL validation to accept both, we turn single args into lists too.
+    # Before, we just had:
+    #   name: val if isinstance(val, graphene.List) else graphene.List(val)
+    # But now we have arguments that can themselves be lists.
+    # The following logic is analogous:
+    #   if val is scalar, then wrap in list;
+    #   if val is list of scalars and expected argtype is list of scalars, then wrap in list;
+    #   In all other cases (val is list of scalars and expected argtype is scalar,
+    #   val is list of lists and expected argtype is list of scalars, etc), leave it alone.
+    #   Essentially, if val is of same type as expected, then wrap in list.
+    # One problem though: Can't check if expected argtype is list of scalars or list of lists
+    # Currently only checks whether expected argtype is a list, and if so,
+    # assumes list of scalars.
+ 
     graphene_scalar_types = [graphene.String, graphene.Int, graphene.Float, graphene.Boolean, graphene.ID]
     graphene_scalar_list_types = [graphene.List(t) for t in graphene_scalar_types]
 
