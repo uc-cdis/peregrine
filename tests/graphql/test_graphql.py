@@ -1329,6 +1329,6 @@ def test_invalid_array_arg(client, submitter, pg_driver_clean, cgci_blgsp):
        """
     }))
     assert r.json == {
-        'data': None, 
-        'errors': ['Argument "project_id" has invalid value [["list", "of"], ["lists"]].\nIn element #0: Expected type "String", found ["list", "of"].\nIn element #1: Expected type "String", found ["lists"].'] 
+        'data': None,
+        'errors': ['Argument "project_id" has invalid value [["list", "of"], ["lists"]].\nIn element #0: Expected type "String", found ["list", "of"].\nIn element #1: Expected type "String", found ["lists"].']
     }

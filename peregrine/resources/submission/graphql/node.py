@@ -15,7 +15,7 @@ import logging
 import psqlgraph
 import re
 import sqlalchemy as sa
-from functools import reduce
+from functools import reduce as functools_reduce # placate Codacy
 
 from datamodelutils import models as md  # noqa
 from peregrine import dictionary
@@ -218,11 +218,11 @@ def apply_arg_quicksearch(q, args, info):
 
 
 def is_list_of_scalars(ls):
-    return reduce(lambda x, y: x and not isinstance(y, list), ls, True)
+    return functools_reduce(lambda x, y: x and not isinstance(y, list), ls, True)
 
 
 def is_list_of_lists(ls):
-    return reduce(lambda x, y: x and isinstance(y, list), ls, True)
+    return functools_reduce(lambda x, y: x and isinstance(y, list), ls, True)
 
 
 def apply_query_args(q, args, info):
@@ -250,8 +250,8 @@ def apply_query_args(q, args, info):
             or_q = q
             and_q = q
             for l in val:
-                for item in l: 
-                    # For properties of type list, individual query args should be 
+                for item in l:
+                    # For properties of type list, individual query args should be
                     # of type list, and results should be supersets of query
                     and_q = and_q.filter(q.entity()._props[key].astext.in_([item]))
                 # Take union of results of each individual query
@@ -574,7 +574,7 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
         without_path_to=graphene.List(WithPathToInput),
     ))
 
-    
+
     # End user can give list of args or a single arg.
     #   (List of args is treated like an OR.)
     # In order for GraphQL validation to accept both, we turn single args into lists too.
@@ -590,7 +590,7 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
     # One problem though: Can't check if expected argtype is list of scalars or list of lists
     # Currently only checks whether expected argtype is a list, and if so,
     # assumes list of scalars.
- 
+
     graphene_scalar_types = [graphene.String, graphene.Int, graphene.Float, graphene.Boolean, graphene.ID]
     graphene_scalar_list_types = [graphene.List(t) for t in graphene_scalar_types]
 
