@@ -1307,34 +1307,34 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
             }
         """}))
     print("RESPONSE JSON: ", r.json)
-    assert True #TODO remove
     # TODO: "case2": [["cc1", "cc2"]],
-    """
-    assert r.json == {
-        u'data': {
-            u'case0': [
-                {u'consent_codes': [u'cc1', u'cc2']}, 
-                {u'consent_codes': [u'cc1']}
+    # fix for the unicode artifacts
+    expected_json = json.loads(json.dumps({
+        "data": {
+            'case0': [
+                {'consent_codes': ['cc1', 'cc2']}, 
+                {'consent_codes': ['cc1']}
             ], 
-            u'case1': [
-                {u'consent_codes': [u'cc1', u'cc2']}
+            'case1': [
+                {'consent_codes': ['cc1', 'cc2']}
             ], 
-            u'case3': [
-                {u'consent_codes': [u'cc1', u'cc2']}, 
-                {u'consent_codes': [u'cc1']}, 
-                {u'consent_codes': [u'cc2']}
+            'case3': [
+                {'consent_codes': ['cc1', 'cc2']}, 
+                {'consent_codes': ['cc1']}, 
+                {'consent_codes': ['cc2']}
             ], 
-            u'case4': [
-                {u'consent_codes': [u'cc1']}, 
-                {u'consent_codes': [u'cc1', u'cc2']}
+            'case4': [
+                {'consent_codes': ['cc1']}, 
+                {'consent_codes': ['cc1', 'cc2']}
             ],
-            u'case5': [
-                {u'consent_codes': [u'cc1', u'cc2']}, 
-                {u'consent_codes': [u'cc2']}
+            'case5': [
+                {'consent_codes': ['cc1', 'cc2']}, 
+                {'consent_codes': ['cc2']}
             ], 
         }
-    }
-
+    }))
+    assert r.json == expected_json
+    """
     assert r.json == {
         "data": {
             "case0": [["cc1", "cc2"], ["cc1"]],
