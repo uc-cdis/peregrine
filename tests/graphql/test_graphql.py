@@ -1299,22 +1299,49 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
         'query': """
             query Test {
                 case0: case (consent_codes: ["cc1"]) { consent_codes }
-                case1: case (consent_codes: ["cc1, cc2"]) { consent_codes }
-                case2: case (consent_codes: [["cc1"], ["cc2"]]) { consent_codes }
-                case3: case (consent_codes: [["cc1"], ["cc1", "cc2"]]) { consent_codes }
-                case4: case (consent_codes: [["nosuchcc", "cc1"], ["cc2"]]) { consent_codes }
-                ALL_THE_CASES: case { submitter_id experiments { submitter_id } consent_codes }
+                case1: case (consent_codes: [["cc1", "cc2"]]) { consent_codes }
+                #case2: case (consent_codes: ["cc1", "cc2"]) { consent_codes }
+                case3: case (consent_codes: [["cc1"], ["cc2"]]) { consent_codes }
+                case4: case (consent_codes: [["cc1"], ["cc1", "cc2"]]) { consent_codes }
+                case5: case (consent_codes: [["nosuchcc", "cc1"], ["cc2"]]) { consent_codes }
             }
         """}))
     print("RESPONSE JSON: ", r.json)
     assert True #TODO remove
+    # TODO: "case2": [["cc1", "cc2"]],
     """
     assert r.json == {
+        u'data': {
+            u'case0': [
+                {u'consent_codes': [u'cc1', u'cc2']}, 
+                {u'consent_codes': [u'cc1']}
+            ], 
+            u'case1': [
+                {u'consent_codes': [u'cc1', u'cc2']}
+            ], 
+            u'case3': [
+                {u'consent_codes': [u'cc1', u'cc2']}, 
+                {u'consent_codes': [u'cc1']}, 
+                {u'consent_codes': [u'cc2']}
+            ], 
+            u'case4': [
+                {u'consent_codes': [u'cc1']}, 
+                {u'consent_codes': [u'cc1', u'cc2']}
+            ],
+            u'case5': [
+                {u'consent_codes': [u'cc1', u'cc2']}, 
+                {u'consent_codes': [u'cc2']}
+            ], 
+        }
+    }
+
+    assert r.json == {
         "data": {
-            "case0": [],
-            "case1": [],
-            "case2": [],
-            "case3": [],
+            "case0": [["cc1", "cc2"], ["cc1"]],
+            "case1": [["cc1", "cc2"]],
+            "case3": [["cc1", "cc2"], ["cc1"],["cc2"]],
+            "case4": [["cc1", "cc2"], ["cc1"]],
+            "case5": [["cc1", "cc2"], ["cc2"]]
         }
     }
     #"""

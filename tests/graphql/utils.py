@@ -14,7 +14,9 @@ re_md5 = re.compile(r'(i?)(?<![a-z0-9])[a-f0-9]{32}(?![a-z0-9])')
 
 data_fnames = [
     'experiment.json',
-    'case.json',
+    'case1.json',
+    'case2.json',
+    'case3.json',
     'sample.json',
     'aliquot.json',
     'demographic.json',
