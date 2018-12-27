@@ -248,7 +248,7 @@ def apply_query_args(q, args, info):
         if is_list_of_lists(val):
             # Assumes list of lists of scalars
             q_all = q.filter(True)
-            q = q.filter(False)
+            or_q = q.filter(False)
             for l in val:
                 and_q = q_all
                 for item in l:
@@ -256,7 +256,8 @@ def apply_query_args(q, args, info):
                     # of type list, and results should be supersets of query
                     and_q = and_q.filter(q.entity()._props[key].astext.like("%"+item+"%"))
                 # Take union of results of each individual query
-                q = q.union(and_q)
+                or_q = or_q.union(and_q)
+            q = or_q
         else:
             # Assumes list of scalars
             q = q.filter(q.entity()._props[key].astext.in_([
