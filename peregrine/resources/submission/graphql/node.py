@@ -238,12 +238,18 @@ def apply_query_args(q, args, info):
     # *: filter for those with matching dictionary properties
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
-        # See comment at def get_node_class_args().
+        print("VAL IS.........", val)
+        # See comment at def get_node_class_args() for reason behind this funny listification stuff
+        # Upd: TODO: Wait, if GraphQL is grooming the user inputs with exactly this use case in mind,
+        # why were we doing it again here?
+        # Upd: ...confirmed commenting it out makes no difference-.-
+        """
         if (not isinstance(val, list)) \
            or (is_list_of_scalars(val) \
               and key != 'not' and key != 'project_id'\
               and q.entity().__pg_properties__[key][0] == list):
             val = [val]
+        #"""
 
         if is_list_of_lists(val):
             # Assumes list of lists of scalars
@@ -577,21 +583,42 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
     ))
 
 
-    # End user can give list of args or a single arg.
-    #   (List of args is treated like an OR.)
-    # In order for GraphQL validation to accept both, we turn single args into lists too.
-    # Before, we just had:
-    #   name: val if isinstance(val, graphene.List) else graphene.List(val)
-    # But now we have arguments that can themselves be lists.
-    # The following logic is analogous:
+    # We want to accept from the user both single args and lists of args.
+    #   (Lists of args are treated as OR.)
+    # We therefore tell the schema/validator here to always expect lists of args.
+    # Before, we had no array-type (list-type) args,
+    #   and so this was just: name: val if isinstance(val, graphene.List) else graphene.List(val).
+    # But now... 
+    #   TODO: Actually. The dictionary schema itself shouldn't be aware of this stuff. 
+    #   (And it indeed isn't, right?)
+    #   Why was the old logic like that? 
+    #   Which dictionary fields were the funny ones?
+    #   Wouldn't it make more sense, here, to just graphene.List()ify everything? 
+
+    # ...But now we have arguments that can themselves be lists.
+    # The following code therefore implements the analogous logic:
     #   if val is scalar, then wrap in list;
     #   if val is list of scalars and expected argtype is list of scalars, then wrap in list;
     #   In all other cases (val is list of scalars and expected argtype is scalar,
     #   val is list of lists and expected argtype is list of scalars, etc), leave it alone.
     #   Essentially, if val is of same type as expected, then wrap in list.
-    # One problem though: Can't check if expected argtype is list of scalars or list of lists
+    # (One problem though: Can't check if expected argtype is list of scalars or list of lists.
     # Currently only checks whether expected argtype is a list, and if so,
-    # assumes list of scalars.
+    # assumes list of scalars.)
+
+    # When the user gives a single arg, GraphQL itself will attempt to coerce the user input like so: 
+    #   https://facebook.github.io/graphql/June2018/#sec-Type-System.List
+    # Unfortunately, per the spec, if expected type is e.g. [[Int]] and provided value is e.g. [1,2,3],
+    #   this is treated as as an error instead of coerced one way or another, for obvious reasons.
+    # Now that we have array-type fields in the dictionary, this means that the common use-case of 
+    #   single-arg queries on array-type fields will break when the user provides e.g. [Int] 
+    #   instead of [[Int]].
+
+    # TODO: OK, the GraphQL spec says that it is an error, but what _actually_ happens is 
+    # that ["cc1", "cc2"] gets groomed into [["cc1"],["cc2"]] instead of [["cc1", "cc2"]], 
+    # which I think is silly/even more broken. Also I don't know why it is different from the spec.
+    # Is it a Graphene thing?
+
 
     graphene_scalar_types = [graphene.String, graphene.Int, graphene.Float, graphene.Boolean, graphene.ID]
     graphene_scalar_list_types = [graphene.List(t) for t in graphene_scalar_types]
