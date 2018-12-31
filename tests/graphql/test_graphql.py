@@ -650,9 +650,8 @@ def test_with_links_any(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    #: number of nodes to change project_id on, there should
-    #: actually only be 1
-    n = 1
+    #: number of nodes to change project_id on, there should be 3
+    n = 3
     with pg_driver_clean.session_scope() as s:
         cases = pg_driver_clean.nodes(models.Case).limit(n).all()
         for case in cases:
