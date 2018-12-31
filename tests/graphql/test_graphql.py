@@ -359,13 +359,7 @@ def test_arg_first(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """ query Test { case (first: 1) { submitter_id }} """}))
-    assert r.json == {
-        'data': {
-            'case': [{
-                'submitter_id': 'BLGSP-71-06-00019'
-            }]
-        }
-    }, r.data
+    assert len(r.json['data']['case']) == 1, r.data
 
 
 def test_arg_offset(client, submitter, pg_driver_clean, cgci_blgsp):
