@@ -794,6 +794,10 @@ def test_property_lists(client, submitter, pg_driver_clean, cgci_blgsp):
             'c3': 1,
         }
     }))
+    for k, v in response.json.items():
+        response.json[k] = sorted(v)
+    for k, v in expected_json.items():
+        expected_json[k] = sorted(v)
     assert response.json == expected_json, response.data
 
 
@@ -1295,64 +1299,68 @@ def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
 # ["cc1", "cc2"] ["cc1"] ["cc2"]..
 # TODO: Case 2 is weird; see comments and TODOs in node.py. Expected [["cc1","cc2"]]
 # but life is not so beautiful
+# Case 6 is also weird but is much less problematic
 # TODO also: assert json cares about the ordering of the results, which results in false -ves;
-# on the other hand, why does test_property_lists not have this ordering issue on master?
+# upd: test_property_lists *does* in fact fail occasinally on master, so can probably go ahead and fix tests
+# to ignore ordering
 # TODO: Since new cases and consent_codes added, various tests are now fake-broken:
 # test_arg_first, test_auth_counts, test_without_path_order.
 # test_transaction_logs seems to be real-broken.
+# upd: test_transaction_logs will also sometimes fail on master with same issue
 def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
             query Test {
                 case0: case (consent_codes: ["cc1"]) { consent_codes }
-                caseTroll: case (consent_codes: "boo") { consent_codes } 
                 case1: case (consent_codes: [["cc1", "cc2"]]) { consent_codes }
                 case2: case (consent_codes: ["cc1", "cc2"]) { consent_codes }
                 case3: case (consent_codes: [["cc1"], ["cc2"]]) { consent_codes }
                 case4: case (consent_codes: [["cc1"], ["cc1", "cc2"]]) { consent_codes }
                 case5: case (consent_codes: [["nosuchcc", "cc1"], ["cc2"]]) { consent_codes }
+                case6: case (consent_codes: "cc1") { consent_codes }
             }
         """}))
-    # fix for the unicode artifacts
-    expected_json = json.loads(json.dumps({
+    expected_dict = {
         "data": {
-            'case0': [
-                {'consent_codes': ['cc1', 'cc2']}, 
-                {'consent_codes': ['cc1']}
+            "case0": [
+                {"consent_codes": ["cc1", "cc2"]},
+                {"consent_codes": ["cc1"]}
             ], 
-            'case1': [
-                {'consent_codes': ['cc1', 'cc2']}
+            "case1": [
+                {"consent_codes": ["cc1", "cc2"]}
             ], 
-            'case3': [
-                {'consent_codes': ['cc1', 'cc2']}, 
-                {'consent_codes': ['cc1']}, 
-                {'consent_codes': ['cc2']}
+            "case2": [
+                {"consent_codes": ["cc1", "cc2"]},
+                {"consent_codes": ["cc1"]},
+                {"consent_codes": ["cc2"]}
             ], 
-            'case4': [
-                {'consent_codes': ['cc1']}, 
-                {'consent_codes': ['cc1', 'cc2']}
+            "case3": [
+                {"consent_codes": ["cc1", "cc2"]},
+                {"consent_codes": ["cc1"]},
+                {"consent_codes": ["cc2"]}
+            ], 
+            "case4": [
+                {"consent_codes": ["cc1"]},
+                {"consent_codes": ["cc1", "cc2"]}
             ],
-            'case5': [
-                {'consent_codes': ['cc1', 'cc2']}, 
-                {'consent_codes': ['cc2']}
-            ], 
-        }
-    }))
-    print("RESPONSE JSON: ", r.json)
-    assert True
-    #assert r.json == expected_json
-    """
-    assert r.json == {
-        "data": {
-            "case0": [["cc1", "cc2"], ["cc1"]],
-            "case1": [["cc1", "cc2"]],
-            "case3": [["cc1", "cc2"], ["cc1"],["cc2"]],
-            "case4": [["cc1", "cc2"], ["cc1"]],
-            "case5": [["cc1", "cc2"], ["cc2"]]
+            "case5": [
+                {"consent_codes": ["cc1", "cc2"]},
+                {"consent_codes": ["cc2"]}
+            ],
+            "case6": [
+                {"consent_codes": ["cc1"]},
+                {"consent_codes": ["cc1", "cc2"]}
+            ]
         }
     }
-    #"""
+    # Lists are ordered but here order does not matter so we sort them before comparing.
+    for k, v in expected_dict.items():
+        expected_dict[k] = sorted(v)
+    for k, v in r.json.items():
+        r.json[k] = sorted(v)
+    assert json.dumps(r.json, sort_keys=True) == json.dumps(expected_dict, sort_keys=True)
+
 
 def test_invalid_array_arg(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)

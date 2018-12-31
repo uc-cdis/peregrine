@@ -243,6 +243,7 @@ def apply_query_args(q, args, info):
         # Upd: TODO: Wait, if GraphQL is grooming the user inputs with exactly this use case in mind,
         # why were we doing it again here?
         # Upd: ...confirmed commenting it out makes no difference-.-
+        # And commenting out the old analogue on master also makes no difference
         """
         if (not isinstance(val, list)) \
            or (is_list_of_scalars(val) \
@@ -618,6 +619,7 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
     # that ["cc1", "cc2"] gets groomed into [["cc1"],["cc2"]] instead of [["cc1", "cc2"]], 
     # which I think is silly/even more broken. Also I don't know why it is different from the spec.
     # Is it a Graphene thing?
+    # https://github.com/graphql-python/graphql-core/blob/master/graphql/execution/executor.py#L571
 
 
     graphene_scalar_types = [graphene.String, graphene.Int, graphene.Float, graphene.Boolean, graphene.ID]
