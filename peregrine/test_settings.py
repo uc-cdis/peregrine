@@ -53,9 +53,7 @@ OAUTH2 = {
     "redirect_uri": "",
 }
 
-#DICTIONARY_URL = os.environ.get('DICTIONARY_URL','https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json')
-DICTIONARY_URL = os.environ.get('DICTIONARY_URL','https://s3.amazonaws.com/dictionary-artifacts/datadictionary/feat/array/schema.json')
-
+DICTIONARY_URL = os.environ.get('DICTIONARY_URL','https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json')
 
 USER_API = "http://localhost"
 # used by fence.jwt.token.generate_signed_access_token for iss
