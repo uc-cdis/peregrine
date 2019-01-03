@@ -1027,27 +1027,39 @@ def test_submitted_unaligned_reads_with_path_to_read_group(
 def test_without_path_order(client, submitter, pg_driver_clean, cgci_blgsp):
     """Assert that the ordering is applied after the exception"""
     put_example_entities_together(client, pg_driver_clean, submitter)
-    utils.put_entity_from_file(client, 'case.json', submitter)
-    utils.put_entity_from_file(client, 'sample.json', submitter)
 
     with pg_driver_clean.session_scope():
-        c = pg_driver_clean.nodes(models.Case).one()
-        c.samples = []
+        # Cases will have identical created_datetimes (granularity in seconds);
+        # So overwrite datetimes here.
+        # Also remove samples links.
+        cases = pg_driver_clean.nodes(models.Case).all()
+        for c in cases:
+            if c.submitter_id == 'BLGSP-71-06-00019':
+                c.created_datetime = '2019-01-03T12:34:56.017404-06:00'
+            elif c.submitter_id == 'BLGSP-71-06-00020':
+                c.created_datetime = '2019-01-03T12:34:57.017404-06:00'
+            elif c.submitter_id == 'BLGSP-71-06-00021':
+                c.created_datetime = '2019-01-03T12:34:58.017404-06:00'
+            c.samples = []
 
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
-        query Test {
-        case (
-          order_by_desc: "created_datetime",
-          without_path_to: { type: "sample" })
-        { submitter_id }
-        }"""}))
+            query Test {
+                case (
+                  order_by_desc: "created_datetime",
+                  without_path_to: { type: "sample" }
+                )
+                { submitter_id }
+            }
+        """}))
 
     assert r.json == {
         "data": {
-            "case": [{
-                "submitter_id": "BLGSP-71-06-00019"
-            }]
+            "case": [
+                {"submitter_id": "BLGSP-71-06-00021"},
+                {"submitter_id": "BLGSP-71-06-00020"},
+                {"submitter_id": "BLGSP-71-06-00019"}
+            ]
         }
     }, r.data
 
