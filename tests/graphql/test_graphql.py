@@ -1043,15 +1043,16 @@ def test_without_path_order(client, submitter, pg_driver_clean, cgci_blgsp):
             c.samples = []
 
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """
-            query Test {
-                case (
-                  order_by_desc: "created_datetime",
-                  without_path_to: { type: "sample" }
-                )
-                { submitter_id }
-            }
-        """}))
+            'query': """
+                query Test {
+                    case (
+                      order_by_desc: "created_datetime",
+                      without_path_to: { type: "sample" }
+                    )
+                    { submitter_id }
+                }
+            """
+        }))
 
     assert r.json == {
         "data": {
@@ -1290,6 +1291,7 @@ def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
           _node_type (category: "{}", first: 1) {{
             id title category
           }}
+
         }}""".format(category)}))
 
     results = r.json.get('data', {}).get('_node_type', {})
@@ -1300,30 +1302,17 @@ def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
         assert 'category' in node
         assert node['category'] == category
 
-# TODO
-# ["cc1", "cc2"] ["cc1"] ["cc2"]..
-# TODO: Case 2 is weird; see comments and TODOs in node.py. Expected [["cc1","cc2"]]
-# but life is not so beautiful
-# Case 6 is also weird but is much less problematic
-# TODO also: assert json cares about the ordering of the results, which results in false -ves;
-# upd: test_property_lists *does* in fact fail occasinally on master, so can probably go ahead and fix tests
-# to ignore ordering
-# TODO: Since new cases and consent_codes added, various tests are now fake-broken:
-# test_arg_first, test_auth_counts, test_without_path_order.
-# test_transaction_logs seems to be real-broken.
-# upd: test_transaction_logs will also sometimes fail on master with same issue
+
 def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
             query Test {
                 case0: case (consent_codes: ["cc1"]) { consent_codes }
-                case1: case (consent_codes: [["cc1", "cc2"]]) { consent_codes }
-                case2: case (consent_codes: ["cc1", "cc2"]) { consent_codes }
-                case3: case (consent_codes: [["cc1"], ["cc2"]]) { consent_codes }
-                case4: case (consent_codes: [["cc1"], ["cc1", "cc2"]]) { consent_codes }
-                case5: case (consent_codes: [["nosuchcc", "cc1"], ["cc2"]]) { consent_codes }
-                case6: case (consent_codes: "cc1") { consent_codes }
+                case1: case (consent_codes: ["cc2"]) { consent_codes }
+                case2: case (consent_codes: ["cc2", "cc1"]) { consent_codes }
+                case3: case (consent_codes: ["cc1", "no_such_code"]) { consent_codes }
+                case4: case (consent_codes: "cc1") { consent_codes }
             }
         """}))
     expected_dict = {
@@ -1333,27 +1322,15 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
                 {"consent_codes": ["cc1"]}
             ], 
             "case1": [
+                {"consent_codes": ["cc2"]},
                 {"consent_codes": ["cc1", "cc2"]}
             ], 
             "case2": [
                 {"consent_codes": ["cc1", "cc2"]},
-                {"consent_codes": ["cc1"]},
-                {"consent_codes": ["cc2"]}
             ], 
             "case3": [
-                {"consent_codes": ["cc1", "cc2"]},
-                {"consent_codes": ["cc1"]},
-                {"consent_codes": ["cc2"]}
             ], 
             "case4": [
-                {"consent_codes": ["cc1"]},
-                {"consent_codes": ["cc1", "cc2"]}
-            ],
-            "case5": [
-                {"consent_codes": ["cc1", "cc2"]},
-                {"consent_codes": ["cc2"]}
-            ],
-            "case6": [
                 {"consent_codes": ["cc1"]},
                 {"consent_codes": ["cc1", "cc2"]}
             ]

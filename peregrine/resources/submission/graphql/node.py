@@ -239,19 +239,8 @@ def apply_query_args(q, args, info):
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
         print("VAL IS.........", val)
-        # See comment at def get_node_class_args() for reason behind this funny listification stuff
-        # Upd: TODO: Wait, if GraphQL is grooming the user inputs with exactly this use case in mind,
-        # why were we doing it again here?
-        # Upd: ...confirmed commenting it out makes no difference-.-
-        # And commenting out the old analogue on master also makes no difference
-        """
-        if (not isinstance(val, list)) \
-           or (is_list_of_scalars(val) \
-              and key != 'not' and key != 'project_id'\
-              and q.entity().__pg_properties__[key][0] == list):
-            val = [val]
-        #"""
 
+        """
         if is_list_of_lists(val):
             # Assumes list of lists of scalars
             q_all = q.filter(True)
@@ -269,6 +258,10 @@ def apply_query_args(q, args, info):
             # Assumes list of scalars
             q = q.filter(q.entity()._props[key].astext.in_([
                 str(v) for v in val]))
+        #"""
+
+        q = q.filter(q.entity()._props[key].astext.in_([
+            str(v) for v in val]))
 
     # not: nest a NOT filter for props, filters out matches
     not_props = args.get('not', {})
@@ -589,12 +582,6 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
     # We therefore tell the schema/validator here to always expect lists of args.
     # Before, we had no array-type (list-type) args,
     #   and so this was just: name: val if isinstance(val, graphene.List) else graphene.List(val).
-    # But now... 
-    #   TODO: Actually. The dictionary schema itself shouldn't be aware of this stuff. 
-    #   (And it indeed isn't, right?)
-    #   Why was the old logic like that? 
-    #   Which dictionary fields were the funny ones?
-    #   Wouldn't it make more sense, here, to just graphene.List()ify everything? 
 
     # ...But now we have arguments that can themselves be lists.
     # The following code therefore implements the analogous logic:
@@ -621,7 +608,17 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
     # Is it a Graphene thing?
     # https://github.com/graphql-python/graphql-core/blob/master/graphql/execution/executor.py#L571
 
+    #"""
+    property_args = {
+        name: graphene.List(val)
+        if not isinstance(val, graphene.List)
+        else val
+        for name, val in get_node_class_property_args(cls).items()
+    }
+    args.update(property_args)
+    #"""
 
+    """
     graphene_scalar_types = [graphene.String, graphene.Int, graphene.Float, graphene.Boolean, graphene.ID]
     graphene_scalar_list_types = [graphene.List(t) for t in graphene_scalar_types]
 
@@ -635,6 +632,7 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
         else:
             property_args[name] = val
     args.update(property_args)
+    #"""
 
     for key in args:
         if isinstance(args[key], graphene.String):
