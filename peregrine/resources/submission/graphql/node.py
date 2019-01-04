@@ -239,6 +239,9 @@ def apply_query_args(q, args, info):
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
 
+        # val is always a list, but the list elements are treated differently based on
+        # whether the relevant dictionary field has type scalar or list.
+        # See comments at get_node_class_args().
         if q.entity().__pg_properties__[key][0] == list:
             # This field has type list. Return supersets of input (i.e. do AND filter)
             for v in val:
@@ -561,39 +564,20 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
         without_path_to=graphene.List(WithPathToInput),
     ))
 
+    # For dictionary fields with scalar types, e.g. submitter_id, we accept from the user
+    # either a single scalar arg or a list of scalar args. The latter is treated as a bulk query
+    # (return results which include any of the expressions in the list).
 
-    # We want to accept from the user both single args and lists of args.
-    #   (Lists of args are treated as OR.)
-    # We therefore tell the schema/validator here to always expect lists of args.
-    # Before, we had no array-type (list-type) args,
-    #   and so this was just: name: val if isinstance(val, graphene.List) else graphene.List(val).
-
-    # ...But now we have arguments that can themselves be lists.
-    # The following code therefore implements the analogous logic:
-    #   if val is scalar, then wrap in list;
-    #   if val is list of scalars and expected argtype is list of scalars, then wrap in list;
-    #   In all other cases (val is list of scalars and expected argtype is scalar,
-    #   val is list of lists and expected argtype is list of scalars, etc), leave it alone.
-    #   Essentially, if val is of same type as expected, then wrap in list.
-    # (One problem though: Can't check if expected argtype is list of scalars or list of lists.
-    # Currently only checks whether expected argtype is a list, and if so,
-    # assumes list of scalars.)
-
-    # When the user gives a single arg, GraphQL itself will attempt to coerce the user input like so: 
-    #   https://facebook.github.io/graphql/June2018/#sec-Type-System.List
-    # Unfortunately, per the spec, if expected type is e.g. [[Int]] and provided value is e.g. [1,2,3],
-    #   this is treated as as an error instead of coerced one way or another, for obvious reasons.
-    # Now that we have array-type fields in the dictionary, this means that the common use-case of 
-    #   single-arg queries on array-type fields will break when the user provides e.g. [Int] 
-    #   instead of [[Int]].
-
-    # TODO: OK, the GraphQL spec says that it is an error, but what _actually_ happens is 
-    # that ["cc1", "cc2"] gets groomed into [["cc1"],["cc2"]] instead of [["cc1", "cc2"]], 
-    # which I think is silly/even more broken. Also I don't know why it is different from the spec.
-    # Is it a Graphene thing?
+    # But for dictionary fields with list types, e.g. consent_codes, we only accept from the user
+    # single list-type args. This is because if the schema expects [[scalar]] and the user inputs 
+    # [scalar], in general GraphQL/Graphene will coerce the input incorrectly:
+    # https://facebook.github.io/graphql/June2018/#sec-Type-System.List
     # https://github.com/graphql-python/graphql-core/blob/master/graphql/execution/executor.py#L571
+    # And it is unintuitive to expect only [[scalar]] from the user for a [scalar] type field.
 
-    #"""
+    # So here we just tell the schema to always expect a list.
+    # See also comments at def apply_query_args().
+
     property_args = {
         name: graphene.List(val)
         if not isinstance(val, graphene.List)
@@ -601,23 +585,6 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
         for name, val in get_node_class_property_args(cls).items()
     }
     args.update(property_args)
-    #"""
-
-    """
-    graphene_scalar_types = [graphene.String, graphene.Int, graphene.Float, graphene.Boolean, graphene.ID]
-    graphene_scalar_list_types = [graphene.List(t) for t in graphene_scalar_types]
-
-    property_args = {}
-    for name, val in get_node_class_property_args(cls).items():
-        if (not isinstance(val, graphene.List)) \
-           or (val in graphene_scalar_list_types \
-              and name != 'not' and name != 'project_id'\
-              and cls.__pg_properties__[name][0] == list):
-            property_args[name] = graphene.List(val)
-        else:
-            property_args[name] = val
-    args.update(property_args)
-    #"""
 
     for key in args:
         if isinstance(args[key], graphene.String):
