@@ -1,6 +1,8 @@
 import json
 import os
 
+import pdb #TODO REMOVE
+
 import pytest
 from flask import g
 from datamodelutils import models
@@ -664,9 +666,25 @@ def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
+    #pdb.set_trace() # Remove
+    # (Inspect the database)
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { transaction_log(first:1) { project_id, submitter } }"""}))
-    assert len(r.json['data']['transaction_log']) == 1, r.data
+#        'query':
+#            """{
+#              transaction_log (first:3){
+#                id
+#                project_id
+#                type
+#                state
+#                submitter
+#                documents {
+#                  id
+#                }
+#              }
+#            }"""}))
+    print("RESPONSE: ", r.json)
+    #assert len(r.json['data']['transaction_log']) == 1, r.data
     assert r.json == {
         "data": {
             "transaction_log": [{
@@ -787,10 +805,6 @@ def test_property_lists(client, submitter, pg_driver_clean, cgci_blgsp):
             'c3': 1,
         }
     }))
-    for k, v in response.json.items():
-        response.json[k] = sorted(v)
-    for k, v in expected_json.items():
-        expected_json[k] = sorted(v)
     assert response.json == expected_json, response.data
 
 
@@ -1318,29 +1332,29 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
     expected_dict = {
         "data": {
             "case0": [
-                {"consent_codes": ["cc1", "cc2"]},
+                {"consent_codes": ["cc1", "cc2", "cc3"]},
                 {"consent_codes": ["cc1"]}
             ], 
             "case1": [
                 {"consent_codes": ["cc2"]},
-                {"consent_codes": ["cc1", "cc2"]}
+                {"consent_codes": ["cc1", "cc2", "cc3"]}
             ], 
             "case2": [
-                {"consent_codes": ["cc1", "cc2"]},
+                {"consent_codes": ["cc1", "cc2", "cc3"]},
             ], 
             "case3": [
             ], 
             "case4": [
                 {"consent_codes": ["cc1"]},
-                {"consent_codes": ["cc1", "cc2"]}
+                {"consent_codes": ["cc1", "cc2", "cc3"]}
             ]
         }
     }
     # Lists are ordered but here order does not matter so we sort them before comparing.
-    for k, v in expected_dict.items():
-        expected_dict[k] = sorted(v)
-    for k, v in r.json.items():
-        r.json[k] = sorted(v)
+    for k, v in expected_dict["data"].items():
+        expected_dict["data"][k] = sorted(v)
+    for k, v in r.json["data"].items():
+        r.json["data"][k] = sorted(v)
     assert json.dumps(r.json, sort_keys=True) == json.dumps(expected_dict, sort_keys=True)
 
 

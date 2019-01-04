@@ -238,30 +238,15 @@ def apply_query_args(q, args, info):
     # *: filter for those with matching dictionary properties
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
-        print("VAL IS.........", val)
 
-        """
-        if is_list_of_lists(val):
-            # Assumes list of lists of scalars
-            q_all = q.filter(True)
-            or_q = q.filter(False)
-            for l in val:
-                and_q = q_all
-                for item in l:
-                    # For properties of type list, individual query args should be
-                    # of type list, and results should be supersets of query
-                    and_q = and_q.filter(q.entity()._props[key].astext.like("%"+item+"%"))
-                # Take union of results of each individual query
-                or_q = or_q.union(and_q)
-            q = or_q
+        if q.entity().__pg_properties__[key][0] == list:
+            # This field has type list. Return supersets of input (i.e. do AND filter)
+            for v in val:
+                q = q.filter(q.entity()._props[key].astext.like("%"+v+"%"))
         else:
-            # Assumes list of scalars
+            # This field has scalar type. Treat input as several queries (i.e. do OR filter)
             q = q.filter(q.entity()._props[key].astext.in_([
                 str(v) for v in val]))
-        #"""
-
-        q = q.filter(q.entity()._props[key].astext.in_([
-            str(v) for v in val]))
 
     # not: nest a NOT filter for props, filters out matches
     not_props = args.get('not', {})
