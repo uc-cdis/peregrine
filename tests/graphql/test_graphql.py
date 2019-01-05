@@ -361,7 +361,13 @@ def test_arg_first(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """ query Test { case (first: 1) { submitter_id }} """}))
-    assert len(r.json['data']['case']) == 1, r.data
+    assert r.json == {
+        'data': {
+            'case': [{
+                'submitter_id': 'BLGSP-71-06-00019'
+            }]
+        }
+    }, r.data
 
 
 def test_arg_offset(client, submitter, pg_driver_clean, cgci_blgsp):
@@ -1334,16 +1340,16 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
             "case0": [
                 {"consent_codes": ["cc1", "cc2", "cc3"]},
                 {"consent_codes": ["cc1"]}
-            ], 
+            ],
             "case1": [
                 {"consent_codes": ["cc2"]},
                 {"consent_codes": ["cc1", "cc2", "cc3"]}
-            ], 
+            ],
             "case2": [
                 {"consent_codes": ["cc1", "cc2", "cc3"]},
-            ], 
+            ],
             "case3": [
-            ], 
+            ],
             "case4": [
                 {"consent_codes": ["cc1"]},
                 {"consent_codes": ["cc1", "cc2", "cc3"]}

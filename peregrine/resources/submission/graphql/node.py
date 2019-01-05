@@ -15,7 +15,6 @@ import logging
 import psqlgraph
 import re
 import sqlalchemy as sa
-from functools import reduce as functools_reduce # placate Codacy
 
 from datamodelutils import models as md  # noqa
 from peregrine import dictionary
@@ -217,13 +216,6 @@ def apply_arg_quicksearch(q, args, info):
     return q
 
 
-def is_list_of_scalars(ls):
-    return functools_reduce(lambda x, y: x and not isinstance(y, list), ls, True)
-
-
-def is_list_of_lists(ls):
-    return functools_reduce(lambda x, y: x and isinstance(y, list), ls, True)
-
 
 def apply_query_args(q, args, info):
     """
@@ -232,6 +224,13 @@ def apply_query_args(q, args, info):
         args: dictionary of the arguments passed to the query.
         info: graphene object that holds the query's arguments, models and requested fields.
     """
+    # TODO REMOVE
+    # apply_query_args() is not called for test_transaction_logs(). 
+    # So apply_arg_limit presumably being called somewhere else. 
+    # apply_query_args() DOES get called for test_arg_first()...
+    # pdb
+    import pdb
+    #pdb.set_trace()
 
     pg_props = set(getattr(q.entity(), '__pg_properties__', {}).keys())
 
