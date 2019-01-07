@@ -1,8 +1,6 @@
 import json
 import os
 
-import pdb #TODO REMOVE
-
 import pytest
 from flask import g
 from datamodelutils import models
@@ -670,27 +668,22 @@ def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
     with pg_driver_clean.session_scope():
         assert r.json['data']['_case_count'] == 0
 
+
 def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    #pdb.set_trace() # Remove
-    # (Inspect the database)
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """query Test { transaction_log(first:1) { project_id, submitter } }"""}))
-#        'query':
-#            """{
-#              transaction_log (first:3){
-#                id
-#                project_id
-#                type
-#                state
-#                submitter
-#                documents {
-#                  id
-#                }
-#              }
-#            }"""}))
-    print("RESPONSE: ", r.json)
-    #assert len(r.json['data']['transaction_log']) == 1, r.data
+        'query': """
+            query Test {
+                transaction_log (
+                    first: 1,
+                    order_by_asc: "created_datetime"
+                ){
+                    project_id,
+                    submitter
+                }
+            }
+        """}))
+    assert len(r.json['data']['transaction_log']) == 1, r.data
     assert r.json == {
         "data": {
             "transaction_log": [{
