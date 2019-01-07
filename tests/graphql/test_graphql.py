@@ -1308,7 +1308,6 @@ def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
           _node_type (category: "{}", first: 1) {{
             id title category
           }}
-
         }}""".format(category)}))
 
     results = r.json.get('data', {}).get('_node_type', {})

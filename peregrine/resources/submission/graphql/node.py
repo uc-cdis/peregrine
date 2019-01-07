@@ -216,7 +216,6 @@ def apply_arg_quicksearch(q, args, info):
     return q
 
 
-
 def apply_query_args(q, args, info):
     """
     Args:
@@ -491,7 +490,6 @@ def lookup_graphql_type(T):
 
 
 def get_node_class_property_args(cls, not_props_io={}):
-
     args = {
         name: lookup_graphql_type(types[0])
         for name, types in cls.__pg_properties__.iteritems()
