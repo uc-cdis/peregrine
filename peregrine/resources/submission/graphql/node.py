@@ -224,13 +224,6 @@ def apply_query_args(q, args, info):
         args: dictionary of the arguments passed to the query.
         info: graphene object that holds the query's arguments, models and requested fields.
     """
-    # TODO REMOVE
-    # apply_query_args() is not called for test_transaction_logs(). 
-    # So apply_arg_limit presumably being called somewhere else. 
-    # apply_query_args() DOES get called for test_arg_first()...
-    # pdb
-    import pdb
-    #pdb.set_trace()
 
     pg_props = set(getattr(q.entity(), '__pg_properties__', {}).keys())
 
@@ -568,14 +561,14 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
     # (return results which include any of the expressions in the list).
 
     # But for dictionary fields with list types, e.g. consent_codes, we only accept from the user
-    # single list-type args. This is because if the schema expects [[scalar]] and the user inputs 
-    # [scalar], in general GraphQL/Graphene will coerce the input incorrectly:
+    # single list-type args. This is because if the schema expects [[scalar]] and the user inputs
+    # [scalar], in general GraphQL/Graphene will coerce the input in an unexpected way:
     # https://facebook.github.io/graphql/June2018/#sec-Type-System.List
     # https://github.com/graphql-python/graphql-core/blob/master/graphql/execution/executor.py#L571
     # And it is unintuitive to expect only [[scalar]] from the user for a [scalar] type field.
 
     # So here we just tell the schema to always expect a list.
-    # See also comments at def apply_query_args().
+    # See comments at def apply_query_args().
 
     property_args = {
         name: graphene.List(val)
