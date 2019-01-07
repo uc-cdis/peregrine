@@ -358,7 +358,11 @@ def test_project_project_id_filter(client, submitter, pg_driver_clean, cgci_blgs
 def test_arg_first(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """ query Test { case (first: 1) { submitter_id }} """}))
+        'query': """ 
+            query Test { 
+                case (first: 1, order_by_asc: "submitter_id") { submitter_id }
+            } 
+        """}))
     assert r.json == {
         'data': {
             'case': [{
