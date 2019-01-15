@@ -884,7 +884,10 @@ def resolve_datanode(self, info, **args):
         q = query_with_args(data_type, args, info)
         q_all.extend(q.all())
 
+    # apply_arg_limit() applied the limit to individual query results, but we
+    # are concatenating several query results so we need to apply it again
     limit = args.get('first', DEFAULT_LIMIT)
+    limit = limit if limit > 0 else None
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all][:limit]
 
 
@@ -994,7 +997,10 @@ def apply_nodetype_args(data, args):
     if 'order_by_desc' in args:
         l = sorted(l, key=lambda d: d[args['order_by_desc']], reverse=True)
 
+    # apply_arg_limit() applied the limit to individual query results, but we
+    # are concatenating several query results so we need to apply it again
     limit = args.get('first', DEFAULT_LIMIT)
+    limit = limit if limit > 0 else None
     l = l[:limit]
 
     return l
