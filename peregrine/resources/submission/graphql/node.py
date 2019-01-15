@@ -373,6 +373,7 @@ class Node(graphene.Interface):
     """The query object that represents the psqlgraph.Node base"""
 
     id = graphene.ID()
+    submitter_id = graphene.String()
     type = graphene.String()
     project_id = graphene.String()
     created_datetime = graphene.String()
