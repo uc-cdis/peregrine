@@ -885,6 +885,7 @@ def resolve_datanode(self, info, **args):
         q_all.extend(q.all())
 
     limit = args.get('first', DEFAULT_LIMIT)
+    limit = limit if limit > 0 else None
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all][:limit]
 
 
@@ -995,6 +996,7 @@ def apply_nodetype_args(data, args):
         l = sorted(l, key=lambda d: d[args['order_by_desc']], reverse=True)
 
     limit = args.get('first', DEFAULT_LIMIT)
+    limit = limit if limit > 0 else None
     l = l[:limit]
 
     return l
