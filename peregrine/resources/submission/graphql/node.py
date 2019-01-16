@@ -500,6 +500,7 @@ def get_node_class_property_args(cls, not_props_io={}):
 def get_base_node_args():
     return dict(
         id=graphene.String(),
+        submitter_id=graphene.String(),
         ids=graphene.List(graphene.String),
         quick_search=graphene.String(),
         first=graphene.Int(default_value=DEFAULT_LIMIT),
