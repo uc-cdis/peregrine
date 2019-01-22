@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+import logging
 
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
@@ -73,6 +75,7 @@ def cors_init(app):
 
 
 def dictionary_init(app):
+    start = time.time()
     if ('DICTIONARY_URL' in app.config):
         app.logger.info('Initializing dictionary from url')
         url = app.config['DICTIONARY_URL']
@@ -92,8 +95,13 @@ def dictionary_init(app):
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
 
+    end = int(round(time.time() - start))
+    app.logger.info('Initialized dictionary in {} sec'.format(end))
+
 
 def app_init(app):
+    app.logger.setLevel(logging.INFO)
+
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
@@ -105,9 +113,9 @@ def app_init(app):
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
-    app.graph_traversals = submission.graphql.make_graph_traversal_dict()
+    app.graph_traversals = submission.graphql.make_graph_traversal_dict(app.logger)
     app.graphql_schema = submission.graphql.get_schema()
-    app.schema_file = submission.generate_schema_file(app.graphql_schema)
+    app.schema_file = submission.generate_schema_file(app.graphql_schema, app.logger)
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:
@@ -115,6 +123,7 @@ def app_init(app):
             'Secret key not set in config! Authentication will not work'
         )
     async_pool_init(app)
+
     app.logger.info('Initialization complete.')
 
 
@@ -183,7 +192,6 @@ app.register_error_handler(AuthError, _log_and_jsonify_exception)
 
 
 def run_for_development(**kwargs):
-    import logging
     app.logger.setLevel(logging.INFO)
 
     for key in ["http_proxy", "https_proxy"]:

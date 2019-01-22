@@ -1,5 +1,5 @@
 httmock==1.2.3
-pytest>=3.2.3
+pytest>=3.2.3,<4.0.0
 lockfile==0.10.2
 coverage==3.7.1
 mock==1.0.1
@@ -18,7 +18,7 @@ envelopes==0.4
 -e git+https://git@github.com/uc-cdis/sheepdog.git@1.1.1#egg=sheepdog
 # dependencies of fence
 pyasn1-modules==0.0.11
-urllib3==1.22
+urllib3==1.23
 -e git+https://git@github.com/uc-cdis/cdis-python-utils.git@0.2.10#egg=cdispyutils
 -e git+https://git@github.com/uc-cdis/cirrus.git@0.1.5#egg=cirrus-0.1.5
 -e git+https://git@github.com/uc-cdis/fence.git@2.2.3#egg=fence
