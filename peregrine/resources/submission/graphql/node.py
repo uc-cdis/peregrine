@@ -840,18 +840,18 @@ def get_data_subclasses():
     """Return a list of the subclasses representing data categories."""
 
     if not DataNode.data_subclasses:
-        # get the list of categories that are data categories (end with _file)
-        data_subclasses_labels = [
+        # get the names of categories that are data categories (end with _file)
+        data_subclasses_labels = set(
             node
             for node in dictionary.schema
             if dictionary.schema[node]['category'].endswith('_file')
-        ]
+        )
         # get the subclasses for the data categories
-        DataNode.data_subclasses = [
+        DataNode.data_subclasses = set(
             node
             for node in psqlgraph.Node.get_subclasses()
             if node.label in data_subclasses_labels
-        ]
+        )
 
     return DataNode.data_subclasses
 
@@ -860,22 +860,17 @@ def get_datanode_fields_dict():
     """Return a dictionary containing the fields shared by all data nodes."""
 
     if not DataNode.shared_fields:
-
         # union of all the data nodes' possible fields
-        shared_fields_dict = {
-            'id': graphene.String(),
-            'type': graphene.String()
+        DataNode.shared_fields = {
+            field: lookup_graphql_type(types[0])()
+            for subclass in get_data_subclasses()
+            for field, types in subclass.__pg_properties__.items()
+            if field not in subclass._pg_edges.keys() # don't include the links
         }
-        for cls in get_data_subclasses(): # select the data nodes
-            props = cls.__pg_properties__
-            for k, types in props.items():
-                shared_fields_dict[k] = lookup_graphql_type(types[0])()
-
-            # handle the links: remove the links from the shared fields
-            for link_name in cls._pg_edges.keys():
-                shared_fields_dict.pop(link_name, None)
-
-        DataNode.shared_fields = shared_fields_dict
+        DataNode.shared_fields.update({
+            'id': graphene.String(),
+            'type': graphene.String(),
+        })
 
     return DataNode.shared_fields
 
