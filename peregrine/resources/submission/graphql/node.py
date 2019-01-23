@@ -244,6 +244,12 @@ def apply_query_args(q, args, info):
     if 'ids' in args:
         q = q.ids(args.get('ids'))
 
+    # submitter_id: filter for those with submitter_ids in a given list
+    if q.entity().label == 'node' and 'submitter_id' in args:
+        val = args['submitter_id']
+        val = val if isinstance(val, list) else [val]
+        q = q.filter(q.entity()._props['submitter_id'].astext.in_([str(v) for v in val]))
+
     # quick_search: see ``apply_arg_quicksearch``
     if 'quick_search' in args:
         q = apply_arg_quicksearch(q, args, info)
