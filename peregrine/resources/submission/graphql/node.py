@@ -244,6 +244,12 @@ def apply_query_args(q, args, info):
     if 'ids' in args:
         q = q.ids(args.get('ids'))
 
+    # submitter_id: filter for those with submitter_ids in a given list
+    if q.entity().label == 'node' and 'submitter_id' in args:
+        val = args['submitter_id']
+        val = val if isinstance(val, list) else [val]
+        q = q.filter(q.entity()._props['submitter_id'].astext.in_([str(v) for v in val]))
+
     # quick_search: see ``apply_arg_quicksearch``
     if 'quick_search' in args:
         q = apply_arg_quicksearch(q, args, info)
@@ -373,6 +379,7 @@ class Node(graphene.Interface):
     """The query object that represents the psqlgraph.Node base"""
 
     id = graphene.ID()
+    submitter_id = graphene.String()
     type = graphene.String()
     project_id = graphene.String()
     created_datetime = graphene.String()
@@ -499,6 +506,7 @@ def get_node_class_property_args(cls, not_props_io={}):
 def get_base_node_args():
     return dict(
         id=graphene.String(),
+        submitter_id=graphene.String(),
         ids=graphene.List(graphene.String),
         quick_search=graphene.String(),
         first=graphene.Int(default_value=DEFAULT_LIMIT),
