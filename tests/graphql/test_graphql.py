@@ -202,7 +202,8 @@ def test_viewer(client, submitter, pg_driver_clean, cgci_blgsp):
 def test_node_interface(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """query Test { node {
+        'query': """query Test { node (first: 100) {
+        # ^ Default limit is 10, but we have more than 10 nodes, so override
         id type project_id created_datetime
         }}"""}))
     results = r.json.get('data', {}).get('node', {})
@@ -660,8 +661,8 @@ def test_with_links_any(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    #: number of nodes to change project_id on, there should be 3
-    n = 3
+    #: number of nodes to change project_id on, there should be 5
+    n = 5
     with pg_driver_clean.session_scope() as s:
         cases = pg_driver_clean.nodes(models.Case).limit(n).all()
         for case in cases:
@@ -1052,11 +1053,15 @@ def test_without_path_order(client, submitter, pg_driver_clean, cgci_blgsp):
         cases = pg_driver_clean.nodes(models.Case).all()
         for c in cases:
             if c.submitter_id == 'BLGSP-71-06-00019':
-                c.created_datetime = '2019-01-03T12:34:56.017404-06:00'
+                c.created_datetime = '2019-01-03T12:34:19.017404-06:00'
             elif c.submitter_id == 'BLGSP-71-06-00020':
-                c.created_datetime = '2019-01-03T12:34:57.017404-06:00'
+                c.created_datetime = '2019-01-03T12:34:20.017404-06:00'
             elif c.submitter_id == 'BLGSP-71-06-00021':
-                c.created_datetime = '2019-01-03T12:34:58.017404-06:00'
+                c.created_datetime = '2019-01-03T12:34:21.017404-06:00'
+            elif c.submitter_id == 'BLGSP-71-06-00022':
+                c.created_datetime = '2019-01-03T12:34:22.017404-06:00'
+            elif c.submitter_id == 'BLGSP-71-06-00023':
+                c.created_datetime = '2019-01-03T12:34:23.017404-06:00'
             c.samples = []
 
     r = client.post(path, headers=submitter, data=json.dumps({
@@ -1074,6 +1079,8 @@ def test_without_path_order(client, submitter, pg_driver_clean, cgci_blgsp):
     assert r.json == {
         "data": {
             "case": [
+                {"submitter_id": "BLGSP-71-06-00023"},
+                {"submitter_id": "BLGSP-71-06-00022"},
                 {"submitter_id": "BLGSP-71-06-00021"},
                 {"submitter_id": "BLGSP-71-06-00020"},
                 {"submitter_id": "BLGSP-71-06-00019"}
@@ -1329,6 +1336,10 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
                 case2: case (consent_codes: ["cc2", "cc1"]) { consent_codes }
                 case3: case (consent_codes: ["cc1", "no_such_code"]) { consent_codes }
                 case4: case (consent_codes: "cc1") { consent_codes }
+                # cases 5,6 exist just to check that these consent codes exist
+                # but are not included in results for cases 1-4
+                case5: case (consent_codes: ["xcc1"]) { consent_codes }
+                case6: case (consent_codes: ["cc1x"]) { consent_codes }
             }
         """}))
     expected_dict = {
@@ -1349,6 +1360,12 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
             "case4": [
                 {"consent_codes": ["cc1"]},
                 {"consent_codes": ["cc1", "cc2", "cc3"]}
+            ],
+            "case5": [
+                {"consent_codes": ["xcc1"]}
+            ],
+            "case6": [
+                {"consent_codes": ["cc1x"]}
             ]
         }
     }

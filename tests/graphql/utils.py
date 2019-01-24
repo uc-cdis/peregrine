@@ -17,6 +17,8 @@ data_fnames = [
     'case1.json',
     'case2.json',
     'case3.json',
+    'case4.json',
+    'case5.json',
     'sample.json',
     'aliquot.json',
     'demographic.json',

@@ -236,7 +236,7 @@ def apply_query_args(q, args, info):
         if q.entity().__pg_properties__[key][0] == list:
             # This field has type list. Return supersets of input (i.e. do AND filter)
             for v in val:
-                q = q.filter(q.entity()._props[key].astext.like("%"+v+"%"))
+                q = q.filter(q.entity()._props[key].astext.like('%"'+v+'"%'))
         else:
             # This field has scalar type. Treat input as several queries (i.e. do OR filter)
             q = q.filter(q.entity()._props[key].astext.in_([
