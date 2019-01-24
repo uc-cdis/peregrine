@@ -879,7 +879,6 @@ def get_datanode_fields_dict():
         # shared_fields takes the intersection of all the data node field sets
         shared_fields = set.intersection(*fields)
 
-        # TODO: "DataNode type interface shoud be fixed to handle non-string type fields"--PT
         shared_fields_dict = {field: graphene.String() for field in shared_fields}
         if 'file_size' in shared_fields:
             shared_fields_dict['file_size'] = graphene.Int()
