@@ -472,6 +472,7 @@ def lookup_graphql_type(T):
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
+        long: graphene.Float,
         int: graphene.Int,
         list: graphene.List(graphene.String),
     }.get(T, graphene.String)
@@ -839,28 +840,45 @@ NodeField = graphene.List(Node, args=get_node_interface_args())
 
 class DataNode(graphene.Interface):
     id = graphene.ID()
+    data_subclasses = None
     shared_fields = None # fields shared by all data nodes in the dictionary
+
+
+def get_data_subclasses():
+    """Return a list of the subclasses representing data categories."""
+
+    if not DataNode.data_subclasses:
+        # get the names of categories that are data categories (end with _file)
+        data_subclasses_labels = set(
+            node
+            for node in dictionary.schema
+            if dictionary.schema[node]['category'].endswith('_file')
+        )
+        # get the subclasses for the data categories
+        DataNode.data_subclasses = set(
+            node
+            for node in psqlgraph.Node.get_subclasses()
+            if node.label in data_subclasses_labels
+        )
+
+    return DataNode.data_subclasses
 
 
 def get_datanode_fields_dict():
     """Return a dictionary containing the fields shared by all data nodes."""
 
     if not DataNode.shared_fields:
-
-        # fields lists the set of node fields, for every data node in the dictionary schema (nodes ending with '_file')
-        fields = [
-            set(schema['properties'].keys())
-            for schema in dictionary.schema.values()
-            if schema['category'].endswith('_file')
-        ]
-
-        # shared_fields takes the intersection of all the data node field sets
-        shared_fields = set.intersection(*fields)
-
-        shared_fields_dict = {field: graphene.String() for field in shared_fields}
-        if 'file_size' in shared_fields:
-            shared_fields_dict['file_size'] = graphene.Int()
-        DataNode.shared_fields = shared_fields_dict
+        # union of all the data nodes' possible fields
+        DataNode.shared_fields = {
+            field: lookup_graphql_type(types[0])()
+            for subclass in get_data_subclasses()
+            for field, types in subclass.__pg_properties__.items()
+            if field not in subclass._pg_edges.keys() # don't include the links
+        }
+        DataNode.shared_fields.update({
+            'id': graphene.String(),
+            'type': graphene.String(),
+        })
 
     return DataNode.shared_fields
 
@@ -872,23 +890,8 @@ def resolve_datanode(self, info, **args):
         A list of graphene object classes.
 
     """
-
-    # get the list of categories that are data categories
-    data_types_labels = [
-        node
-        for node in dictionary.schema
-        if dictionary.schema[node]['category'].endswith('_file')
-    ]
-
-    # get the subclasses for the data categories
-    data_types = [
-        node
-        for node in psqlgraph.Node.get_subclasses()
-        if node.label in data_types_labels
-    ]
-
     q_all = []
-    for data_type in data_types:
+    for data_type in get_data_subclasses():
         q = query_with_args(data_type, args, info)
         q_all.extend(q.all())
 
