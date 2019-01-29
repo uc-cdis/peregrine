@@ -115,19 +115,43 @@ def construct_traversals_from_node(root_node, label_to_subclass):
     return {label: list(paths) for label, paths in traversals.iteritems() if paths}
 
 
-def make_graph_traversal_dict(app_logger):
-    start = time.time()
-    label_to_subclass = {
-        n.__name__: n
-        for n in Node.get_subclasses()
-    }
-    data = {
-        node.label: construct_traversals_from_node(node, label_to_subclass)
-        for node in Node.get_subclasses()
-    }
-    end = int(round(time.time() - start))
-    app_logger.info('Traversed the graph in {} sec'.format(end))
-    return data
+def make_graph_traversal_dict(app, preload=None):
+    """Initialize the graph traversal dict.
+
+    If USE_LAZY_TRAVERSE is False, Peregrine server will preload the full dict at start,
+    or it will be initialized as an empty dict.
+
+    You may call this method with `preload=True` to manually preload the full dict.
+    """
+    app.graph_traversals = getattr(app, 'graph_traversals', {})
+    if preload or not app.config.get('USE_LAZY_TRAVERSE', True):
+        for node in Node.get_subclasses():
+            get_paths_between(node.label, app=app)
+
+
+def get_paths_between(src, dest=None, app=None):
+    if app is None:
+        app = flask.current_app
+    none = object()
+    rv = app.graph_traversals.get(src, none)
+    if rv is none:
+        # GOTCHA: lazy initialization is not locked because 1) threading is not enabled
+        # in production with uWSGI, and 2) this always generates the same result for the
+        # same input so there's no racing condition to worry about
+        start = time.time()
+        label_to_subclass = {
+            n.__name__: n
+            for n in Node.get_subclasses()
+        }
+        node = Node.get_subclass(src)
+        rv = construct_traversals_from_node(node, label_to_subclass)
+        app.graph_traversals[src] = rv
+        time_taken = int(round(time.time() - start))
+        if time_taken > 0.5:
+            app.logger.info('Traversed the graph starting from %s in %.2f sec',
+                            src, time_taken)
+    if dest is not None:
+        return rv.get(dest, [])
 
 
 def union_subq_without_path(q, *args, **kwargs):
@@ -135,15 +159,9 @@ def union_subq_without_path(q, *args, **kwargs):
 
 
 def union_subq_path(q, src_label, dst_label, post_filters=[]):
-    edges = (
-        flask.current_app
-        .graph_traversals
-        .get(src_label, {})
-        .get(dst_label, {})
-    )
-    if not edges:
+    paths = get_paths_between(src_label, dst_label)
+    if not paths:
         return q
-    paths = list(flask.current_app.graph_traversals[src_label][dst_label])
     base = q.subq_path(paths.pop(), post_filters)
     while paths:
         base = base.union(q.subq_path(paths.pop(), post_filters))
@@ -179,12 +197,7 @@ def subq_paths(q, dst_label, post_filters=None):
 
     post_filters = post_filters or []
 
-    paths = (
-        flask.current_app
-        .graph_traversals
-        .get(q.entity().label, {})
-        .get(dst_label, {})
-    )
+    paths = get_paths_between(q.entity().label, dst_label)
     if not paths:
         return q.filter(sa.sql.false())
 
