@@ -132,9 +132,7 @@ def make_graph_traversal_dict(app, preload=None):
 def get_paths_between(src, dest=None, app=None):
     if app is None:
         app = flask.current_app
-    none = object()
-    rv = app.graph_traversals.get(src, none)
-    if rv is none:
+    if src not in app.graph_traversals:
         # GOTCHA: lazy initialization is not locked because 1) threading is not enabled
         # in production with uWSGI, and 2) this always generates the same result for the
         # same input so there's no racing condition to worry about
@@ -144,14 +142,14 @@ def get_paths_between(src, dest=None, app=None):
             for n in Node.get_subclasses()
         }
         node = Node.get_subclass(src)
-        rv = construct_traversals_from_node(node, label_to_subclass)
-        app.graph_traversals[src] = rv
+        app.graph_traversals[src] = construct_traversals_from_node(node,
+                                                                   label_to_subclass)
         time_taken = int(round(time.time() - start))
         if time_taken > 0.5:
             app.logger.info('Traversed the graph starting from %s in %.2f sec',
                             src, time_taken)
     if dest is not None:
-        return rv.get(dest, [])
+        return app.graph_traversals[src].get(dest, [])
 
 
 def union_subq_without_path(q, *args, **kwargs):
