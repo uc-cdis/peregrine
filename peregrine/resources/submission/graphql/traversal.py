@@ -80,7 +80,7 @@ def is_valid_direction(node, visited):
         return this_level >= last_level
 
 
-def construct_traversals_from_node(root_node, label_to_subclass):
+def construct_traversals_from_node(root_node, app):
     traversals = {node.label: set() for node in Node.get_subclasses()}
     to_visit = [(root_node, [], [])]
     path = []
@@ -97,15 +97,21 @@ def construct_traversals_from_node(root_node, label_to_subclass):
         # Don't walk back up the tree
         if not is_valid_direction(node, visited or [root_node]):
             continue
+        name_to_subclass = getattr(app, 'name_to_subclass', None)
+        if name_to_subclass is None:
+            name_to_subclass = app.name_to_subclass = {
+                n.__name__: n
+                for n in Node.get_subclasses()
+            }
         neighbors_dst = {
-            (label_to_subclass[edge.__dst_class__], edge.__src_dst_assoc__)
+            (name_to_subclass[edge.__dst_class__], edge.__src_dst_assoc__)
             for edge in Edge._get_edges_with_src(node.__name__)
-            if label_to_subclass[edge.__dst_class__]
+            if name_to_subclass[edge.__dst_class__]
         }
         neighbors_src = {
-            (label_to_subclass[edge.__src_class__], edge.__dst_src_assoc__)
+            (name_to_subclass[edge.__src_class__], edge.__dst_src_assoc__)
             for edge in Edge._get_edges_with_dst(node.__name__)
-            if label_to_subclass[edge.__src_class__]
+            if name_to_subclass[edge.__src_class__]
         }
         to_visit.extend([
             (neighbor, path + [edge], visited + [node])
@@ -115,7 +121,7 @@ def construct_traversals_from_node(root_node, label_to_subclass):
     return {label: list(paths) for label, paths in traversals.iteritems() if paths}
 
 
-def make_graph_traversal_dict(app, preload=None):
+def make_graph_traversal_dict(app, preload=False):
     """Initialize the graph traversal dict.
 
     If USE_LAZY_TRAVERSE is False, Peregrine server will preload the full dict at start,
@@ -126,30 +132,38 @@ def make_graph_traversal_dict(app, preload=None):
     app.graph_traversals = getattr(app, 'graph_traversals', {})
     if preload or not app.config.get('USE_LAZY_TRAVERSE', True):
         for node in Node.get_subclasses():
-            get_paths_between(node.label, app=app)
+            _get_paths_from(node, app)
 
 
-def get_paths_between(src, dest=None, app=None):
-    if app is None:
-        app = flask.current_app
-    if src not in app.graph_traversals:
+def _get_paths_from(src, app):
+    if isinstance(src, type) and issubclass(src, Node):
+        src_label = src.label
+    else:
+        src, src_label = Node.get_subclass(src), src
+    if src_label not in app.graph_traversals:
         # GOTCHA: lazy initialization is not locked because 1) threading is not enabled
         # in production with uWSGI, and 2) this always generates the same result for the
         # same input so there's no racing condition to worry about
         start = time.time()
-        label_to_subclass = {
-            n.__name__: n
-            for n in Node.get_subclasses()
-        }
-        node = Node.get_subclass(src)
-        app.graph_traversals[src] = construct_traversals_from_node(node,
-                                                                   label_to_subclass)
+        app.graph_traversals[src_label] = construct_traversals_from_node(src, app)
         time_taken = int(round(time.time() - start))
         if time_taken > 0.5:
-            app.logger.info('Traversed the graph starting from %s in %.2f sec',
-                            src, time_taken)
-    if dest is not None:
-        return app.graph_traversals[src].get(dest, [])
+            app.logger.info('Traversed the graph starting from "%s" in %.2f sec',
+                            src_label, time_taken)
+    return app.graph_traversals[src_label]
+
+
+def get_paths_between(src, dest, app=None):
+    """Get traversal paths between src and dest.
+
+    src and dest may be Node subclasses or their labels.
+    Returns a list of path strings.
+    """
+    if app is None:
+        app = flask.current_app
+    if isinstance(dest, type) and issubclass(dest, Node):
+        dest = dest.label
+    return _get_paths_from(src, app).get(dest, [])
 
 
 def union_subq_without_path(q, *args, **kwargs):
@@ -195,7 +209,7 @@ def subq_paths(q, dst_label, post_filters=None):
 
     post_filters = post_filters or []
 
-    paths = get_paths_between(q.entity().label, dst_label)
+    paths = get_paths_between(q.entity(), dst_label)
     if not paths:
         return q.filter(sa.sql.false())
 
