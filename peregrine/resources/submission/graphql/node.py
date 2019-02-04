@@ -217,13 +217,27 @@ def apply_arg_quicksearch(q, args, info):
 
 
 def apply_query_args(q, args, info):
+    """
+    Args:
+        q: psqlgraph query
+        args: dictionary of the arguments passed to the query.
+        info: graphene object that holds the query's arguments, models and requested fields.
+    """
+
     pg_props = set(getattr(q.entity(), '__pg_properties__', {}).keys())
 
     # *: filter for those with matching dictionary properties
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
-        val = val if isinstance(val, list) else [val]
-        if val:
+
+        # val is always a list, but the list elements are treated differently based on
+        # whether the relevant dictionary field has type scalar or list.
+        # See comments at get_node_class_args().
+        if q.entity().__pg_properties__[key][0] == list:
+            # This field has type list. Return supersets of input (i.e. do AND filter)
+            q = q.filter(*[q.entity()._props[key].astext.like('%"'+v+'"%') for v in val])
+        else:
+            # This field has scalar type. Treat input as several queries (i.e. do OR filter)
             q = q.filter(q.entity()._props[key].astext.in_([
                 str(v) for v in val]))
 
@@ -547,6 +561,21 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
         with_path_to_any=graphene.List(WithPathToInput),
         without_path_to=graphene.List(WithPathToInput),
     ))
+
+    # For dictionary fields with scalar types, e.g. submitter_id, we accept from the user
+    # either a single scalar arg or a list of scalar args. The latter is treated as a bulk query
+    # (return results which include any of the expressions in the list).
+
+    # But for dictionary fields with list types, e.g. consent_codes, we only accept from the user
+    # single list-type args. This is because if the schema expects [[scalar]] and the user inputs
+    # [scalar], in general GraphQL/Graphene will coerce the input in an unexpected way:
+    # https://facebook.github.io/graphql/June2018/#sec-Type-System.List
+    # https://github.com/graphql-python/graphql-core/blob/master/graphql/execution/executor.py#L571
+    # And it is unintuitive to expect only [[scalar]] from the user for a [scalar] type field.
+
+    # So here we just tell the schema to always expect a list.
+    # See comments at def apply_query_args().
+
     property_args = {
         name: graphene.List(val)
         if not isinstance(val, graphene.List)
