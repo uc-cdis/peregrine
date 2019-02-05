@@ -76,3 +76,4 @@ SESSION_COOKIE_NAME = 'PEREGRINE_session'
 # verify project existence in dbgap or not
 VERIFY_PROJECT = False
 AUTH_SUBMISSION_LIST = False
+USE_LAZY_TRAVERSE = True
