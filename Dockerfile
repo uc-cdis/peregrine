@@ -27,6 +27,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 #     && python -m pip install --upgrade pip \
 #     && python -m pip install --upgrade setuptools \
 #     && python -m pip install --upgrade uwsgi \
+RUN apk add --no-cache openblas-dev
 RUN mkdir /var/www/peregrine \
     && mkdir -p /var/www/.cache/Python-Eggs/ \
     && chown www-data -R /var/www/.cache/Python-Eggs/ \
