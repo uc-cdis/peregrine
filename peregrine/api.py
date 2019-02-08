@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+import logging
 
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
@@ -73,23 +75,33 @@ def cors_init(app):
 
 
 def dictionary_init(app):
-    dictionary_url = app.config.get('DICTIONARY_URL')
-    if dictionary_url:
+    start = time.time()
+    if ('DICTIONARY_URL' in app.config):
         app.logger.info('Initializing dictionary from url')
-        d = DataDictionary(url=dictionary_url)
+        url = app.config['DICTIONARY_URL']
+        d = DataDictionary(url=url)
         dict_init.init(d)
-        dictionary.init(d)
+    elif ('PATH_TO_SCHEMA_DIR' in app.config):
+        app.logger.info('Initializing dictionary from schema dir')
+        d = DataDictionary(root_dir=app.config['PATH_TO_SCHEMA_DIR'])
+        dict_init.init(d)
     else:
         app.logger.info('Initializing dictionary from gdcdictionary')
-        from gdcdictionary import gdcdictionary
-        dictionary.init(gdcdictionary)
+        import gdcdictionary
+        d = gdcdictionary.gdcdictionary
+    dictionary.init(d)
     from gdcdatamodel import models as md
     from gdcdatamodel import validators as vd
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
 
+    end = int(round(time.time() - start))
+    app.logger.info('Initialized dictionary in {} sec'.format(end))
+
 
 def app_init(app):
+    app.logger.setLevel(logging.INFO)
+
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
@@ -101,9 +113,9 @@ def app_init(app):
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
-    app.graph_traversals = submission.graphql.make_graph_traversal_dict()
+    submission.graphql.make_graph_traversal_dict(app)
     app.graphql_schema = submission.graphql.get_schema()
-    app.schema_file = submission.generate_schema_file(app.graphql_schema)
+    app.schema_file = submission.generate_schema_file(app.graphql_schema, app.logger)
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:
@@ -111,6 +123,7 @@ def app_init(app):
             'Secret key not set in config! Authentication will not work'
         )
     async_pool_init(app)
+
     app.logger.info('Initialization complete.')
 
 
@@ -179,7 +192,6 @@ app.register_error_handler(AuthError, _log_and_jsonify_exception)
 
 
 def run_for_development(**kwargs):
-    import logging
     app.logger.setLevel(logging.INFO)
 
     for key in ["http_proxy", "https_proxy"]:

@@ -8,7 +8,9 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN mkdir /var/www/peregrine \
     && mkdir -p /var/www/.cache/Python-Eggs/ \
     && chown www-data -R /var/www/.cache/Python-Eggs/ \
-    && mkdir /run/nginx/
+    && mkdir /run/nginx/ \
+    && mkdir -m 075 /var/run/gen3 \
+    && chown root:www-data /var/run/gen3
 
 COPY . /peregrine
 COPY ./deployment/uwsgi/uwsgi.ini /etc/uwsgi/uwsgi.ini
@@ -32,4 +34,5 @@ EXPOSE 80
 
 WORKDIR /var/www/peregrine
 
-CMD /peregrine/dockerrun.bash
+ENTRYPOINT [ "/bin/sh", "/peregrine/dockerrun.sh" ]
+CMD []

@@ -12,10 +12,13 @@ from .base import (
     munge,
 )
 
+from .util import (
+    clean_count,
+)
+
 from gdcgraphql import (
     Query,
 )
-
 
 class NodeCountQuery(base.GraphQLQuery):
 
@@ -48,7 +51,7 @@ class NodeCountQuery(base.GraphQLQuery):
         q = self.get_authorized_query(cls)
         for arg in self.top.arguments:
             q = node_query.add_arg_filter(q, arg)
-        self.result = {self.top.key: q.count()}
+        self.result = {self.top.key: clean_count(q)}
 
     @staticmethod
     def _queries():

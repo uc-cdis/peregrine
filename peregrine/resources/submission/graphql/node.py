@@ -21,6 +21,7 @@ from peregrine import dictionary
 from .util import (
     apply_arg_limit,
     apply_arg_offset,
+    clean_count,
     get_authorized_query,
     get_fields as util_get_fields,
     filtered_column_dict,
@@ -216,13 +217,27 @@ def apply_arg_quicksearch(q, args, info):
 
 
 def apply_query_args(q, args, info):
+    """
+    Args:
+        q: psqlgraph query
+        args: dictionary of the arguments passed to the query.
+        info: graphene object that holds the query's arguments, models and requested fields.
+    """
+
     pg_props = set(getattr(q.entity(), '__pg_properties__', {}).keys())
 
     # *: filter for those with matching dictionary properties
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
-        val = val if isinstance(val, list) else [val]
-        if val:
+
+        # val is always a list, but the list elements are treated differently based on
+        # whether the relevant dictionary field has type scalar or list.
+        # See comments at get_node_class_args().
+        if q.entity().__pg_properties__[key][0] == list:
+            # This field has type list. Return supersets of input (i.e. do AND filter)
+            q = q.filter(*[q.entity()._props[key].astext.like('%"'+v+'"%') for v in val])
+        else:
+            # This field has scalar type. Treat input as several queries (i.e. do OR filter)
             q = q.filter(q.entity()._props[key].astext.in_([
                 str(v) for v in val]))
 
@@ -242,6 +257,12 @@ def apply_query_args(q, args, info):
     # ids: filter for those with ids in a given list (alias of `id` filter)
     if 'ids' in args:
         q = q.ids(args.get('ids'))
+
+    # submitter_id: filter for those with submitter_ids in a given list
+    if q.entity().label == 'node' and 'submitter_id' in args:
+        val = args['submitter_id']
+        val = val if isinstance(val, list) else [val]
+        q = q.filter(q.entity()._props['submitter_id'].astext.in_([str(v) for v in val]))
 
     # quick_search: see ``apply_arg_quicksearch``
     if 'quick_search' in args:
@@ -372,6 +393,7 @@ class Node(graphene.Interface):
     """The query object that represents the psqlgraph.Node base"""
 
     id = graphene.ID()
+    submitter_id = graphene.String()
     type = graphene.String()
     project_id = graphene.String()
     created_datetime = graphene.String()
@@ -464,7 +486,9 @@ def lookup_graphql_type(T):
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
+        long: graphene.Float,
         int: graphene.Int,
+        list: graphene.List(graphene.String),
     }.get(T, graphene.String)
 
 
@@ -497,6 +521,7 @@ def get_node_class_property_args(cls, not_props_io={}):
 def get_base_node_args():
     return dict(
         id=graphene.String(),
+        submitter_id=graphene.String(),
         ids=graphene.List(graphene.String),
         quick_search=graphene.String(),
         first=graphene.Int(default_value=DEFAULT_LIMIT),
@@ -536,6 +561,21 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
         with_path_to_any=graphene.List(WithPathToInput),
         without_path_to=graphene.List(WithPathToInput),
     ))
+
+    # For dictionary fields with scalar types, e.g. submitter_id, we accept from the user
+    # either a single scalar arg or a list of scalar args. The latter is treated as a bulk query
+    # (return results which include any of the expressions in the list).
+
+    # But for dictionary fields with list types, e.g. consent_codes, we only accept from the user
+    # single list-type args. This is because if the schema expects [[scalar]] and the user inputs
+    # [scalar], in general GraphQL/Graphene will coerce the input in an unexpected way:
+    # https://facebook.github.io/graphql/June2018/#sec-Type-System.List
+    # https://github.com/graphql-python/graphql-core/blob/master/graphql/execution/executor.py#L571
+    # And it is unintuitive to expect only [[scalar]] from the user for a [scalar] type field.
+
+    # So here we just tell the schema to always expect a list.
+    # See comments at def apply_query_args().
+
     property_args = {
         name: graphene.List(val)
         if not isinstance(val, graphene.List)
@@ -699,7 +739,7 @@ def get_node_class_link_resolver_attrs(cls):
                 q = link_query(self, info, cls=cls, link=link, **args)
                 q = q.with_entities(sa.distinct(link['type'].node_id))
                 q = q.limit(None)
-                return q.count()
+                return clean_count(q)
             except Exception as e:
                 capp.logger.exception(e)
                 raise
@@ -787,7 +827,7 @@ def create_root_fields(fields):
             if 'with_path_to' in args or 'with_path_to_any' in args:
                 q = q.with_entities(sa.distinct(cls.node_id))
             q = q.limit(args.get('first', None))
-            return q.count()
+            return clean_count(q)
 
         count_field = graphene.Field(
             graphene.Int, args=get_node_class_args(cls))
@@ -820,7 +860,6 @@ def get_fields():
 
     return __fields
 
-
 NodeField = graphene.List(Node, args=get_node_interface_args())
 
 
@@ -830,28 +869,45 @@ NodeField = graphene.List(Node, args=get_node_interface_args())
 
 class DataNode(graphene.Interface):
     id = graphene.ID()
+    data_subclasses = None
     shared_fields = None # fields shared by all data nodes in the dictionary
+
+
+def get_data_subclasses():
+    """Return a list of the subclasses representing data categories."""
+
+    if not DataNode.data_subclasses:
+        # get the names of categories that are data categories (end with _file)
+        data_subclasses_labels = set(
+            node
+            for node in dictionary.schema
+            if dictionary.schema[node]['category'].endswith('_file')
+        )
+        # get the subclasses for the data categories
+        DataNode.data_subclasses = set(
+            node
+            for node in psqlgraph.Node.get_subclasses()
+            if node.label in data_subclasses_labels
+        )
+
+    return DataNode.data_subclasses
 
 
 def get_datanode_fields_dict():
     """Return a dictionary containing the fields shared by all data nodes."""
 
     if not DataNode.shared_fields:
-
-        # fields lists the set of node fields, for every data node in the dictionary schema (nodes ending with '_file')
-        fields = [
-            set(schema['properties'].keys())
-            for schema in dictionary.schema.values()
-            if schema['category'].endswith('_file')
-        ]
-
-        # shared_fields takes the intersection of all the data node field sets
-        shared_fields = set.intersection(*fields)
-
-        shared_fields_dict = {field: graphene.String() for field in shared_fields}
-        if 'file_size' in shared_fields:
-            shared_fields_dict['file_size'] = graphene.Int()
-        DataNode.shared_fields = shared_fields_dict
+        # union of all the data nodes' possible fields
+        DataNode.shared_fields = {
+            field: lookup_graphql_type(types[0])()
+            for subclass in get_data_subclasses()
+            for field, types in subclass.__pg_properties__.items()
+            if field not in subclass._pg_edges.keys() # don't include the links
+        }
+        DataNode.shared_fields.update({
+            'id': graphene.String(),
+            'type': graphene.String(),
+        })
 
     return DataNode.shared_fields
 
@@ -863,27 +919,15 @@ def resolve_datanode(self, info, **args):
         A list of graphene object classes.
 
     """
-
-    # get the list of categories that are data categories
-    data_types_labels = [
-        node
-        for node in dictionary.schema
-        if dictionary.schema[node]['category'].endswith('_file')
-    ]
-
-    # get the subclasses for the data categories
-    data_types = [
-        node
-        for node in psqlgraph.Node.get_subclasses()
-        if node.label in data_types_labels
-    ]
-
     q_all = []
-    for data_type in data_types:
+    for data_type in get_data_subclasses():
         q = query_with_args(data_type, args, info)
         q_all.extend(q.all())
 
+    # apply_arg_limit() applied the limit to individual query results, but we
+    # are concatenating several query results so we need to apply it again
     limit = args.get('first', DEFAULT_LIMIT)
+    limit = limit if limit > 0 else None
     return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all][:limit]
 
 
@@ -993,7 +1037,10 @@ def apply_nodetype_args(data, args):
     if 'order_by_desc' in args:
         l = sorted(l, key=lambda d: d[args['order_by_desc']], reverse=True)
 
+    # apply_arg_limit() applied the limit to individual query results, but we
+    # are concatenating several query results so we need to apply it again
     limit = args.get('first', DEFAULT_LIMIT)
+    limit = limit if limit > 0 else None
     l = l[:limit]
 
     return l

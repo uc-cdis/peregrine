@@ -202,7 +202,8 @@ def test_viewer(client, submitter, pg_driver_clean, cgci_blgsp):
 def test_node_interface(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """query Test { node {
+        'query': """query Test { node (first: 100) {
+        # ^ Default limit is 10, but we have more than 10 nodes, so override
         id type project_id created_datetime
         }}"""}))
     results = r.json.get('data', {}).get('node', {})
@@ -358,7 +359,11 @@ def test_project_project_id_filter(client, submitter, pg_driver_clean, cgci_blgs
 def test_arg_first(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """ query Test { case (first: 1) { submitter_id }} """}))
+        'query': """ 
+            query Test { 
+                case (first: 1, order_by_asc: "submitter_id") { submitter_id }
+            } 
+        """}))
     assert r.json == {
         'data': {
             'case': [{
@@ -656,9 +661,8 @@ def test_with_links_any(client, submitter, pg_driver_clean, cgci_blgsp):
 
 def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    #: number of nodes to change project_id on, there should
-    #: actually only be 1
-    n = 1
+    #: number of nodes to change project_id on, there should be 5
+    n = 5
     with pg_driver_clean.session_scope() as s:
         cases = pg_driver_clean.nodes(models.Case).limit(n).all()
         for case in cases:
@@ -669,10 +673,21 @@ def test_auth_counts(client, submitter, pg_driver_clean, cgci_blgsp):
     with pg_driver_clean.session_scope():
         assert r.json['data']['_case_count'] == 0
 
+
 def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """query Test { transaction_log(first:1) { project_id, submitter } }"""}))
+        'query': """
+            query Test {
+                transaction_log (
+                    first: 1,
+                    order_by_asc: "created_datetime"
+                ){
+                    project_id,
+                    submitter
+                }
+            }
+        """}))
     assert len(r.json['data']['transaction_log']) == 1, r.data
     assert r.json == {
         "data": {
@@ -1030,27 +1045,46 @@ def test_submitted_unaligned_reads_with_path_to_read_group(
 def test_without_path_order(client, submitter, pg_driver_clean, cgci_blgsp):
     """Assert that the ordering is applied after the exception"""
     put_example_entities_together(client, pg_driver_clean, submitter)
-    utils.put_entity_from_file(client, 'case.json', submitter)
-    utils.put_entity_from_file(client, 'sample.json', submitter)
 
     with pg_driver_clean.session_scope():
-        c = pg_driver_clean.nodes(models.Case).one()
-        c.samples = []
+        # Cases will have identical created_datetimes (granularity in seconds);
+        # So overwrite datetimes here.
+        # Also remove samples links.
+        cases = pg_driver_clean.nodes(models.Case).all()
+        for c in cases:
+            if c.submitter_id == 'BLGSP-71-06-00019':
+                c.created_datetime = '2019-01-03T12:34:19.017404-06:00'
+            elif c.submitter_id == 'BLGSP-71-06-00020':
+                c.created_datetime = '2019-01-03T12:34:20.017404-06:00'
+            elif c.submitter_id == 'BLGSP-71-06-00021':
+                c.created_datetime = '2019-01-03T12:34:21.017404-06:00'
+            elif c.submitter_id == 'BLGSP-71-06-00022':
+                c.created_datetime = '2019-01-03T12:34:22.017404-06:00'
+            elif c.submitter_id == 'BLGSP-71-06-00023':
+                c.created_datetime = '2019-01-03T12:34:23.017404-06:00'
+            c.samples = []
 
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """
-        query Test {
-        case (
-          order_by_desc: "created_datetime",
-          without_path_to: { type: "sample" })
-        { submitter_id }
-        }"""}))
+            'query': """
+                query Test {
+                    case (
+                      order_by_desc: "created_datetime",
+                      without_path_to: { type: "sample" }
+                    )
+                    { submitter_id }
+                }
+            """
+        }))
 
     assert r.json == {
         "data": {
-            "case": [{
-                "submitter_id": "BLGSP-71-06-00019"
-            }]
+            "case": [
+                {"submitter_id": "BLGSP-71-06-00023"},
+                {"submitter_id": "BLGSP-71-06-00022"},
+                {"submitter_id": "BLGSP-71-06-00021"},
+                {"submitter_id": "BLGSP-71-06-00020"},
+                {"submitter_id": "BLGSP-71-06-00019"}
+            ]
         }
     }, r.data
 
@@ -1290,3 +1324,69 @@ def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
         assert 'title' in node
         assert 'category' in node
         assert node['category'] == category
+
+
+def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            query Test {
+                case0: case (consent_codes: ["cc1"]) { consent_codes }
+                case1: case (consent_codes: ["cc2"]) { consent_codes }
+                case2: case (consent_codes: ["cc2", "cc1"]) { consent_codes }
+                case3: case (consent_codes: ["cc1", "no_such_code"]) { consent_codes }
+                case4: case (consent_codes: "cc1") { consent_codes }
+                # cases 5,6 exist just to check that these consent codes exist
+                # but are not included in results for cases 1-4
+                case5: case (consent_codes: ["xcc1"]) { consent_codes }
+                case6: case (consent_codes: ["cc1x"]) { consent_codes }
+            }
+        """}))
+    expected_dict = {
+        "data": {
+            "case0": [
+                {"consent_codes": ["cc1", "cc2", "cc3"]},
+                {"consent_codes": ["cc1"]}
+            ],
+            "case1": [
+                {"consent_codes": ["cc2"]},
+                {"consent_codes": ["cc1", "cc2", "cc3"]}
+            ],
+            "case2": [
+                {"consent_codes": ["cc1", "cc2", "cc3"]},
+            ],
+            "case3": [
+            ],
+            "case4": [
+                {"consent_codes": ["cc1"]},
+                {"consent_codes": ["cc1", "cc2", "cc3"]}
+            ],
+            "case5": [
+                {"consent_codes": ["xcc1"]}
+            ],
+            "case6": [
+                {"consent_codes": ["cc1x"]}
+            ]
+        }
+    }
+    # Lists are ordered but here order does not matter so we sort them before comparing.
+    for k, v in expected_dict["data"].items():
+        expected_dict["data"][k] = sorted(v)
+    for k, v in r.json["data"].items():
+        r.json["data"][k] = sorted(v)
+    assert json.dumps(r.json, sort_keys=True) == json.dumps(expected_dict, sort_keys=True)
+
+
+def test_invalid_array_arg(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+    r = client.post(path, headers=submitter, data=json.dumps({
+       'query': """
+           query Test {
+               case0: case (project_id : [["list", "of"], ["lists"]]) { id }
+           }
+       """
+    }))
+    assert r.json == {
+        'data': None,
+        'errors': ['Argument "project_id" has invalid value [["list", "of"], ["lists"]].\nIn element #0: Expected type "String", found ["list", "of"].\nIn element #1: Expected type "String", found ["lists"].']
+    }
