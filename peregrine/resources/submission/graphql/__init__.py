@@ -12,6 +12,7 @@ from .node import (
     NodeField,
     create_root_fields,
     resolve_node,
+    NodeCounter,
 
     DataNode,
     get_datanode_fields_dict,
@@ -106,7 +107,10 @@ def execute_query(query, variables=None, app=None):
             with timer:
                 set_session_timeout(session, GRAPHQL_TIMEOUT)
                 # result = Schema.execute(query, variable_values=variables)
-                result = app.graphql_schema.execute(query, variable_values=variables)
+                result = app.graphql_schema.execute(query, variable_values=variables,
+                                                    return_promise=True)
+                NodeCounter.current().run(session)
+                result = result.get()
     except graphql.error.GraphQLError as e:
         return None, [str(e)]
 
