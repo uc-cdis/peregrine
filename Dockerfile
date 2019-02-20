@@ -23,5 +23,5 @@ EXPOSE 80
 
 WORKDIR /var/www/peregrine
 
-ENTRYPOINT [ "/bin/sh", "/peregrine/dockerrun.sh" ]
+ENTRYPOINT [ "/bin/sh", "/dockerrun.sh" ]
 CMD []
