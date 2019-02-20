@@ -43,6 +43,24 @@ def get_open_project_ids():
             for program in project['programs']
         ]
 
+def set_read_access_projects_for_public_endpoint():
+    """
+    Set the global user project list to include all projects for endpoint
+    that doesn't need authorization
+    """
+
+    with flask.current_app.db.session_scope():
+        projects = (
+            flask.current_app.db
+            .nodes(models.Project)
+            .all()
+        )
+        flask.g.read_access_projects = [
+            program['name'] + '-' + project['code']
+            for project in projects
+            for program in project['programs']
+        ]
+
 
 def set_read_access_projects():
     """
