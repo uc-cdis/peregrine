@@ -3,7 +3,7 @@
 
 FROM quay.io/cdis/py27base:feat_python2-base-image
 
-ENV DEBIAN_FRONTEND=noninteractive
+ENV DEBIAN_FRONTEND=noninteractive 
 
 RUN mkdir /var/www/peregrine \
     && chown www-data /var/www/peregrine
