@@ -19,6 +19,30 @@ tags:
   - name: system
     description: System endpoints
 paths:
+  /datasets:
+    get:
+      tags:
+        - datasets
+      summary: Get counts for nodes for each project
+      parameters:
+        - in: query
+          name: nodes
+          description: comma delimited nodes to get counts for
+          schema:
+            type: string
+      responses:
+        '200':
+          description: node counts for each project
+          content:
+            application/json:
+              schema:
+                type: object
+                example: {project__A: {case: 0, aliquot: 1}, project_B: {case: 2, aliquot: 3}}
+        '401':
+          description: unauthorized request
+        '400':
+          description: invalid request
+
   /graphql:
     post:
       tags:
