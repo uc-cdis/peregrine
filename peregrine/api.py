@@ -12,6 +12,7 @@ from authutils import AuthError
 import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
 from cdispyutils.log import get_handler
+from cdispyutils.uwsgi import setup_user_harakiri
 
 import peregrine
 from peregrine import dictionary
@@ -108,6 +109,9 @@ def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
+
+    if app.config.get("USE_USER_HARAKIRI", True):
+        setup_user_harakiri(app)
 
     app_register_blueprints(app)
     app_register_duplicate_blueprints(app)
