@@ -233,6 +233,10 @@ def apply_query_args(q, args, info):
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
 
+        # https://github.com/uc-cdis/peregrine/blob/c36d7ac86ef483f530055edff92992da7d17ca6c/peregrine/resources/submission/graphql/node.py#L975
+        # val for DataNode is not a list, wrap it
+        val = val if isinstance(val, list) else [val]
+
         # val is always a list, but the list elements are treated differently based on
         # whether the relevant dictionary field has type scalar or list.
         # See comments at get_node_class_args().
