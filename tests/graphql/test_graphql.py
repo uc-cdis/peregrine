@@ -1,5 +1,6 @@
 import json
 import os
+import random
 
 import pytest
 from flask import g
@@ -1390,3 +1391,23 @@ def test_invalid_array_arg(client, submitter, pg_driver_clean, cgci_blgsp):
         'data': None,
         'errors': ['Argument "project_id" has invalid value [["list", "of"], ["lists"]].\nIn element #0: Expected type "String", found ["list", "of"].\nIn element #1: Expected type "String", found ["lists"].']
     }
+
+
+def test_datanode(graphql_client, client, submitter, pg_driver_clean, cgci_blgsp):
+    obj_id = str(random.random())[:8]
+    post_example_entities_together(client, pg_driver_clean, submitter)
+    utils.put_entity_from_file(client, 'read_group.json', submitter)
+
+    files = [
+        models.SubmittedUnalignedReads(
+            'file_131', project_id='CGCI-BLGSP', object_id=obj_id,
+        )
+    ]
+
+    with pg_driver_clean.session_scope() as s:
+        rg = pg_driver_clean.nodes(models.ReadGroup).one()
+        rg.submitted_unaligned_reads_files = files
+        s.merge(rg)
+    j1 = graphql_client('{datanode {object_id}}').json
+    j2 = graphql_client('{datanode(object_id: "%s") {object_id}}' % obj_id).json
+    assert j1 == j2
