@@ -21,7 +21,7 @@ RUN pip install -r requirements.txt \
 
 EXPOSE 80
 
-WORKDIR /var/www/peregrine
+WORKDIR /var/www/peregrine 
 
 ENTRYPOINT [ "/bin/sh", "/dockerrun.sh" ]
 CMD []
