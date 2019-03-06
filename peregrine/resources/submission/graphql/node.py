@@ -10,6 +10,7 @@ using the Graphene GraphQL library
 
 from flask import current_app as capp
 import dateutil
+import flask
 import graphene
 import logging
 import psqlgraph
@@ -17,6 +18,8 @@ import re
 import sqlalchemy as sa
 
 from datamodelutils import models as md  # noqa
+from promise import Promise
+
 from peregrine import dictionary
 from .util import (
     apply_arg_limit,
@@ -229,6 +232,10 @@ def apply_query_args(q, args, info):
     # *: filter for those with matching dictionary properties
     for key in set(args.keys()).intersection(pg_props):
         val = args[key]
+
+        # https://github.com/uc-cdis/peregrine/blob/c36d7ac86ef483f530055edff92992da7d17ca6c/peregrine/resources/submission/graphql/node.py#L975
+        # val for DataNode is not a list, wrap it
+        val = val if isinstance(val, list) else [val]
 
         # val is always a list, but the list elements are treated differently based on
         # whether the relevant dictionary field has type scalar or list.
@@ -795,6 +802,72 @@ def create_node_class_gql_object(cls):
     return gql_object
 
 
+class NodeCounter:
+    """SQL builder for specific count queries.
+
+    With large dictionary of hundreds of nodes, constructing count queries can be a time
+    consuming task with SQLAlchemy. This workaround uses raw SQL and combines all simple
+    count queries into one to reduce query build time and round-trip time to database.
+    """
+
+    def __init__(self):
+        self._project_ids = {}  # map of project_ids to their placeholder names
+        self._queries = []  # list of (key, promise, scalar subquery)
+
+    @classmethod
+    def current(cls):
+        if not hasattr(flask.g, 'node_counter'):
+            flask.g.node_counter = cls()
+        return flask.g.node_counter
+
+    def add_count(self, cls, args):
+        # escape non-trivial cases defined in `authorization_filter`
+        if cls != psqlgraph.Node and not hasattr(cls, 'project_id'):
+            return None
+        if cls.label == 'project':
+            return None
+        # escape if project_id is not the only args
+        if list(args.keys()) != ['project_id']:
+            return None
+
+        # extract project_id and guarantee permission
+        project_id = args['project_id']
+        if isinstance(project_id, (list, tuple)) and len(project_id) == 1:
+            project_id = project_id[0]
+        if not isinstance(project_id, (str, unicode)):
+            # escape if multiple project_ids are given
+            return None
+        if project_id not in flask.g.read_access_projects:
+            return 0
+
+        # group project_id and name them
+        project_id_name = self._project_ids.get(project_id, None)
+        if project_id_name is None:
+            project_id_name = 'p_%s' % len(self._project_ids)
+            self._project_ids[project_id] = project_id_name
+
+        # prepare the subquery and promise
+        key = 'c_%s' % len(self._queries)
+        p = Promise()
+        self._queries.append((
+            key,
+            p,
+            "(SELECT count(*) FROM %s WHERE _props->>'project_id' = :%s) AS %s"
+            % (cls.__tablename__, project_id_name, key),
+        ))
+        return p
+
+    def run(self, session):
+        if not self._queries:
+            return
+
+        sql = 'SELECT %s;' % ', '.join(count for _, _, count in self._queries)
+        results = session.execute(
+            sql, dict((v, k) for k, v in self._project_ids.iteritems())).fetchone()
+        for key, promise, _ in self._queries:
+            promise.fulfill(results[key])
+
+
 def create_root_fields(fields):
     attrs = {}
     for cls, gql_object in fields.iteritems():
@@ -822,6 +895,10 @@ def create_root_fields(fields):
 
         # Count resolver
         def count_resolver(self, info, cls=cls, gql_object=gql_object, **args):
+            rv = NodeCounter.current().add_count(cls, args)
+            if rv is not None:
+                return rv
+
             q = get_authorized_query(cls)
             q = apply_query_args(q, args, info)
             if 'with_path_to' in args or 'with_path_to_any' in args:

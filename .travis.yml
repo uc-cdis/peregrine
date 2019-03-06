@@ -35,7 +35,7 @@ before_script:
 
 # command to run tests
 script:
-  - py.test -vv --cov=peregrine --cov-report xml tests/system_test.py tests/graphql/test_graphql.py
+  - py.test -vv --cov=peregrine --cov-report xml tests/system_test.py tests/graphql/test_graphql.py tests/graphql/test_datasets.py
 
 after_script:
   - python-codacy-coverage -r coverage.xml

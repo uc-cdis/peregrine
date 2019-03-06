@@ -12,9 +12,11 @@ from authutils import AuthError
 import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
 from cdispyutils.log import get_handler
+from cdispyutils.uwsgi import setup_user_harakiri
 
 import peregrine
 from peregrine import dictionary
+from peregrine.blueprints import datasets
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
 from .resources import submission
 from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
@@ -32,12 +34,14 @@ def app_register_blueprints(app):
     app.url_map.strict_slashes = False
 
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix=v0+'/submission')
+    app.register_blueprint(datasets.blueprint, url_prefix=v0+'/datasets')
 
 
 def app_register_duplicate_blueprints(app):
     # TODO: (jsm) deprecate this v0 version under root endpoint.  This
     # root endpoint duplicates /v0 to allow gradual client migration
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix='/submission')
+    app.register_blueprint(datasets.blueprint, url_prefix='/datasets')
 
 
 def async_pool_init(app):
@@ -105,6 +109,9 @@ def app_init(app):
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
+
+    if app.config.get("USE_USER_HARAKIRI", True):
+        setup_user_harakiri(app)
 
     app_register_blueprints(app)
     app_register_duplicate_blueprints(app)
