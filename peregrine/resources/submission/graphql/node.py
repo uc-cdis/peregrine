@@ -470,6 +470,14 @@ def query_with_args(classes, args, info):
 
 
 def query_node_with_args(args, info):
+    """
+    Run queries with arguments for Node only.
+
+    This is identical to `query_with_args` unless `of_type` is present - when it falls
+    back to an ancient implementation to handle `of_type` for compatibility.
+
+    XXX: These two methods may be rewritten in a more efficient and consistent way.
+    """
     if 'of_type' in args:
         # TODO: (jsm) find a better solution.  currently this filter
         # will do a subquery for each type AND LOAD THE IDS of all the
