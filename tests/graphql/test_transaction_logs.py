@@ -327,20 +327,18 @@ def test_transaction_log_entities(client, submitter, pg_driver_clean, cgci_blgsp
     utils.reset_transactions(pg_driver_clean)
     post_example_entities_together(client, pg_driver_clean, submitter)
 
-    # "response" is always empty so this fails
-    # TODO: fix response
-    # r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
-    #     'query': """{ log: transaction_log {
-    #     doc: documents { resp: response { ent: entities { type }}}}}"""}))
-    # print r.data
-    # assert r.status_code == 200
-    # entities = r.json['data']['log'][0]['doc'][0]['resp']['ent']
-    # assert all(e['type'] for e in entities)
+    # using response
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """{ log: transaction_log {
+        doc: documents { resp: response { ent: entities { type }}}}}"""}))
+    assert r.status_code == 200
+    entities = r.json['data']['log'][0]['doc'][0]['resp']['ent']
+    assert all(e['type'] for e in entities)
 
+    # using response_json
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """{ log: transaction_log {
         doc: documents { resp: response_json }}}"""}))
-    print r.data
     assert r.status_code == 200
     resp = json.loads(r.json['data']['log'][0]['doc'][0]['resp'])
     assert all(entity['type'] for entity in resp['entities'])
@@ -355,20 +353,20 @@ def test_transaction_log_entities_errors(
     )
     transaction_id = put_response.json.get('transaction_id')
 
-    # "response" is always empty so this fails
-    # TODO: fix response
-    # query = """
-    # {{ log: transaction_log( id: {} ) {{
-    #     doc: documents {{ resp: response {{ ent: entities {{
-    #     err: errors {{ type keys message }} }} }} }} }} }}
-    # """
-    # query = query.format(transaction_id)
-    # r = client.post(path, headers=submitter(path, 'post'), data=json.dumps({
-    #     'query': query
-    # }))
-    # assert r.status_code == 200
-    # error = r.json['data']['log'][0]['doc'][0]['resp']['ent'][0]['err'][0]
+    # using response
+    query = """
+    {{ log: transaction_log( id: {} ) {{
+        doc: documents {{ resp: response {{ ent: entities {{
+        err: errors {{ type keys message }} }} }} }} }} }}
+    """
+    query = query.format(transaction_id)
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': query
+    }))
+    assert r.status_code == 200
+    error = r.json['data']['log'][0]['doc'][0]['resp']['ent'][0]['err'][0]
 
+    # using response_json
     query = """
     {{ log: transaction_log( id: {} ) {{
         doc: documents {{ resp: response_json
