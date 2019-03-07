@@ -7,7 +7,7 @@ from flask import current_app
 from mock import patch, PropertyMock
 
 from psqlgraph import PolyNode as Node
-from peregrine.auth import roles as all_roles
+from peregrine.auth import ROLES as all_roles
 from collections import defaultdict
 import requests
 requests.packages.urllib3.disable_warnings()
@@ -93,18 +93,15 @@ def run_with_fake_auth():
         return project_ids
 
     with patch(
-            'peregrine.api.AuthDriver',
-            spec=True
-    ) as Auth, patch(
-        'peregrine.auth.FederatedUser.roles',
+        'peregrine.auth.CurrentUser.roles',
         new_callable=PropertyMock,
         return_value=roles,
     ), patch(
-        'peregrine.auth.FederatedUser.logged_in',
+        'peregrine.auth.CurrentUser.logged_in',
         new_callable=PropertyMock,
         return_value=lambda: True,
     ), patch(
-        'peregrine.auth.FederatedUser.get_project_ids',
+        'peregrine.auth.CurrentUser.get_project_ids',
         new_callable=PropertyMock,
         return_value=get_project_ids,
     ), patch(

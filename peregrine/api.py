@@ -1,5 +1,7 @@
 import os
 import sys
+import time
+import logging
 
 from flask import Flask, jsonify
 from flask.ext.cors import CORS
@@ -9,13 +11,13 @@ from psqlgraph import PsqlGraphDriver
 from authutils import AuthError
 import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
-from userdatamodel.driver import SQLAlchemyDriver
 from cdispyutils.log import get_handler
 from indexclient.client import IndexClient
+from cdispyutils.uwsgi import setup_user_harakiri
 
 import peregrine
 from peregrine import dictionary
-from .auth import AuthDriver
+from peregrine.blueprints import datasets
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
 from .resources import submission
 from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
@@ -33,12 +35,14 @@ def app_register_blueprints(app):
     app.url_map.strict_slashes = False
 
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix=v0+'/submission')
+    app.register_blueprint(datasets.blueprint, url_prefix=v0+'/datasets')
 
 
 def app_register_duplicate_blueprints(app):
     # TODO: (jsm) deprecate this v0 version under root endpoint.  This
     # root endpoint duplicates /v0 to allow gradual client migration
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix='/submission')
+    app.register_blueprint(datasets.blueprint, url_prefix='/datasets')
 
 
 def async_pool_init(app):
@@ -62,20 +66,12 @@ def db_init(app):
         set_flush_timestamps=True,
     )
 
-    app.userdb = SQLAlchemyDriver(app.config['PSQL_USER_DB_CONNECTION'])
-    flask_scoped_session(app.userdb.Session, app)
 
     app.logger.info('Initializing Indexd driver')
     app.index_client = IndexClient(
         app.config['SIGNPOST']['host'],
         version=app.config['SIGNPOST']['version'],
         auth=app.config['SIGNPOST']['auth'])
-
-    try:
-        app.logger.info('Initializing Auth driver')
-        app.auth = AuthDriver(app.config["AUTH_ADMIN_CREDS"], app.config["INTERNAL_AUTH"])
-    except Exception:
-        app.logger.exception("Couldn't initialize auth, continuing anyway")
 
 
 # Set CORS options on app configuration
@@ -89,26 +85,41 @@ def cors_init(app):
         r"/*": {"origins": '*'},
         }, headers=accepted_headers, expose_headers=['Content-Disposition'])
 
+
 def dictionary_init(app):
-    dictionary_url = app.config.get('DICTIONARY_URL')
-    if dictionary_url:
+    start = time.time()
+    if ('DICTIONARY_URL' in app.config):
         app.logger.info('Initializing dictionary from url')
-        d = DataDictionary(url=dictionary_url)
+        url = app.config['DICTIONARY_URL']
+        d = DataDictionary(url=url)
         dict_init.init(d)
-        dictionary.init(d)
+    elif ('PATH_TO_SCHEMA_DIR' in app.config):
+        app.logger.info('Initializing dictionary from schema dir')
+        d = DataDictionary(root_dir=app.config['PATH_TO_SCHEMA_DIR'])
+        dict_init.init(d)
     else:
         app.logger.info('Initializing dictionary from gdcdictionary')
-        from gdcdictionary import gdcdictionary
-        dictionary.init(gdcdictionary)
+        import gdcdictionary
+        d = gdcdictionary.gdcdictionary
+    dictionary.init(d)
     from gdcdatamodel import models as md
     from gdcdatamodel import validators as vd
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
 
+    end = int(round(time.time() - start))
+    app.logger.info('Initialized dictionary in {} sec'.format(end))
+
+
 def app_init(app):
+    app.logger.setLevel(logging.INFO)
+
     # Register duplicates only at runtime
     app.logger.info('Initializing app')
     dictionary_init(app)
+
+    if app.config.get("USE_USER_HARAKIRI", True):
+        setup_user_harakiri(app)
 
     app_register_blueprints(app)
     app_register_duplicate_blueprints(app)
@@ -117,8 +128,9 @@ def app_init(app):
     # exclude es init as it's not used yet
     # es_init(app)
     cors_init(app)
-    app.graph_traversals = submission.graphql.make_graph_traversal_dict()
+    submission.graphql.make_graph_traversal_dict(app)
     app.graphql_schema = submission.graphql.get_schema()
+    app.schema_file = submission.generate_schema_file(app.graphql_schema, app.logger)
     try:
         app.secret_key = app.config['FLASK_SECRET_KEY']
     except KeyError:
@@ -126,7 +138,9 @@ def app_init(app):
             'Secret key not set in config! Authentication will not work'
         )
     async_pool_init(app)
+
     app.logger.info('Initialization complete.')
+
 
 app = Flask(__name__)
 
@@ -134,6 +148,7 @@ app = Flask(__name__)
 app.logger.addHandler(get_handler())
 
 setup_default_handlers(app)
+
 
 @app.route('/_status', methods=['GET'])
 def health_check():
@@ -192,7 +207,6 @@ app.register_error_handler(AuthError, _log_and_jsonify_exception)
 
 
 def run_for_development(**kwargs):
-    import logging
     app.logger.setLevel(logging.INFO)
 
     for key in ["http_proxy", "https_proxy"]:
