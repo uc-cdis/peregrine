@@ -19,6 +19,15 @@ def test_authorized_call_with_protected_config(
     assert r.json["CGCI-BLGSP"]["case"] == case_count - 2
 
 
+def test_unauthorized_call_with_protected_config(
+        client, submitter, random_user, pg_driver_clean, cgci_blgsp
+    ):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+    r = client.get("/datasets?nodes=case,aliquot", headers=random_user)
+    assert r.status_code == 200
+    assert r.json == {}
+
+
 def test_anonymous_call_with_protected_config(client, pg_driver_clean, cgci_blgsp):
     r = client.get("/datasets?nodes=case,aliquot")
     assert r.status_code == 401

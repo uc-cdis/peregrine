@@ -156,6 +156,24 @@ def encoded_jwt(app):
 
     return encoded_jwt_function
 
+@pytest.fixture(scope='session')
+def random_user(encoded_jwt):
+    private_key = utils.read_file('resources/keys/test_private_key.pem')
+    # set up a fake User object which has all the attributes that fence needs
+    # to generate a token
+    project_ids = []
+    user_properties = {
+        'id': 2,
+        'username': 'random_user',
+        'is_admin': False,
+        'project_access': {project: ROLES.values() for project in project_ids},
+        'policies': [],
+        'google_proxy_group_id': None,
+    }
+    user = type('User', (object,), user_properties)
+    token = encoded_jwt(private_key, user)
+    return {'Authorization': 'bearer ' + token}
+
 
 @pytest.fixture(scope='session')
 def submitter(encoded_jwt):
