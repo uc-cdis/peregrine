@@ -189,6 +189,11 @@ class TransactionDocument(graphene.ObjectType):
     response_json = graphene.String()
     response = graphene.Field(TransactionResponse)
 
+    # These fields depend on these columns being loaded
+    fields_depend_on_columns = {
+        "doc_size": {"doc"},
+    }
+
     @classmethod
     def resolve_doc_size(cls, document, *args, **kwargs):
         return len(document.doc)
@@ -244,7 +249,7 @@ class TransactionLog(graphene.ObjectType):
 
     def resolve_documents(self, info, **args):
         return [TransactionDocument(**dict(
-            filtered_column_dict(r, info),
+            filtered_column_dict(r, info, TransactionDocument.fields_depend_on_columns),
             **{'response_json': json.dumps(r.response_json)}
         )) for r in self.documents]
 

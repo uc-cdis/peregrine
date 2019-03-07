@@ -382,10 +382,6 @@ def test_transaction_log_entities_errors(
     assert all(key in error for key in ('type', 'keys', 'message'))
 
 
-# "doc_size" is always empty so this test fails
-# also, bug "object of type 'NoneType' has no len()"
-# TODO: fix doc_size
-@pytest.mark.skip(reason='"doc_size" is always empty so this test fails')
 def test_transaction_log_documents(client, submitter, pg_driver_clean, cgci_blgsp):
 
     utils.reset_transactions(pg_driver_clean)
@@ -393,7 +389,6 @@ def test_transaction_log_documents(client, submitter, pg_driver_clean, cgci_blgs
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """{ log: transaction_log {
         doc: documents { doc_size name }}}"""}))
-    print r.data
     doc = r.json['data']['log'][0]['doc'][0]
     assert doc['name'] is None
     assert isinstance(doc['doc_size'], int)
