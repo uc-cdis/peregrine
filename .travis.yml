@@ -18,6 +18,8 @@ services:
 before_install:
   # bust only the the part of the cache that we are frequently changing
   - pip uninstall --yes gdcdictionary gdcdatamodel || true
+  # resolve https://github.com/travis-ci/travis-ci/issues/7940
+  - export BOTO_CONFIG=/dev/null
 
 # command to install dependencies
 install:
@@ -33,7 +35,7 @@ before_script:
 
 # command to run tests
 script:
-  - py.test -vv --cov=peregrine --cov-report xml tests/system_test.py tests/graphql/test_graphql.py
+  - py.test -vv --cov=peregrine --cov-report xml tests/system_test.py tests/graphql/test_graphql.py tests/graphql/test_datasets.py
 
 after_script:
   - python-codacy-coverage -r coverage.xml

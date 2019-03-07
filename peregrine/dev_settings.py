@@ -43,15 +43,6 @@ PSQLGRAPH = {
     'database': os.getenv("GDC_PG_DBNAME", "sheepdog_automated_test")
 }
 
-PSQL_USER_DB_NAME = 'fence_test'
-PSQL_USER_DB_USERNAME = 'test'
-PSQL_USER_DB_PASSWORD = 'test'
-PSQL_USER_DB_HOST = 'localhost'
-
-PSQL_USER_DB_CONNECTION = "postgresql://{name}:{password}@{host}/{db}".format(
-    name=PSQL_USER_DB_USERNAME, password=PSQL_USER_DB_PASSWORD, host=PSQL_USER_DB_HOST, db=PSQL_USER_DB_NAME
-)
-
 # API server
 PEREGRINE_HOST = os.getenv("PEREGRINE_HOST", "localhost")
 PEREGRINE_PORT = int(os.getenv("PEREGRINE_PORT", "5555"))
@@ -96,3 +87,4 @@ SESSION_COOKIE_NAME = 'PEREGRINE_session'
 # verify project existence in dbgap or not
 VERIFY_PROJECT = False
 AUTH_SUBMISSION_LIST = False
+USE_LAZY_TRAVERSE = True

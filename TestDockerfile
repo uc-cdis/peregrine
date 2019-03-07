@@ -30,18 +30,22 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && mkdir /var/www/peregrine \
     && mkdir -p /var/www/.cache/Python-Eggs/ \
     && chown www-data -R /var/www/.cache/Python-Eggs/ \
-    && mkdir /run/nginx/ \
-    && mkdir -m 075 /var/run/gen3 \
-    && chown root:www-data /var/run/gen3
+    && mkdir /run/nginx/
+
+COPY requirements.txt /peregrine/requirements.txt
+COPY dev-requirements.txt /peregrine/dev-requirements.txt
+WORKDIR /peregrine
+RUN pip install -r requirements.txt \
+    && pip install -r dev-requirements.txt
+
+RUN apt-get install -y --no-install-recommends postgresql
 
 COPY . /peregrine
 COPY ./deployment/uwsgi/uwsgi.ini /etc/uwsgi/uwsgi.ini
 COPY ./deployment/nginx/nginx.conf /etc/nginx/
 COPY ./deployment/nginx/uwsgi.conf /etc/nginx/sites-available/
-WORKDIR /peregrine
 
-RUN pip install -r requirements.txt \
-    && COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" >peregrine/version_data.py \
+RUN COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" >peregrine/version_data.py \
     && VERSION=`git describe --always --tags` && echo "VERSION=\"${VERSION}\"" >>peregrine/version_data.py \
     && cd /peregrine/src/gdcdictionary && DICTCOMMIT=`git rev-parse HEAD` && echo "DICTCOMMIT=\"${DICTCOMMIT}\"" >>/peregrine/peregrine/version_data.py \
     && DICTVERSION=`git describe --always --tags` && echo "DICTVERSION=\"${DICTVERSION}\"" >>/peregrine/peregrine/version_data.py \
@@ -52,9 +56,12 @@ RUN pip install -r requirements.txt \
     && ln -sf /dev/stderr /var/log/nginx/error.log \
     && chown www-data /var/www/peregrine
 
+RUN chmod -R 777 .
+USER postgres
+RUN ./run_tests.sh
+
 EXPOSE 80
 
 WORKDIR /var/www/peregrine
 
-ENTRYPOINT [ "/bin/sh", "/peregrine/dockerrun.sh" ]
-CMD []
+CMD /peregrine/dockerrun.bash
