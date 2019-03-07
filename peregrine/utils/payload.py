@@ -28,6 +28,8 @@ from peregrine.resources.submission.constants import (
     SUCCESS_STATE,
 )
 
+from peregrine.resources.submission.graphql.node import get_fields
+
 
 def get_external_proxies():
     """Get any custom proxies set in the config.
@@ -215,12 +217,14 @@ def get_introspection_query():
     f = open(os.path.join(cur_dir, 'graphql', 'introspection_query.txt'), 'r')
     return f.read()
 
+
 def json_dumps_formatted(data):
     """Return json string with standard format."""
     dump = json.dumps(
         data, indent=2, separators=(', ', ': '), ensure_ascii=False
     )
     return dump.encode('utf-8')
+
 
 def jsonify_check_errors(data_and_errors, error_code=400):
     """
@@ -245,3 +249,40 @@ def get_variables(payload):
         except Exception as e:
             errors = ['Unable to parse variables', str(e)]
     return variables, errors
+
+
+def contain_node_with_category(json, category):
+    '''
+    Check if JSON object contain `category` keys or not
+    Args:
+        json: JSON object
+    Returns:
+        True: if JSON object contains data_file key
+        False: otherwise
+    '''
+    keys_list = []
+    get_keys(json, keys_list)
+    ns_field = get_fields()
+
+    category_map = {}
+    for (k, v) in ns_field.iteritems():
+        category_map[v] = k._dictionary['category']
+
+    for key in keys_list:
+        try:
+            if category_map[key] == category:
+                return True
+        except KeyError:
+            pass
+    return False
+
+
+def get_keys(payload, keys_list):
+    '''
+    Get all keys of JSON object and update to the keys_list
+    '''
+    if isinstance(payload, dict):
+        keys_list += payload.keys()
+        map(lambda x: get_keys(x, keys_list), payload.values())
+    elif isinstance(payload, list):
+        map(lambda x: get_keys(x, keys_list), payload)

@@ -3,7 +3,14 @@ Construct the blueprint for peregrine submissions, using the blueprint from
 :py:mod:``peregrine``.
 """
 
+import datetime
 import os
+import os.path
+
+import uuid
+import shutil
+from flask import Response, send_file, stream_with_context
+
 import json
 import time
 import fcntl
@@ -14,7 +21,9 @@ import flask
 
 from peregrine.auth import current_user, get_program_project_roles
 import peregrine.blueprints
+from peregrine.utils import jsonify_check_errors
 from peregrine.resources.submission import graphql
+
 
 
 def get_open_project_ids():
@@ -118,10 +127,12 @@ def set_read_access_projects():
 @peregrine.blueprints.blueprint.route('/graphql', methods=['POST'])
 def root_graphql_query():
     """
-    Run a graphql query.
+    Run a graphql query and export to supported formats(json, bdbag)
+
     """
     # Short circuit if user is not recognized. Make sure that the list of
     # projects that the user has read access to is set.
+    
     try:
         set_read_access_projects()
     except AuthZError:
@@ -129,12 +140,37 @@ def root_graphql_query():
         return data, 403
     payload = peregrine.utils.parse_request_json()
     query = payload.get('query')
+    export_format = payload.get('format')
     variables, errors = peregrine.utils.get_variables(payload)
     if errors:
         return flask.jsonify({'data': None, 'errors': errors}), 400
-    return peregrine.utils.jsonify_check_errors(
-        graphql.execute_query(query, variables)
-    )
+
+    return_data = jsonify_check_errors(graphql.execute_query(query, variables))
+    data, code = return_data
+
+    if code != 200:
+        return data, code
+
+    if export_format == 'bdbag':
+        res = peregrine.utils.flatten_json(json.loads(data.data), '', "-")
+
+        bag_info = {'organization': 'CDIS',
+                    'data_type': 'TOPMed',
+                    'date_created': datetime.date.today().isoformat()}
+        args = dict(
+            bag_info=bag_info,
+            payload=res)
+
+        bag = peregrine.utils.create_bdbag(**args)  # bag is a compressed file
+        key_name = str(flask.g.user.id) + "/" + \
+            str(uuid.uuid4()) + '_' + datetime.datetime.now().strftime('%s')
+        peregrine.utils.put_data_to_s3(bag, key_name)
+        url = peregrine.utils.generate_presigned_url(key_name)
+        shutil.rmtree(os.path.abspath(os.path.join(bag, os.pardir)))
+
+        return flask.Response(url), 200
+    else:
+        return return_data
 
 
 def generate_schema_file(graphql_schema, app_logger):
