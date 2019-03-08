@@ -238,3 +238,11 @@ def es_setup(request):
     es.indices.refresh(index=INDEX)
 
     json_data.close()
+
+
+@pytest.fixture
+def public_dataset_api(request):
+    os.environ["PUBLIC_DATASETS"] = "true"
+    def tearDown():
+        os.environ["PUBLIC_DATASETS"] = "false"
+    request.addfinalizer(tearDown)
