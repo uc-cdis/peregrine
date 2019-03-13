@@ -433,34 +433,51 @@ def resolve_node(self, info, **args):
             for node in psqlgraph.Node.get_subclasses()
             if node.label in subclasses_labels
         ]
+        q_all = query_with_args(subclasses, args, info)
     else:
-        subclasses = [psqlgraph.Node]
-
-    q_all = []
-    for subclass in subclasses:
-        q = query_with_args(subclass, args, info)
-        q_all.extend(q.all())
+        q_all = query_node_with_args(args, info)
 
     return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q_all]
 
 
-def query_with_args(cls, args, info):
+def query_with_args(classes, args, info):
     """
-    Sends a query and applies the arguments.
+    Run queries with arguments.
 
     Args:
-        cls: psqlgraph class to query.
+        classes: psqlgraph classes to query.
         args: dictionary of the arguments passed to the query.
         info: graphene object that holds the query's arguments, models and requested fields.
     """
+    of_types = [psqlgraph.Node.get_subclass(label)
+                for label in set(args.get('of_type', []))]
+    rv = []
+    for cls in classes:
+        if not of_types or cls in of_types:
+            q = get_authorized_query(cls)
+            if 'project_id' in args:
+                q = q.filter(q.entity()._props['project_id'].astext
+                             == args['project_id'])
 
-    q = get_authorized_query(cls)
-    if 'project_id' in args:
-        q = q.filter(q.entity()._props['project_id'].astext
-                     == args['project_id'])
+            rv.extend(apply_query_args(q, args, info).all())
+    # apply_arg_limit() applied the limit to individual query results, but we
+    # are concatenating several query results so we need to apply it again
+    limit = args.get('first', DEFAULT_LIMIT)
+    if limit > 0:
+        return rv[:limit]
+    else:
+        return rv
 
-    q = apply_query_args(q, args, info)
 
+def query_node_with_args(args, info):
+    """
+    Run queries with arguments for Node only.
+
+    This is identical to `query_with_args` unless `of_type` is present - when it falls
+    back to an ancient implementation to handle `of_type` for compatibility.
+
+    XXX: These two methods may be rewritten in a more efficient and consistent way.
+    """
     if 'of_type' in args:
         # TODO: (jsm) find a better solution.  currently this filter
         # will do a subquery for each type AND LOAD THE IDS of all the
@@ -469,9 +486,6 @@ def query_with_args(cls, args, info):
         # properly for the abstract base class with concrete table
         # inheritance (a.k.a it can't find the colums for Node)
         of_types = set(args['of_type'])
-        entities = [psqlgraph.Node.get_subclass(label) for label in of_types]
-        entities = [e for e in entities if e]
-
         ids = []
         for label in of_types:
             entity = psqlgraph.Node.get_subclass(label)
@@ -485,8 +499,9 @@ def query_with_args(cls, args, info):
         q = get_authorized_query(psqlgraph.Node).ids(ids)
         q = apply_arg_limit(q, args, info)
         q = apply_arg_offset(q, args, info)
-
-    return q
+        return q.all()
+    else:
+        return query_with_args([psqlgraph.Node], args, info)
 
 
 def lookup_graphql_type(T):
@@ -996,16 +1011,8 @@ def resolve_datanode(self, info, **args):
         A list of graphene object classes.
 
     """
-    q_all = []
-    for data_type in get_data_subclasses():
-        q = query_with_args(data_type, args, info)
-        q_all.extend(q.all())
-
-    # apply_arg_limit() applied the limit to individual query results, but we
-    # are concatenating several query results so we need to apply it again
-    limit = args.get('first', DEFAULT_LIMIT)
-    limit = limit if limit > 0 else None
-    return [__gql_object_classes[n.label](**load_node(n, info)) for n in q_all][:limit]
+    return [__gql_object_classes[n.label](**load_node(n, info))
+            for n in query_with_args(get_data_subclasses(), args, info)]
 
 
 def get_datanode_interface_args():

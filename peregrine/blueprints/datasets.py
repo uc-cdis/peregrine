@@ -30,7 +30,7 @@ def get_datasets():
         set_read_access_projects()
     projects = flask.g.read_access_projects
     if not projects:
-        raise AuthZError("You are not authorized to access any projects")
+        return flask.jsonify({})
     # construct a query that get counts for all projects
     # because graphql can't add structure to group by projects,
     # we labeled the count by project index and later parse it
