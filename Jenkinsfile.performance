@@ -1,6 +1,6 @@
 #!groovy
 
-@Library('cdis-jenkins-lib@feat/cron') _
+@Library('cdis-jenkins-lib@master') _
 
 performancePipeline {
 }
