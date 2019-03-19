@@ -1,6 +1,6 @@
 #!groovy
 
-@Library('cdis-jenkins-lib@feat/junit') _
+@Library('cdis-jenkins-lib@feat/prebuild') _
 
 performancePipeline { 
 }
