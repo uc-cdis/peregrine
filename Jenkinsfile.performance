@@ -2,5 +2,9 @@
 
 @Library('cdis-jenkins-lib@feat/prebuild') _
 
-performancePipeline { 
+performancePipeline {
+    currentBranchFormatted = 'master'
+}
+
+performancePipeline {
 }
