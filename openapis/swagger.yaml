@@ -42,6 +42,28 @@ paths:
           description: unauthorized request
         '400':
           description: invalid request
+  /datasets/projects:
+    get:
+      tags:
+        - datasets
+      summary: Get high level information for all projects
+      responses:
+        '200':
+          description: high level information for all projects
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                example: {projects: [{name: project_A, code: A_code, dbgap_accession_number: 123}]}
+        '401':
+          description: unauthorized request
+        '400':
+          description: invalid request
 
   /graphql:
     post:
@@ -112,6 +134,19 @@ paths:
           description: Unhealthy
 components:
   schemas:
+    Project:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        dbgap_accession_number:
+          type: string
+        description:
+          type: string
+        image_url:
+          type: string
     QueryInputInfo:
       type: object
       properties:
