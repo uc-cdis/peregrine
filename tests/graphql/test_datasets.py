@@ -33,7 +33,7 @@ def test_unauthorized_call_with_protected_config(
     r = client.get("/datasets/projects", headers=random_user)
 
     assert r.status_code == 200
-    assert r.json == {}
+    assert r.json == {"projects": []}
 
 
 def test_anonymous_call_with_protected_config(client, pg_driver_clean, cgci_blgsp):

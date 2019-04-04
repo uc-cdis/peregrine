@@ -76,12 +76,12 @@ def get_projects():
         set_read_access_projects()
     projects = flask.g.read_access_projects
     if not projects:
-        return flask.jsonify({})
+        return flask.jsonify({"projects": []})
     # construct a query that get counts for all projects
     # because graphql can't add structure to group by projects,
     # we labeled the count by project index and later parse it
     # with regex to add structure to response
-    query = "{project { name code dbgap_accession_number "
+    query = "{project (first: 0) { name code dbgap_accession_number "
     for field in ['description', 'image_url']:
         if dictionary.schema['project']['properties'].get(field):
             query += field + ' '

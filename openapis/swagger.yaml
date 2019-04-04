@@ -54,7 +54,12 @@ paths:
             application/json:
               schema:
                 type: object
-                example: [{name: project_A, code: A_code, dbgap_accession_number: 123}]
+                properties:
+                  projects:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Project'
+                example: {projects: [{name: project_A, code: A_code, dbgap_accession_number: 123}]}
         '401':
           description: unauthorized request
         '400':
@@ -129,6 +134,19 @@ paths:
           description: Unhealthy
 components:
   schemas:
+    Project:
+      type: object
+      properties:
+        name:
+          type: string
+        code:
+          type: string
+        dbgap_accession_number:
+          type: string
+        description:
+          type: string
+        image_url:
+          type: string
     QueryInputInfo:
       type: object
       properties:
