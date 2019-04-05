@@ -1348,3 +1348,64 @@ def test_datanode(graphql_client, client, submitter, pg_driver_clean, cgci_blgsp
     j1 = graphql_client('{datanode {object_id}}').json
     j2 = graphql_client('{datanode(object_id: "%s") {object_id}}' % obj_id).json
     assert j1 == j2
+
+
+def test_boolean_filter(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    # make sure the existing data is what is expected
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {
+                experiment {
+                    copy_numbers_identified
+                }
+            }
+        """
+    }))
+    print("Existing data should contain a single experiment:")
+    print(r.data)
+    assert len(r.json["data"]["experiment"]) == 1
+    assert r.json["data"]["experiment"][0]["copy_numbers_identified"] == True
+
+    # test boolean filter true
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {
+                experiment (copy_numbers_identified: true) {
+                    copy_numbers_identified
+                }
+            }
+        """
+    }))
+    print("Filtering by boolean=true should return the experiment:")
+    print(r.data)
+    assert len(r.json["data"]["experiment"]) == 1
+
+    # test boolean filter false
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {
+                experiment (copy_numbers_identified: false) {
+                    copy_numbers_identified
+                }
+            }
+        """
+    }))
+    print("Filtering by boolean=false should not return any data:")
+    print(r.data)
+    assert len(r.json["data"]["experiment"]) == 0
+
+    # test boolean filter [true,false]
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {
+                experiment (copy_numbers_identified: [true,false]) {
+                    copy_numbers_identified
+                }
+            }
+        """
+    }))
+    print("Filtering by boolean=[true,false] should return the experiment:")
+    print(r.data)
+    assert len(r.json["data"]["experiment"]) == 1
