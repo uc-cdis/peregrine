@@ -240,11 +240,15 @@ def apply_query_args(q, args, info):
         # val is always a list, but the list elements are treated differently based on
         # whether the relevant dictionary field has type scalar or list.
         # See comments at get_node_class_args().
-        if q.entity().__pg_properties__[key][0] == list:
+        field_type = q.entity().__pg_properties__[key][0]
+        if field_type == list:
             # This field has type list. Return supersets of input (i.e. do AND filter)
             q = q.filter(*[q.entity()._props[key].astext.like('%"'+v+'"%') for v in val])
         else:
             # This field has scalar type. Treat input as several queries (i.e. do OR filter)
+            if field_type == bool:
+                # convert True to "true"; False to "false"
+                val = [str(v).lower() for v in val]
             q = q.filter(q.entity()._props[key].astext.in_([
                 str(v) for v in val]))
 
