@@ -176,7 +176,7 @@ def apply_arg_quicksearch(q, args, info):
     within the node UUID as well as in the unique keys of the JSONB.
 
     Currently, for simplicity and performance, only the
-    ``submitter_id`` is being used in this filter.
+    ``id`` and ``submitter_id`` are being used in this filter.
 
     TODO: make this filter more general. Previous attempts:
 
@@ -628,6 +628,7 @@ def get_node_class_property_attrs(cls, _cache={}):
 
     def resolve_type(self, info, *args):
         return self.__class__.__name__
+
     attrs = {
         name: graphene.Field(lookup_graphql_type(types[0]))
         for name, types in cls.__pg_properties__.iteritems()
@@ -995,11 +996,22 @@ def get_datanode_fields_dict():
     if not DataNode.shared_fields:
         # union of all the data nodes' possible fields
         DataNode.shared_fields = {
-            field: lookup_graphql_type(types[0])()
+            field: lookup_graphql_type(types[0])
             for subclass in get_data_subclasses()
-            for field, types in subclass.__pg_properties__.items()
+            for field, types in subclass.__pg_properties__.iteritems()
             if field not in subclass._pg_edges.keys() # don't include the links
         }
+
+        # instantiate the graphene types
+        # XXX: for now all arrays are assumed to contain string items.
+        DataNode.shared_fields = {
+            field: _type()
+            if not isinstance(_type, graphene.List)
+            else graphene.List(graphene.String) # XXX: graphene.List(item_type)
+            for field, _type in DataNode.shared_fields.iteritems()
+        }
+
+        # add required node fields
         DataNode.shared_fields.update({
             'id': graphene.String(),
             'type': graphene.String(),
