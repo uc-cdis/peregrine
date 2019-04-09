@@ -509,12 +509,13 @@ def query_node_with_args(args, info):
 
 
 def lookup_graphql_type(T):
+    # XXX: for now all arrays are assumed to contain string items.
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
         long: graphene.Float,
         int: graphene.Int,
-        list: graphene.List(graphene.String),
+        list: graphene.List(graphene.String), # XXX: graphene.List(item_type)
     }.get(T, graphene.String)
 
 
