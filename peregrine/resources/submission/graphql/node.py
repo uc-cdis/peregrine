@@ -510,12 +510,14 @@ def query_node_with_args(args, info):
 
 def lookup_graphql_type(T):
     # XXX: for now all arrays are assumed to contain string items.
+    # graphene.List(graphene.String) should eventually be replaced
+    # by graphene.List(actual_item_type)
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
         long: graphene.Float,
         int: graphene.Int,
-        list: graphene.List(graphene.String), # XXX: graphene.List(item_type)
+        list: graphene.List(graphene.String),
     }.get(T, graphene.String)
 
 
@@ -995,21 +997,15 @@ def get_datanode_fields_dict():
     """Return a dictionary containing the fields shared by all data nodes."""
 
     if not DataNode.shared_fields:
+        def instantiate_graphene(t):
+            return t if isinstance(t, graphene.List) else t()
+
         # union of all the data nodes' possible fields
         DataNode.shared_fields = {
-            field: lookup_graphql_type(types[0])
+            field: instantiate_graphene(lookup_graphql_type(types[0]))
             for subclass in get_data_subclasses()
             for field, types in subclass.__pg_properties__.iteritems()
             if field not in subclass._pg_edges.keys() # don't include the links
-        }
-
-        # instantiate the graphene types
-        # XXX: for now all arrays are assumed to contain string items.
-        DataNode.shared_fields = {
-            field: _type()
-            if not isinstance(_type, graphene.List)
-            else graphene.List(graphene.String) # XXX: graphene.List(item_type)
-            for field, _type in DataNode.shared_fields.iteritems()
         }
 
         # add required node fields
