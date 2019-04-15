@@ -174,6 +174,29 @@ def test_quicksearch(client, submitter, pg_driver_clean, cgci_blgsp):
     }
 
 
+def test_quicksearch_skip_empty(client, submitter, pg_driver_clean, cgci_blgsp):
+    from peregrine.resources.submission.graphql import node
+    orig = node.apply_arg_quicksearch
+    try:
+        queries = []
+
+        def apply_arg_quicksearch(q, *args):
+            queries.append(q)
+            rv = orig(q, *args)
+            queries.append(rv)
+            return rv
+
+        node.apply_arg_quicksearch = apply_arg_quicksearch
+        client.post(path, headers=submitter, data=json.dumps({
+            'query': """query Test {
+            aliquot(quick_search: "") { id type project_id submitter_id  }}
+            """
+        }))
+        assert queries[0] is queries[1], 'should not apply empty quick_search'
+    finally:
+        node.apply_arg_quicksearch = orig
+
+
 def test_node_interface_project_id(client, admin, submitter, pg_driver_clean):
     assert put_cgci_blgsp(client, auth=admin).status_code == 200
     post = post_example_entities_together(client, pg_driver_clean, submitter)
