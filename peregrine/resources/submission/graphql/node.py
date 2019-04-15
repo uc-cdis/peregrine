@@ -194,7 +194,7 @@ def apply_arg_quicksearch(q, args, info):
     """
 
     search_phrase = args.get('quick_search', None)
-    if search_phrase is None:
+    if not search_phrase:
         # Safety check to make sure that the quicksearch filter is
         # actually being used
         return q
