@@ -31,70 +31,6 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 path = '/v0/submission/graphql'
 #export_path = '/v0/submission/export'
 
-# ======================================================================
-# Fixtures
-
-
-@pytest.fixture
-def graphql_client(client, submitter):
-    def execute(query, variables={}):
-        return client.post(path, headers=submitter, data=json.dumps({
-            'query': query,
-            'variables': variables,
-        }))
-    return execute
-
-
-@pytest.fixture
-def mock_tx_log(pg_driver_clean):
-    utils.reset_transactions(pg_driver_clean)
-    with pg_driver_clean.session_scope() as session:
-        return session.merge(models.submission.TransactionLog(
-            is_dry_run=True,
-            program='CGCI',
-            project='BLGSP',
-            role='create',
-            state='SUCCEEDED',
-            committed_by=12345,
-            closed=False,
-        ))
-
-
-@pytest.fixture
-def populated_blgsp(client, submitter, pg_driver_clean):
-    utils.reset_transactions(pg_driver_clean)
-    post_example_entities_together(client, pg_driver_clean, submitter)
-
-
-@pytest.fixture
-def failed_deletion_transaction(client, submitter, pg_driver_clean, populated_blgsp):
-    with pg_driver_clean.session_scope():
-        node_id = pg_driver_clean.nodes(models.Sample).first().node_id
-    delete_path = '/v0/submission/CGCI/BLGSP/entities/{}'.format(node_id)
-    r = client.delete(
-        delete_path,
-        headers=submitter)
-    assert r.status_code == 400, r.data
-    return str(r.json['transaction_id'])
-
-
-@pytest.fixture
-def failed_upload_transaction(client, submitter, pg_driver_clean):
-    put_path = '/v0/submission/CGCI/BLGSP/'
-    r = client.put(
-        put_path,
-        data=json.dumps({
-            'type': 'sample',
-            'cases': [{'id': 'no idea'}],
-            'sample_type': 'teapot',
-            'how_heavy': 'no',
-        }),
-        headers=submitter)
-    assert r.status_code == 400, r.data
-    return str(r.json['transaction_id'])
-
-# ======================================================================
-# Tests
 
 
 def post_example_entities_together(
@@ -255,6 +191,29 @@ def test_quicksearch(client, submitter, pg_driver_clean, cgci_blgsp):
     }
 
 
+def test_quicksearch_skip_empty(client, submitter, pg_driver_clean, cgci_blgsp):
+    from peregrine.resources.submission.graphql import node
+    orig = node.apply_arg_quicksearch
+    try:
+        queries = []
+
+        def apply_arg_quicksearch(q, *args):
+            queries.append(q)
+            rv = orig(q, *args)
+            queries.append(rv)
+            return rv
+
+        node.apply_arg_quicksearch = apply_arg_quicksearch
+        client.post(path, headers=submitter, data=json.dumps({
+            'query': """query Test {
+            aliquot(quick_search: "") { id type project_id submitter_id  }}
+            """
+        }))
+        assert queries[0] is queries[1], 'should not apply empty quick_search'
+    finally:
+        node.apply_arg_quicksearch = orig
+
+
 def test_node_interface_project_id(client, admin, submitter, pg_driver_clean):
     assert put_cgci_blgsp(client, auth=admin).status_code == 200
     post = post_example_entities_together(client, pg_driver_clean, submitter)
@@ -378,10 +337,10 @@ def test_project_project_id_filter(client, submitter, pg_driver_clean, cgci_blgs
 def test_arg_first(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """ 
-            query Test { 
+        'query': """
+            query Test {
                 case (first: 1, order_by_asc: "submitter_id") { submitter_id }
-            } 
+            }
         """}))
     assert r.json == {
         'data': {
@@ -1537,3 +1496,64 @@ def test_datanode(graphql_client, client, submitter, pg_driver_clean, cgci_blgsp
     j1 = graphql_client('{datanode {object_id}}').json
     j2 = graphql_client('{datanode(object_id: "%s") {object_id}}' % obj_id).json
     assert j1 == j2
+
+
+def test_boolean_filter(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    # make sure the existing data is what is expected
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {
+                experiment {
+                    copy_numbers_identified
+                }
+            }
+        """
+    }))
+    print("Existing data should contain a single experiment:")
+    print(r.data)
+    assert len(r.json["data"]["experiment"]) == 1
+    assert r.json["data"]["experiment"][0]["copy_numbers_identified"] == True
+
+    # test boolean filter true
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {
+                experiment (copy_numbers_identified: true) {
+                    copy_numbers_identified
+                }
+            }
+        """
+    }))
+    print("Filtering by boolean=true should return the experiment:")
+    print(r.data)
+    assert len(r.json["data"]["experiment"]) == 1
+
+    # test boolean filter false
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {
+                experiment (copy_numbers_identified: false) {
+                    copy_numbers_identified
+                }
+            }
+        """
+    }))
+    print("Filtering by boolean=false should not return any data:")
+    print(r.data)
+    assert len(r.json["data"]["experiment"]) == 0
+
+    # test boolean filter [true,false]
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {
+                experiment (copy_numbers_identified: [true,false]) {
+                    copy_numbers_identified
+                }
+            }
+        """
+    }))
+    print("Filtering by boolean=[true,false] should return the experiment:")
+    print(r.data)
+    assert len(r.json["data"]["experiment"]) == 1

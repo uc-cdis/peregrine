@@ -176,7 +176,7 @@ def apply_arg_quicksearch(q, args, info):
     within the node UUID as well as in the unique keys of the JSONB.
 
     Currently, for simplicity and performance, only the
-    ``submitter_id`` is being used in this filter.
+    ``id`` and ``submitter_id`` are being used in this filter.
 
     TODO: make this filter more general. Previous attempts:
 
@@ -194,7 +194,7 @@ def apply_arg_quicksearch(q, args, info):
     """
 
     search_phrase = args.get('quick_search', None)
-    if search_phrase is None:
+    if not search_phrase:
         # Safety check to make sure that the quicksearch filter is
         # actually being used
         return q
@@ -240,11 +240,15 @@ def apply_query_args(q, args, info):
         # val is always a list, but the list elements are treated differently based on
         # whether the relevant dictionary field has type scalar or list.
         # See comments at get_node_class_args().
-        if q.entity().__pg_properties__[key][0] == list:
+        field_type = q.entity().__pg_properties__[key][0]
+        if field_type == list:
             # This field has type list. Return supersets of input (i.e. do AND filter)
             q = q.filter(*[q.entity()._props[key].astext.like('%"'+v+'"%') for v in val])
         else:
             # This field has scalar type. Treat input as several queries (i.e. do OR filter)
+            if field_type == bool:
+                # convert True to "true"; False to "false"
+                val = [str(v).lower() for v in val]
             q = q.filter(q.entity()._props[key].astext.in_([
                 str(v) for v in val]))
 
@@ -505,6 +509,9 @@ def query_node_with_args(args, info):
 
 
 def lookup_graphql_type(T):
+    # XXX: for now all arrays are assumed to contain string items.
+    # graphene.List(graphene.String) should eventually be replaced
+    # by graphene.List(actual_item_type)
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
@@ -624,6 +631,7 @@ def get_node_class_property_attrs(cls, _cache={}):
 
     def resolve_type(self, info, *args):
         return self.__class__.__name__
+
     attrs = {
         name: graphene.Field(lookup_graphql_type(types[0]))
         for name, types in cls.__pg_properties__.iteritems()
@@ -989,13 +997,18 @@ def get_datanode_fields_dict():
     """Return a dictionary containing the fields shared by all data nodes."""
 
     if not DataNode.shared_fields:
+        def instantiate_graphene(t):
+            return t if isinstance(t, graphene.List) else t()
+
         # union of all the data nodes' possible fields
         DataNode.shared_fields = {
-            field: lookup_graphql_type(types[0])()
+            field: instantiate_graphene(lookup_graphql_type(types[0]))
             for subclass in get_data_subclasses()
-            for field, types in subclass.__pg_properties__.items()
+            for field, types in subclass.__pg_properties__.iteritems()
             if field not in subclass._pg_edges.keys() # don't include the links
         }
+
+        # add required node fields
         DataNode.shared_fields.update({
             'id': graphene.String(),
             'type': graphene.String(),

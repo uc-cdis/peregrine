@@ -36,7 +36,7 @@ from peregrine.resources.submission.constants import (
 )
 
 def filter_to_cls_fields(cls, doc):
-    fields = {f.attname for f in cls._meta.fields}
+    fields = set(cls._meta.fields.keys())
     doc = {
         key: val
         for key, val in doc.iteritems()
@@ -76,7 +76,7 @@ class TransactionResponseError(graphene.ObjectType):
         try:
             return [
                 GenericEntity(**dependent)
-                for dependent in self.dependents
+                for dependent in self.dependents or []
             ]
         except AttributeError:
             # graphene does unsightly things, if there are no
@@ -137,7 +137,7 @@ class TransactionResponseEntity(graphene.ObjectType):
             return []
 
     def resolve_type(self, info, **args):
-        return lambda: self.type
+        return self.type
 
     def resolve_related_cases(self, info, **args):
         if case_cache_enabled():
@@ -165,7 +165,7 @@ class TransactionResponse(graphene.ObjectType):
     entities = graphene.List(TransactionResponseEntity)
 
     @classmethod
-    def resolve_entities(cls, response, **args):
+    def resolve_entities(cls, response, *args, **kwargs):
         try:
             return [
                 instantiate_safely(TransactionResponseEntity, entity)
@@ -189,12 +189,17 @@ class TransactionDocument(graphene.ObjectType):
     response_json = graphene.String()
     response = graphene.Field(TransactionResponse)
 
+    # These fields depend on these columns being loaded
+    fields_depend_on_columns = {
+        "doc_size": {"doc"},
+    }
+
     @classmethod
     def resolve_doc_size(cls, document, *args, **kwargs):
         return len(document.doc)
 
     @classmethod
-    def resolve_response(cls, document, *arg, **kwargss):
+    def resolve_response(cls, document, *arg, **kwargs):
         try:
             response_json = json.loads(document.response_json)
             return instantiate_safely(TransactionResponse, response_json)
@@ -244,7 +249,7 @@ class TransactionLog(graphene.ObjectType):
 
     def resolve_documents(self, info, **args):
         return [TransactionDocument(**dict(
-            filtered_column_dict(r, info),
+            filtered_column_dict(r, info, TransactionDocument.fields_depend_on_columns),
             **{'response_json': json.dumps(r.response_json)}
         )) for r in self.documents]
 
