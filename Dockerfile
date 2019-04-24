@@ -14,15 +14,7 @@ WORKDIR /peregrine
 
 RUN pip install -r requirements.txt \
     && COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" >peregrine/version_data.py \
-    && VERSION=`git describe --always --tags` && echo "VERSION=\"${VERSION}\"" >>peregrine/version_data.py \
-    && echo "DICTCOMMIT=\"(TODO)\"" >>/peregrine/peregrine/version_data.py \
-    && echo "DICTVERSION=\"(TODO)\"" >>/peregrine/peregrine/version_data.py
-
-
-#    && cd /peregrine/lib/python2.7/site-packages/gdcdictionary \
-#    && DICTCOMMIT=`git rev-parse HEAD` && echo "DICTCOMMIT=\"${DICTCOMMIT}\"" >>/peregrine/peregrine/version_data.py \
-#    && DICTVERSION=`git describe --always --tags` && echo "DICTVERSION=\"${DICTVERSION}\"" >>/peregrine/peregrine/version_data.py \
-#    && python setup.py install
+    && VERSION=`git describe --always --tags` && echo "VERSION=\"${VERSION}\"" >>peregrine/version_data.py
 
 EXPOSE 80
 
