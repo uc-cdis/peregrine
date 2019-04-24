@@ -15,7 +15,7 @@ Flask==0.12.4
 Flask-Cors==1.9.0
 Jinja2==2.7.3
 MarkupSafe==0.23
-PyYAML==3.11
+PyYAML==5.1
 Werkzeug==0.9.6
 boto==2.36.0
 elasticsearch==1.2.0
