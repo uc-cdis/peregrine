@@ -1,3 +1,4 @@
+authutils==3.0.6
 datamodelutils==0.4.4
 defusedxml==0.5.0
 dictionaryutils==2.0.7
@@ -41,4 +42,3 @@ cdispyutils==0.2.13
 -e git+https://git@github.com/uc-cdis/graphql-core.git@cdis2.0.0#egg=graphql-core
 -e git+https://git@github.com/uc-cdis/cdiserrors.git@0.1.1#egg=cdiserrors
 -e git+https://git@github.com/uc-cdis/cdislogging.git@master#egg=cdislogging
--e git+https://git@github.com/uc-cdis/authutils.git@3.0.1#egg=authutils
