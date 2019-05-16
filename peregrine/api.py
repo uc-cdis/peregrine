@@ -11,7 +11,6 @@ from psqlgraph import PsqlGraphDriver
 
 from authutils import AuthError
 import datamodelutils
-import gdcdictionary
 from dictionaryutils import DataDictionary, dictionary as dict_init
 from cdispyutils.log import get_handler
 from cdispyutils.uwsgi import setup_user_harakiri
