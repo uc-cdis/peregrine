@@ -5,7 +5,7 @@ import logging
 import pkg_resources
 
 from flask import Flask, jsonify
-from flask.ext.cors import CORS
+from flask_cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
 from psqlgraph import PsqlGraphDriver
 
