@@ -56,8 +56,6 @@ OAUTH2 = {
 DICTIONARY_URL = os.environ.get('DICTIONARY_URL','https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json')
 
 USER_API = "http://localhost"
-# used by fence.jwt.token.generate_signed_access_token for iss
-BASE_URL = "http://localhost"
 
 VERIFY_PROJECT = False
 AUTH_SUBMISSION_LIST = False

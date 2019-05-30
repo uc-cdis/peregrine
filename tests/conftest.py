@@ -13,7 +13,6 @@ import sheepdog
 import peregrine
 from peregrine.api import app as _app, app_init
 from peregrine.auth import ROLES
-from fence.jwt.token import generate_signed_access_token
 import utils
 
 here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -141,14 +140,14 @@ def encoded_jwt(app):
 
         Args:
             private_key (str): private key
-            user (userdatamodel.models.User): user object
+            user (generic User object): user object
 
         Return:
             str: JWT containing claims encoded with private key
         """
         kid = peregrine.test_settings.JWT_KEYPAIR_FILES.keys()[0]
         scopes = ['openid']
-        token = generate_signed_access_token(
+        token = utils.generate_signed_access_token(
             kid, private_key, user, 3600, scopes, forced_exp_time=None,
             iss=app.config['USER_API'],
         )
@@ -159,7 +158,7 @@ def encoded_jwt(app):
 @pytest.fixture(scope='session')
 def random_user(encoded_jwt):
     private_key = utils.read_file('resources/keys/test_private_key.pem')
-    # set up a fake User object which has all the attributes that fence needs
+    # set up a fake User object which has all the attributes needed
     # to generate a token
     project_ids = []
     user_properties = {
@@ -178,7 +177,7 @@ def random_user(encoded_jwt):
 @pytest.fixture(scope='session')
 def submitter(encoded_jwt):
     private_key = utils.read_file('resources/keys/test_private_key.pem')
-    # set up a fake User object which has all the attributes that fence needs
+    # set up a fake User object which has all the attributes needed
     # to generate a token
     project_ids = ['phs000218', 'phs000235', 'phs000178']
     user_properties = {
