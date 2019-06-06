@@ -1,7 +1,7 @@
 # To run: docker run -v /path/to/wsgi.py:/var/www/peregrine/wsgi.py --name=peregrine -p 81:80 peregrine
 # To check running container: docker exec -it peregrine /bin/bash 
 
-FROM quay.io/cdis/py27base:pybase2-1.0.1
+FROM quay.io/cdis/py27base:pybase2-1.0.2
 
 ENV DEBIAN_FRONTEND=noninteractive
 
