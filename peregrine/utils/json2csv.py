@@ -47,3 +47,105 @@ def to_csv(hits, dialect='excel'):
     writer.writerows(rows)
 
     return s.getvalue()
+
+
+def dicts2tsv(dict_list):
+    """
+    Convert the list of dictionary to tsv format.
+    Each element of the list represent a row in tsv
+
+    Args:
+        dict_list(list): list of dictionary
+
+    Returns:
+        output(str): string in tsv format
+    """
+
+    tsv = ""
+
+    header_set = set()
+
+    for dict_row in dict_list:
+        for key in dict_row.keys():
+            if (dict_row[key] is not None and dict_row[key] != []):
+                header_set.update([key])
+
+    for h in header_set:
+        words = h.split('-')
+        tsv = tsv + "{}\t".format(words[-1])
+    tsv = tsv[:-1] + "\n"
+
+    nrow = 0
+    for dict_row in dict_list:
+        for h in header_set:
+            if dict_row.get(h):
+                tsv = tsv + "{}\t".format(dict_row[h])
+            else:
+                tsv = tsv + "None\t"
+        tsv = tsv[:-1] + "\n"
+        nrow = nrow + 1
+        if nrow >= 1000:
+            break
+    return tsv
+
+
+def join(tsv_list, L, index, row):
+    '''
+    Join list of sub tsv to generate a big tsv
+
+    Args:
+        tsv_list(list): list of tables or tvs. Each element is represented by a list of dictionary
+        L(list): joined table that is iteratively updated
+        index(int): the index of the table will be joined
+        row(dict): the current joining row
+
+    Returns: None
+    '''
+    if index == len(tsv_list):
+        L.append(row)
+    else:
+        for item in tsv_list[index]:
+            newrow = row.copy()
+            newrow.update(item)
+            join(tsv_list, L, index + 1, newrow)
+
+
+def json2tsv(json, prefix, delem):
+    '''
+    Convert json file to tsv format
+
+    Args:
+        json(json) graphQL output JSON
+        prefix(str) prefix string
+        delem(char): delimitter .e.g '\t'
+
+    Returns: 
+        list of dictionary representing a tsv file. Each item in the list represent a row data.
+        each row is a dictionary with column name key and value at that position
+    '''
+
+    L = []
+    if isinstance(json, list) and json != []:
+        for l in json:
+            L += (json2tsv(l, prefix, delem))
+        return L
+    if isinstance(json, dict):
+        # handle dictionary
+        tsv_list = []
+        for k in json.keys():
+            tsv = json2tsv(json[k], prefix + delem + k, delem)
+            tsv_list.append(tsv)
+
+        join(tsv_list, L, 0, {})
+    else:
+        L.append({prefix: json})
+    return L
+
+
+def flatten_json(json, prefix, delem):
+    data = json['data']
+    res = {}
+    for key, val in data.iteritems():
+        res[key] = json2tsv({key: val}, prefix, delem)
+
+    return res

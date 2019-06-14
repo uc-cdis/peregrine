@@ -12,6 +12,7 @@ from authutils import AuthError
 import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
 from cdispyutils.log import get_handler
+from indexclient.client import IndexClient
 from cdispyutils.uwsgi import setup_user_harakiri
 
 import peregrine
@@ -64,6 +65,13 @@ def db_init(app):
         database=app.config['PSQLGRAPH']['database'],
         set_flush_timestamps=True,
     )
+
+
+    app.logger.info('Initializing Indexd driver')
+    app.index_client = IndexClient(
+        app.config['SIGNPOST']['host'],
+        version=app.config['SIGNPOST']['version'],
+        auth=app.config['SIGNPOST']['auth'])
 
 
 # Set CORS options on app configuration

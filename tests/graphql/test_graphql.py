@@ -1,5 +1,6 @@
 import json
 import os
+import shutil
 import random
 
 import pytest
@@ -8,8 +9,19 @@ from datamodelutils import models
 from psqlgraph import Node
 from peregrine import dictionary
 
+import peregrine
 from tests.graphql import utils
 from tests.graphql.utils import data_fnames
+
+from peregrine.utils import json2tsv
+
+# Python 2 and 3 compatible
+try:
+    from unittest.mock import MagicMock
+    from unittest.mock import patch
+except ImportError:
+    from mock import MagicMock
+    from mock import patch
 
 BLGSP_PATH = '/v0/submission/CGCI/BLGSP/'
 BRCA_PATH = '/v0/submission/TCGA/BRCA/'
@@ -17,6 +29,8 @@ BRCA_PATH = '/v0/submission/TCGA/BRCA/'
 DATA_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'data')
 
 path = '/v0/submission/graphql'
+#export_path = '/v0/submission/export'
+
 
 
 def post_example_entities_together(
@@ -37,6 +51,7 @@ def put_example_entities_together(client, pg_driver_clean, submitter):
             data.append(json.loads(f.read()))
     return client.put(path, headers=submitter, data=json.dumps(data))
 
+
 def put_cgci(client, auth=None):
     path = '/v0/submission'
     data = json.dumps({
@@ -45,6 +60,7 @@ def put_cgci(client, auth=None):
     })
     r = client.put(path, headers=auth, data=data)
     return r
+
 
 def put_cgci_blgsp(client, auth=None):
     put_cgci(client, auth=auth)
@@ -108,6 +124,7 @@ def test_unathenticated_graphql_query(
         'query': """query Test { alias1: case { id } }"""
     }))
     assert r.status_code == 401, r.data
+
 
 
 def test_fragment(client, submitter, pg_driver_clean, cgci_blgsp):
@@ -320,10 +337,10 @@ def test_project_project_id_filter(client, submitter, pg_driver_clean, cgci_blgs
 def test_arg_first(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """ 
-            query Test { 
+        'query': """
+            query Test {
                 case (first: 1, order_by_asc: "submitter_id") { submitter_id }
-            } 
+            }
         """}))
     assert r.json == {
         'data': {
@@ -653,7 +670,7 @@ def test_transaction_logs(client, submitter, pg_driver_clean, cgci_blgsp):
     assert r.json == {
         "data": {
             "transaction_log": [{
-            'project_id': 'CGCI-BLGSP', 'submitter': None
+                'project_id': 'CGCI-BLGSP', 'submitter': None
             }]
         }
     }
@@ -676,7 +693,7 @@ def test_with_path_to(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     with pg_driver_clean.session_scope():
         case_sub_id = pg_driver_clean.nodes(models.Case).path('samples')\
-                                              .first().submitter_id
+            .first().submitter_id
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
         query Test {{
@@ -929,6 +946,7 @@ def test_catch_language_error(client, submitter, pg_driver_clean, cgci_blgsp):
         )]
     }
 
+
 @pytest.mark.skip(reason='must rewrite query')
 def test_filter_empty_prop_list(
         client, submitter, pg_driver_clean, cgci_blgsp, monkeypatch):
@@ -1070,8 +1088,6 @@ def test_read_group_with_path_to_case(
     }
 
 
-
-
 def test_tx_logs_async_fields(pg_driver_clean, graphql_client, cgci_blgsp):
     assert graphql_client("""{
         tx_log: transaction_log {
@@ -1142,6 +1158,7 @@ def test_tx_logs_committable(pg_driver_clean, graphql_client, cgci_blgsp, mock_t
             "not_committable": 1,
         }
     }
+
 
 @pytest.mark.skip(reason='we have different data')
 def test_tx_logs_deletion(pg_driver_clean, graphql_client, cgci_blgsp, failed_deletion_transaction):
@@ -1264,6 +1281,114 @@ def test_tx_log_comprehensive_query_failed_deletion(
     assert response.status_code == 200, response.data
     assert 'errors' not in response.json, response.data
 
+
+def test_json2tsv():
+
+    data = {"project": [
+        {
+            "code": "BLGSP",
+                    "experiments": [],
+                    "id": "daa208a7-f57a-562c-a04a-7a7c77542c98",
+                    "name": "Burkitt Lymphoma Genome Sequencing Project",
+                    "programs": [
+                        {
+                            "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
+                            "name": "DEV"
+                        }
+                    ]
+        }]
+    }
+
+    res = json2tsv(data, '', '_')
+
+    assert len(res) == 1
+    assert res[0]['_project_programs_id'] == 'f6bd2676-33f6-5671-ac2f-38aa1ceedcd8'
+    assert res[0]['_project_programs_name'] == 'DEV'
+    assert res[0]['_project_id'] == 'daa208a7-f57a-562c-a04a-7a7c77542c98'
+    assert res[0]['_project_code'] == 'BLGSP'
+    assert res[0]['_project_name'] == 'Burkitt Lymphoma Genome Sequencing Project'
+
+
+def test_json2tsv_multiple_branches(client, submitter, pg_driver_clean):
+    data = {"data": {
+        "project": [
+                    {
+                        "code": "BLGSP",
+                        "experiments": [],
+                        "id": "daa208a7-f57a-562c-a04a-7a7c77542c98",
+                        "name": "Burkitt Lymphoma Genome Sequencing Project",
+                        "programs": [
+                            {
+                                "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
+                                "name": "DEV"
+                            }
+                        ]
+                    },
+            {
+                        "code": "test",
+                        "experiments": [
+                            {
+                                "id": "8307c663-af58-4b01-8fd0-9b63f55dac10"
+                            },
+                            {
+                                "id": "f6e00607-7f38-49ea-b64b-c45ccf0ff990"
+                            }
+                        ],
+                        "id": "a77f549b-c74b-563e-80bb-570b5a4dde88",
+                        "name": "test",
+                        "programs": [
+                            {
+                                "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
+                                "name": "DEV"
+                            }
+                        ]
+                    },
+            {
+                        "code": "open",
+                        "experiments": [],
+                        "id": "9a2fe4bf-5484-5fe4-b882-0d61ecade7cc",
+                        "name": "Open access Project",
+                        "programs": [
+                            {
+                                "id": "f6bd2676-33f6-5671-ac2f-38aa1ceedcd8",
+                                "name": "DEV"
+                            }
+                        ]
+                    }
+        ]
+    }
+    }
+    res = json2tsv(data, '', '_')
+
+    assert len(res) == 4
+    assert res[0]['_data_project_programs_name'] == 'DEV'
+    assert res[0]['_data_project_id'] == 'daa208a7-f57a-562c-a04a-7a7c77542c98'
+    assert res[0]['_data_project_programs_id'] == 'f6bd2676-33f6-5671-ac2f-38aa1ceedcd8'
+    assert res[1]['_data_project_programs_id'] == 'f6bd2676-33f6-5671-ac2f-38aa1ceedcd8'
+    assert res[1]['_data_project_name'] == 'test'
+
+@patch('peregrine.utils.s3.put_data_to_s3')
+@patch('peregrine.utils.s3.generate_presigned_url')
+def test_bagit_endpoint(
+        generate_presigned_url, put_data_to_s3,
+        client, submitter, monkeypatch):
+    data = json.dumps({
+        'format': 'bdbag',
+        'path': 'manifest_bag',
+        'query': """
+            {
+                valid:   project (project_id: "CGCI-BLGSP") { ...f }
+                invalid: project (project_id: "TCGA-TEST")  { ...f }
+                multiple: project (project_id: ["TCGA-BRCA", "CGCI-BLGSP"]) { ...f }
+            }
+            fragment f on project { project_id code }
+        """
+    })
+    put_data_to_s3.return_value = True
+    generate_presigned_url.return_value = 'http://presignedurl.test'
+    res = client.post(path, headers=submitter, data=data)
+    assert res.status_code == 200
+    assert res.data
 
 def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)

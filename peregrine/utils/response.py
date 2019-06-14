@@ -8,10 +8,9 @@ import dicttoxml
 import os
 from cdispyutils.log import get_handler
 from flask import Response, Markup
-from peregrine import VERSION
 from peregrine.utils.json2csv import to_csv
 
-defusedxml.defuse_stdlib()
+#defusedxml.defuse_stdlib()
 logger = logging.getLogger("peregrine.utils.response")
 logger.addHandler(get_handler())
 
@@ -28,13 +27,6 @@ except Exception as e:
 def get_data_release():
     """TODO: Unhard code this"""
     return 'Data Release 3.0 - September 21, 2016'
-
-
-def get_status():
-    status = {'status': 'OK', 'version': 1, 'tag': VERSION, 'data_release': get_data_release()}
-    if COMMIT:
-        status["commit"] = COMMIT
-    return status
 
 
 def tryToInt(value):
@@ -125,6 +117,7 @@ def format_response(request_options, data, mimetype):
         Returns:
             A Flask Response object, with the data formatted as specified and the Content-Type set
     """
+    import pdb; pdb.set_trace()
     if (request_options.get('attachment', '').lower() == 'true' or
             "text/csv" in mimetype or
             "text/tab-separated-values" in mimetype):
@@ -152,8 +145,8 @@ def format_response(request_options, data, mimetype):
         data = to_json(request_options, data)
 
     response = Response(data, mimetype=mimetype)
-    for key, value in get_status().iteritems():
-        response.headers.extend({'X-GDC-{}'.format(key): value})
+    # for key, value in get_status().iteritems():
+    #     response.headers.extend({'X-GDC-{}'.format(key): value})
 
     return response
 
