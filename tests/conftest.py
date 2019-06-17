@@ -1,10 +1,9 @@
 import os
 import sys
 
-from indexclient.client import IndexClient as SignpostClient
+from indexclient.client import IndexClient
 from multiprocessing import Process
 from psqlgraph import PsqlGraphDriver
-from signpost import Signpost
 import json
 import pytest
 import requests
@@ -29,47 +28,8 @@ def pg_config():
     )
 
 
-def wait_for_signpost_alive(port):
-    url = 'http://localhost:{}'.format(port)
-    try:
-        requests.get(url)
-    except requests.ConnectionError:
-        return wait_for_signpost_alive(port)
-    else:
-        return
-
-
-def wait_for_signpost_not_alive(port):
-    url = 'http://localhost:{}'.format(port)
-    try:
-        requests.get(url)
-    except requests.ConnectionError:
-        return
-    else:
-        return wait_for_signpost_not_alive(port)
-
-
-def run_signpost(port):
-    Signpost({"driver": "inmemory", "layers": ["validator"]}).run(
-        host="localhost", port=port, debug=False)
-
-
-@pytest.fixture(scope="session")
-def start_signpost(request):
-    port = 8000
-    signpost = Process(target=run_signpost, args=[port])
-    signpost.start()
-    wait_for_signpost_alive(port)
-
-    def teardown():
-        signpost.terminate()
-        wait_for_signpost_not_alive(port)
-
-    request.addfinalizer(teardown)
-
-
 @pytest.fixture(scope='session')
-def app(request, start_signpost):
+def app(request):
 
     _app.config.from_object("peregrine.test_settings")
     app_init(_app)
@@ -77,11 +37,11 @@ def app(request, start_signpost):
     sheepdog_blueprint = sheepdog.blueprint.create_blueprint('submission')
     _app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
 
-    _app.logger.info('Initializing Signpost driver')
-    _app.signpost = SignpostClient(
-        _app.config['SIGNPOST']['host'],
-        version=_app.config['SIGNPOST']['version'],
-        auth=_app.config['SIGNPOST']['auth'])
+    _app.logger.info('Initializing IndexClient')
+    _app.index_client = IndexClient(
+        _app.config['INDEX_CLIENT']['host'],
+        version=_app.config['INDEX_CLIENT']['version'],
+        auth=_app.config['INDEX_CLIENT']['auth'])
     try:
         _app.logger.info('Initializing Auth driver')
     except Exception:
