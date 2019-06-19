@@ -2,7 +2,7 @@ import os
 from collections import OrderedDict
 
 
-SIGNPOST = {
+INDEX_CLIENT = {
     "host": "http://localhost:8000/", 'version': 'v0',
     "auth": None}
 AUTH = 'https://fake_auth_url'
