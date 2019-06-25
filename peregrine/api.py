@@ -2,9 +2,10 @@ import os
 import sys
 import time
 import logging
+import pkg_resources
 
 from flask import Flask, jsonify
-from flask.ext.cors import CORS
+from flask_cors import CORS
 from flask_sqlalchemy_session import flask_scoped_session
 from psqlgraph import PsqlGraphDriver
 
@@ -19,7 +20,7 @@ from peregrine import dictionary
 from peregrine.blueprints import datasets
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
 from .resources import submission
-from .version_data import VERSION, COMMIT, DICTVERSION, DICTCOMMIT
+from .version_data import VERSION, COMMIT
 
 
 # recursion depth is increased for complex graph traversals
@@ -154,9 +155,10 @@ def health_check():
 
 @app.route('/_version', methods=['GET'])
 def version():
+    # dictver['commit'] deprecated; see peregrine#130
     dictver = {
-        'version': DICTVERSION,
-        'commit': DICTCOMMIT,
+        'version': pkg_resources.get_distribution("gdcdictionary").version,
+        'commit': '',
     }
     base = {
         'version': VERSION,
