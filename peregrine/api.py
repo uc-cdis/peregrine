@@ -155,8 +155,10 @@ def health_check():
 
 @app.route('/_version', methods=['GET'])
 def version():
+    # dictver['commit'] deprecated; see peregrine#130
     dictver = {
-        'version': pkg_resources.get_distribution("gdcdictionary").version
+        'version': pkg_resources.get_distribution("gdcdictionary").version,
+        'commit': '',
     }
     base = {
         'version': VERSION,
