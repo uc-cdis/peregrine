@@ -157,7 +157,7 @@ def health_check():
 def version():
     # dictver['commit'] deprecated; see peregrine#130
     dictver = {
-        'version': pkg_resources.get_distribution("gdcdictionary").version,
+        'version': pkg_resources.get_distribution("gen3dictionary").version,
         'commit': '',
     }
     base = {
