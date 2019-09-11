@@ -885,7 +885,7 @@ def test_schema(client, submitter, pg_driver_clean):
 
 
 def test_special_case_project_id(
-        client, submitter, pg_driver_clean, cgci_blgsp, put_tcga_brca):
+        client, submitter, pg_driver_clean, cgci_blgsp, put_tcga_brca, mock_arborist_requests):
     data = json.dumps({
         'query': """
             {
@@ -896,6 +896,21 @@ def test_special_case_project_id(
             fragment f on project { project_id code }
         """
     })
+
+    # the user has read access to CGCI-BLGSP and TCGA-BRCA
+    mock_arborist_requests(auth_mapping={
+        "/programs/CGCI/projects/BLGSP": [
+            {
+                "service": "peregrine", "method": "read"
+            }
+        ],
+        "/programs/TCGA/projects/BRCA": [
+            {
+                "service": "peregrine", "method": "read"
+            }
+        ]
+    })
+
     r = client.post(path, headers=submitter, data=data)
     print r.data
     assert r.json == {

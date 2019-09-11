@@ -81,17 +81,6 @@ def set_user(*args, **kwargs):
 
 
 def run_with_fake_auth():
-    from datamodelutils import models as md
-    def get_project_ids(role='_member_', project_ids=None):
-        if project_ids is None:
-            project_ids = []
-        if not project_ids:
-            with current_app.db.session_scope():
-                project_ids += [
-                    '{}-{}'.format(p.programs[0].name, p.code)
-                    for p in current_app.db.nodes(md.Project).all()]
-        return project_ids
-
     with patch(
         'peregrine.auth.CurrentUser.roles',
         new_callable=PropertyMock,
@@ -100,10 +89,6 @@ def run_with_fake_auth():
         'peregrine.auth.CurrentUser.logged_in',
         new_callable=PropertyMock,
         return_value=lambda: True,
-    ), patch(
-        'peregrine.auth.CurrentUser.get_project_ids',
-        new_callable=PropertyMock,
-        return_value=get_project_ids,
     ), patch(
         'peregrine.auth.verify_hmac',
         new=set_user,

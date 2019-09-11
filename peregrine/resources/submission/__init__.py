@@ -75,10 +75,8 @@ def set_read_access_projects():
         None
 
     Raises:
-        peregrine.errors.AuthError:
-            if ``flask.g.user`` does not exist or if the user is not logged in
-            (does not have a username), then an InvalidTokenError (inheriting
-            from AuthError) is raised by ``CurrentUser.get_project_ids``
+        peregrine.errors.AuthNError:
+            if unable to retrieve auth mapping from arborist
 
     Side Effects:
         assigns result from ``get_open_project_ids`` to
