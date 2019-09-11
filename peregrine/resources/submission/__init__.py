@@ -12,7 +12,7 @@ from cdiserrors import AuthZError
 import datamodelutils.models as models
 import flask
 
-from peregrine.auth import current_user, get_program_project_roles
+from peregrine.auth import current_user, get_read_access_projects
 import peregrine.blueprints
 from peregrine.resources.submission import graphql
 
@@ -85,34 +85,8 @@ def set_read_access_projects():
         ``flask.g.read_access_projects``.
     """
     if not hasattr(flask.g, 'read_access_projects'):
-        flask.g.read_access_projects = []
-        user_project_ids = current_user.get_project_ids('read')
-        # translate the project IDs from user into {program}-{project}
-        with flask.current_app.db.session_scope():
-            programs = (
-                flask.current_app.db
-                .nodes(models.Program)
-                .prop_in('dbgap_accession_number', user_project_ids)
-                .all()
-            )
-            flask.g.read_access_projects.extend(
-                program.name + '-' + project.code
-                for program in programs
-                for project in program.projects
-            )
-            projects = (
-                flask.current_app.db
-                .nodes(models.Project)
-                .prop_in('dbgap_accession_number', user_project_ids)
-                .all()
-            )
-            flask.g.read_access_projects.extend(
-                program.name + '-' + project.code
-                for project in projects
-                for program in project.programs
-            )
-        open_project_ids = get_open_project_ids()
-        flask.g.read_access_projects.extend(open_project_ids)
+        flask.g.read_access_projects = get_read_access_projects()
+        flask.g.read_access_projects.extend(get_open_project_ids())
 
 
 @peregrine.blueprints.blueprint.route('/graphql', methods=['POST'])

@@ -19,6 +19,8 @@ AUTH_ADMIN_CREDS = {
     'auth_url': env.get('KEYSTONE_AUTH_URL'),
     'user_domain_name': env.get('KEYSTONE_DOMAIN')}
 
+ARBORIST = "http://arborist-service/"
+
 # Storage
 CLEVERSAFE_HOST = env.get('CLEVERSAFE_HOST', 'cleversafe.service.consul')
 

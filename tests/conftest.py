@@ -12,7 +12,17 @@ import sheepdog
 import peregrine
 from peregrine.api import app as _app, app_init
 from peregrine.auth import ROLES
+from peregrine.errors import AuthZError
 import utils
+
+# Python 2 and 3 compatible
+try:
+    from unittest.mock import MagicMock
+    from unittest.mock import patch
+except ImportError:
+    from mock import MagicMock
+    from mock import patch
+
 
 here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, here)
@@ -223,3 +233,46 @@ def public_dataset_api(request):
     def tearDown():
         os.environ["PUBLIC_DATASETS"] = "false"
     request.addfinalizer(tearDown)
+
+
+@pytest.fixture(scope="function")
+def mock_arborist_requests(request):
+    """
+    TODO
+    """
+
+    def do_patch(mapping={}):
+        mapping = mapping or {
+            "/programs/CGCI/projects/BLGSP": [
+                {
+                    "service": "peregrine", "method": "read"
+                }
+            ]
+        }
+
+        def make_mock_response(*args, **kwargs):
+            # if not authorized:
+            #     raise AuthZError('Mocked Arborist says no')
+            mocked_response = MagicMock(requests.Response)
+            # mocked_response.status_code = 200
+
+            def mocked_items(*args, **kwargs):
+                return None
+            mocked_response.items = mapping.items
+
+            return mocked_response
+
+        mocked_auth_mapping = MagicMock(side_effect=make_mock_response)
+        patch_auth_mapping = patch("gen3authz.client.arborist.client.ArboristClient.auth_mapping", mocked_auth_mapping)
+        patch_auth_mapping.start()
+        request.addfinalizer(patch_auth_mapping.stop)
+
+    return do_patch
+
+
+@pytest.fixture(autouse=True)
+def arborist_authorized(mock_arborist_requests):
+    """
+    TODO
+    """
+    mock_arborist_requests()
