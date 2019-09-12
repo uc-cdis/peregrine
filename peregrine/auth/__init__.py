@@ -12,6 +12,7 @@ from authutils import ROLES # TODO check if uses of this should be replaced
 from authutils.user import current_user
 from cdislogging import get_logger
 from datamodelutils import models
+from gen3authz.client.arborist.errors import ArboristError
 import flask
 
 from peregrine.errors import AuthNError
@@ -89,9 +90,10 @@ def get_read_access_projects():
     """
     Get all resources the user has read access to and parses the Arborist resource paths into a program.name and a project.code.
     """
-    mapping = flask.current_app.auth.auth_mapping(current_user.username)
-    if not mapping:
-        raise AuthNError("Unable to retrieve auth mapping")
+    try:
+        mapping = flask.current_app.auth.auth_mapping(current_user.username)
+    except ArboristError as e:
+        raise AuthNError("Unable to retrieve auth mapping: {}".format(e))
 
     with flask.current_app.db.session_scope():
         read_access_projects = [

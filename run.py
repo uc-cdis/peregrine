@@ -96,6 +96,19 @@ def run_with_fake_auth():
         run_for_development(debug=debug, threaded=True)
 
 
+def run_with_fake_authz():
+    """
+    Mocks arborist calls.
+    """
+    auth_mapping = {}  # modify this to mock specific access
+    with patch(
+        'gen3authz.client.arborist.client.ArboristClient.auth_mapping',
+        new_callable=PropertyMock,
+        return_value=lambda x: auth_mapping,
+    ):
+        run_for_development(debug=debug, threaded=True)
+
+
 def run_with_fake_download():
     with patch("peregrine.download.get_nodes", fake_get_nodes):
         with patch.multiple("peregrine.download",
@@ -116,4 +129,4 @@ if __name__ == '__main__':
         if os.environ.get("GDC_FAKE_AUTH") == 'True':
             run_with_fake_auth()
         else:
-            run_for_development(debug=debug, threaded=True)
+            run_with_fake_authz()
