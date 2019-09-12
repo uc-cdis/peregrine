@@ -8,7 +8,6 @@ or
 ``pip install git+https://git@github.com/uc-cdis/authutils.git@1.2.3#egg=authutils``
 """
 
-from authutils import ROLES # TODO check if uses of this should be replaced
 from authutils.user import current_user
 from cdislogging import get_logger
 from datamodelutils import models

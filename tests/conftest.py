@@ -11,7 +11,6 @@ import sheepdog
 
 import peregrine
 from peregrine.api import app as _app, app_init
-from peregrine.auth import ROLES
 from peregrine.errors import AuthZError
 import utils
 

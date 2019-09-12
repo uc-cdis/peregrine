@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 
+from authutils import ROLES as all_roles
+from collections import defaultdict
+from flask import current_app
+from mock import patch, PropertyMock
 import os
 from peregrine.api import run_for_development
-from flask import current_app
-
-from mock import patch, PropertyMock
-
 from psqlgraph import PolyNode as Node
-from peregrine.auth import ROLES as all_roles
-from collections import defaultdict
 import requests
-requests.packages.urllib3.disable_warnings()
 
+requests.packages.urllib3.disable_warnings()
 
 all_role_values = all_roles.values()
 roles = defaultdict(lambda: all_role_values)
