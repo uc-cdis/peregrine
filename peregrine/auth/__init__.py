@@ -101,8 +101,7 @@ def get_read_access_projects():
             for resource_path, permissions in mapping.items()
             for project_id in resource_path_to_project_ids(resource_path)
             # ignore resource if no peregrine read access:
-            if any(permission.get("service") in ["*", "peregrine"] for permission in permissions)
-            if any(permission.get("method") == "read" for permission in permissions)
+            if any(permission.get("service") in ["*", "peregrine"] and permission.get("method") in ["*", "read"] for permission in permissions)
         ]
 
     # return unique project_ids
