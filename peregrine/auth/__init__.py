@@ -22,67 +22,68 @@ logger = get_logger(__name__)
 
 def resource_path_to_project_ids(resource_path):
     parts = resource_path.strip('/').split('/')
-    if resource_path == "/" or (parts and parts[0] == "programs"):
 
-        if len(parts) > 4 or (len(parts) > 2 and parts[2] != "projects"):
+    # resource path ignored by peregrine
+    if resource_path != "/" and parts[0] != "programs":
+        return []
+
+    if len(parts) > 4 or (len(parts) > 2 and parts[2] != "projects"):
+        logger.warn(
+            "ignoring resource path {} because peregrine cannot handle a permission more granular than program/project level".format(resource_path)
+        )
+        return []
+
+    # "/" or "/programs": access to all programs
+    if len(parts) == 1:
+        programs = (
+            flask.current_app.db
+            .nodes(models.Program)
+            .all()
+        )
+        return [
+            program.name + '-' + project.code
+            for program in programs
+            for project in program.projects
+        ]
+
+    # "/programs/[...]" or "/programs/[...]/projects/":
+    # access to all projects of a program
+    if len(parts) < 4:
+        program_name = parts[1]
+        program = (
+            flask.current_app.db
+            .nodes(models.Program)
+            .props(name=program_name)
+            .first()
+        )
+        if not program:
             logger.warn(
-                "ignoring resource path {} because peregrine cannot handle a permission more granular than program/project level".format(resource_path)
+                "program {} in resource path {} does not exist".format(program_name, resource_path)
             )
             return []
+        return [
+            program.name + '-' + project.code
+            for project in program.projects
+        ]
 
-        #  "/" or "/programs": access to all programs
-        if len(parts) == 1:
-            programs = (
-                flask.current_app.db
-                .nodes(models.Program)
-                .all()
-            )
-            return [
-                program.name + '-' + project.code
-                for program in programs
-                for project in program.projects
-            ]
-
-        #  "/programs/[...]" or "/programs/[...]/projects/":
-        # access to all projects of a program
-        if len(parts) < 4:
-            program_name = parts[1]
-            program = (
-                flask.current_app.db
-                .nodes(models.Program)
-                .props(name=program_name)
-                .first()
-            )
-            if not program:
-                logger.warn(
-                    "program {} in resource path {} does not exist".format(program_name, resource_path)
-                )
-                return []
-            return [
-                program.name + '-' + project.code
-                for project in program.projects
-            ]
-
-        #  "/programs/[...]/projects/[...]": access to a specific project
-        if parts[2] == "projects":
-            project_code = parts[3]
-            project = (
-                flask.current_app.db
-                .nodes(models.Project)
-                .props(code=project_code)
-                .first()
-            )
-            if not project:
-                logger.warn(
-                    "project {} in resource path {} does not exist".format(project_code, resource_path)
-                )
-                return []
-            return [
-                program.name + '-' + project.code
-                for program in project.programs
-            ]
-
-    return []
+    # "/programs/[...]/projects/[...]": access to a specific project
+    # here, len(parts) == 4 and parts[2] == "projects"
+    project_code = parts[3]
+    project = (
+        flask.current_app.db
+        .nodes(models.Project)
+        .props(code=project_code)
+        .first()
+    )
+    if not project:
+        logger.warn(
+            "project {} in resource path {} does not exist".format(project_code, resource_path)
+        )
+        return []
+    return [
+        program.name + '-' + project.code
+        for program in project.programs
+    ]
 
 
 def get_read_access_projects():

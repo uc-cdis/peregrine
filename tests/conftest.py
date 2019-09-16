@@ -217,7 +217,7 @@ def mock_arborist_requests(request):
     """
     This fixture returns a function which you call to mock the call to
     arborist client's methods.
-    Parameter "mapping" lets us specify the response for a call to
+    Parameter "auth_mapping" lets us specify the response for a call to
     auth_mapping().
     auth_mapping() is mocked because it is called by peregrine.
     auth_request() and create_resource() are mocked because they are called
@@ -230,14 +230,10 @@ def mock_arborist_requests(request):
                 mocked_response = MagicMock(requests.Response)
 
                 if function_name == "auth_mapping":
-                    def mocked_items(*args, **kwargs):
-                        return None
                     mocked_response.items = auth_mapping.items
 
                 if function_name == "create_resource":
-                    def mocked_get(*args, **kwargs):
-                        return None
-                    mocked_response.get = mocked_get
+                    mocked_response.get = lambda *args, **kwargs: None
 
                 return mocked_response
             return response
