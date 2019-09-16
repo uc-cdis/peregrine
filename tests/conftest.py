@@ -11,8 +11,17 @@ import sheepdog
 
 import peregrine
 from peregrine.api import app as _app, app_init
-from peregrine.auth import ROLES
+from peregrine.errors import AuthZError
 import utils
+
+# Python 2 and 3 compatible
+try:
+    from unittest.mock import MagicMock
+    from unittest.mock import patch
+except ImportError:
+    from mock import MagicMock
+    from mock import patch
+
 
 here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, here)
@@ -115,36 +124,16 @@ def encoded_jwt(app):
 
     return encoded_jwt_function
 
-@pytest.fixture(scope='session')
-def random_user(encoded_jwt):
-    private_key = utils.read_file('resources/keys/test_private_key.pem')
-    # set up a fake User object which has all the attributes needed
-    # to generate a token
-    project_ids = []
-    user_properties = {
-        'id': 2,
-        'username': 'random_user',
-        'is_admin': False,
-        'project_access': {project: ROLES.values() for project in project_ids},
-        'policies': [],
-        'google_proxy_group_id': None,
-    }
-    user = type('User', (object,), user_properties)
-    token = encoded_jwt(private_key, user)
-    return {'Authorization': 'bearer ' + token}
-
 
 @pytest.fixture(scope='session')
 def submitter(encoded_jwt):
     private_key = utils.read_file('resources/keys/test_private_key.pem')
     # set up a fake User object which has all the attributes needed
     # to generate a token
-    project_ids = ['phs000218', 'phs000235', 'phs000178']
     user_properties = {
         'id': 1,
         'username': 'submitter',
         'is_admin': False,
-        'project_access': {project: ROLES.values() for project in project_ids},
         'policies': [],
         'google_proxy_group_id': None,
     }
@@ -156,12 +145,10 @@ def submitter(encoded_jwt):
 @pytest.fixture(scope='session')
 def admin(encoded_jwt):
     private_key = utils.read_file('resources/keys/test_private_key.pem')
-    project_ids = ['phs000218', 'phs000235', 'phs000178']
     user_properties = {
         'id': 2,
         'username': 'admin',
         'is_admin': True,
-        'project_access': {project: ROLES.values() for project in project_ids},
         'policies': [],
         'google_proxy_group_id': None,
     }
@@ -223,3 +210,64 @@ def public_dataset_api(request):
     def tearDown():
         os.environ["PUBLIC_DATASETS"] = "false"
     request.addfinalizer(tearDown)
+
+
+@pytest.fixture(scope="function")
+def mock_arborist_requests(request):
+    """
+    This fixture returns a function which you call to mock the call to
+    arborist client's methods.
+    Parameter "auth_mapping" lets us specify the response for a call to
+    auth_mapping().
+    auth_mapping() is mocked because it is called by peregrine.
+    auth_request() and create_resource() are mocked because they are called
+    by sheepdog, which is a dependency of the tests.
+    """
+
+    def do_patch(auth_mapping={}):
+        def make_mock_response(function_name):
+            def response(*args, **kwargs):
+                mocked_response = MagicMock(requests.Response)
+
+                if function_name == "auth_mapping":
+                    mocked_response.items = auth_mapping.items
+
+                if function_name == "create_resource":
+                    mocked_response.get = lambda *args, **kwargs: None
+
+                return mocked_response
+            return response
+
+        mocked_auth_mapping = MagicMock(side_effect=make_mock_response("auth_mapping"))
+        mocked_auth_request = MagicMock(side_effect=make_mock_response("auth_request"))
+        mocked_create_resource = MagicMock(side_effect=make_mock_response("create_resource"))
+
+        patch_auth_mapping = patch("gen3authz.client.arborist.client.ArboristClient.auth_mapping", mocked_auth_mapping)
+        patch_auth_request = patch("gen3authz.client.arborist.client.ArboristClient.auth_request", mocked_auth_request)
+        patch_create_resource = patch("gen3authz.client.arborist.client.ArboristClient.create_resource", mocked_create_resource)
+
+        patch_auth_mapping.start()
+        patch_auth_request.start()
+        patch_create_resource.start()
+
+        request.addfinalizer(patch_auth_mapping.stop)
+        request.addfinalizer(patch_auth_request.stop)
+        request.addfinalizer(patch_create_resource.stop)
+
+    return do_patch
+
+
+@pytest.fixture(autouse=True)
+def arborist_authorized(mock_arborist_requests):
+    """
+    By default, mocked auth_mapping() calls return read access to CGCI-BLGSP.
+    To mock a different response, use fixture
+    "mock_arborist_requests(auth_mapping={...})" in the test itself
+    """
+    mock_arborist_requests(auth_mapping={
+        "/programs/CGCI/projects/BLGSP": [
+            {
+                "service": "peregrine", "method": "read"
+            }
+        ]
+    })

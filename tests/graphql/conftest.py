@@ -6,14 +6,10 @@ from datamodelutils import models
 #from datamodelutils.models.submission import TransactionLog
 from tests.graphql import utils
 
-from tests.auth_mock import Config as auth_conf
 from tests.graphql.test_graphql import (
     put_cgci,
     post_example_entities_together,
 )
-
-SUBMITTER_HEADERS = {"X-Auth-Token": auth_conf.SUBMITTER_ADMIN_TOKEN}
-ADMIN_HEADERS = {"X-Auth-Token": auth_conf.ADMIN_TOKEN}
 
 path = '/v0/submission/graphql'
 

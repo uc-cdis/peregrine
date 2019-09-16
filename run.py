@@ -1,17 +1,15 @@
 #!/usr/bin/env python
 
+from authutils import ROLES as all_roles
+from collections import defaultdict
+from flask import current_app
+from mock import patch, PropertyMock
 import os
 from peregrine.api import run_for_development
-from flask import current_app
-
-from mock import patch, PropertyMock
-
 from psqlgraph import PolyNode as Node
-from peregrine.auth import ROLES as all_roles
-from collections import defaultdict
 import requests
-requests.packages.urllib3.disable_warnings()
 
+requests.packages.urllib3.disable_warnings()
 
 all_role_values = all_roles.values()
 roles = defaultdict(lambda: all_role_values)
@@ -81,17 +79,6 @@ def set_user(*args, **kwargs):
 
 
 def run_with_fake_auth():
-    from datamodelutils import models as md
-    def get_project_ids(role='_member_', project_ids=None):
-        if project_ids is None:
-            project_ids = []
-        if not project_ids:
-            with current_app.db.session_scope():
-                project_ids += [
-                    '{}-{}'.format(p.programs[0].name, p.code)
-                    for p in current_app.db.nodes(md.Project).all()]
-        return project_ids
-
     with patch(
         'peregrine.auth.CurrentUser.roles',
         new_callable=PropertyMock,
@@ -101,12 +88,21 @@ def run_with_fake_auth():
         new_callable=PropertyMock,
         return_value=lambda: True,
     ), patch(
-        'peregrine.auth.CurrentUser.get_project_ids',
-        new_callable=PropertyMock,
-        return_value=get_project_ids,
-    ), patch(
         'peregrine.auth.verify_hmac',
         new=set_user,
+    ):
+        run_for_development(debug=debug, threaded=True)
+
+
+def run_with_fake_authz():
+    """
+    Mocks arborist calls.
+    """
+    auth_mapping = {}  # modify this to mock specific access
+    with patch(
+        'gen3authz.client.arborist.client.ArboristClient.auth_mapping',
+        new_callable=PropertyMock,
+        return_value=lambda x: auth_mapping,
     ):
         run_for_development(debug=debug, threaded=True)
 
@@ -131,4 +127,4 @@ if __name__ == '__main__':
         if os.environ.get("GDC_FAKE_AUTH") == 'True':
             run_with_fake_auth()
         else:
-            run_for_development(debug=debug, threaded=True)
+            run_with_fake_authz()

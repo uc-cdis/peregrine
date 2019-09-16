@@ -14,6 +14,7 @@ fuzzywuzzy==0.6.1
 addict==0.2.7
 Flask==0.12.4
 Flask-Cors==1.9.0
+gen3authz==0.2.1
 Jinja2==2.7.3
 MarkupSafe==0.23
 PyYAML==5.1

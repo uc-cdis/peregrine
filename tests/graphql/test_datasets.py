@@ -23,14 +23,17 @@ def test_authorized_call_with_protected_config(
 
 
 def test_unauthorized_call_with_protected_config(
-        client, submitter, random_user, pg_driver_clean, cgci_blgsp
+        client, submitter, pg_driver_clean, cgci_blgsp, mock_arborist_requests
     ):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.get("/datasets?nodes=case,aliquot", headers=random_user)
+
+    mock_arborist_requests(auth_mapping={})
+
+    r = client.get("/datasets?nodes=case,aliquot", headers=submitter)
     assert r.status_code == 200
     assert r.json == {}
 
-    r = client.get("/datasets/projects", headers=random_user)
+    r = client.get("/datasets/projects", headers=submitter)
 
     assert r.status_code == 200
     assert r.json == {"projects": []}

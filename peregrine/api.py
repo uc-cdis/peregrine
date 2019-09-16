@@ -14,6 +14,7 @@ import datamodelutils
 from dictionaryutils import DataDictionary, dictionary as dict_init
 from cdispyutils.log import get_handler
 from cdispyutils.uwsgi import setup_user_harakiri
+from gen3authz.client.arborist.client import ArboristClient
 
 import peregrine
 from peregrine import dictionary
@@ -131,6 +132,12 @@ def app_init(app):
             'Secret key not set in config! Authentication will not work'
         )
     async_pool_init(app)
+
+    if app.config.get("ARBORIST"):
+        app.auth = ArboristClient(arborist_base_url=app.config["ARBORIST"])
+    else:
+        app.logger.info("Using default Arborist base URL")
+        app.auth = ArboristClient()
 
     app.logger.info('Initialization complete.')
 
