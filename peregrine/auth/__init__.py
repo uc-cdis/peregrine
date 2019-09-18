@@ -93,7 +93,11 @@ def get_read_access_projects():
     try:
         mapping = flask.current_app.auth.auth_mapping(current_user.username)
     except ArboristError as e:
-        raise AuthNError("Unable to retrieve auth mapping: {}".format(e))
+        # Arborist errored, or this user is unknown to Arborist
+        logger.warn(
+            "Unable to retrieve auth mapping for user `{}`: {}".format(current_user.username, e)
+        )
+        mapping = {}
 
     with flask.current_app.db.session_scope():
         read_access_projects = [

@@ -1447,3 +1447,18 @@ def test_boolean_filter(client, submitter, pg_driver_clean, cgci_blgsp):
     print("Filtering by boolean=[true,false] should return the experiment:")
     print(r.data)
     assert len(r.json["data"]["experiment"]) == 1
+
+
+def test_arborist_unknown_user(client, pg_driver_clean, submitter, cgci_blgsp, mock_arborist_requests):
+    """
+    Tests that if a logged in user does not exist in the DB, peregrine does
+    not throw an error but gracefully returns no data
+    """
+    post_example_entities_together(client, pg_driver_clean, submitter)
+    mock_arborist_requests(known_user=False)
+    r = client.post(
+        path,
+        headers=submitter,
+        data=json.dumps({"query": "{ project { code } }"})
+    )
+    assert r.json == { "data": { "project": [] } }
