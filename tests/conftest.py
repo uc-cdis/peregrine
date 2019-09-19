@@ -1,6 +1,7 @@
 import os
 import sys
 
+from gen3authz.client.arborist.errors import ArboristError
 from indexclient.client import IndexClient
 from multiprocessing import Process
 from psqlgraph import PsqlGraphDriver
@@ -217,19 +218,27 @@ def mock_arborist_requests(request):
     """
     This fixture returns a function which you call to mock the call to
     arborist client's methods.
-    Parameter "auth_mapping" lets us specify the response for a call to
-    auth_mapping().
+
     auth_mapping() is mocked because it is called by peregrine.
     auth_request() and create_resource() are mocked because they are called
     by sheepdog, which is a dependency of the tests.
+
+    Args:
+        auth_mapping (dict): response of the call to auth_mapping()
+        known_user (boolean): True if the user is known to Arborist
+
+    Returns:
+        Mocked response
     """
 
-    def do_patch(auth_mapping={}):
+    def do_patch(auth_mapping={}, known_user=True):
         def make_mock_response(function_name):
             def response(*args, **kwargs):
                 mocked_response = MagicMock(requests.Response)
 
                 if function_name == "auth_mapping":
+                    if not known_user:
+                        raise ArboristError("User does not exist in Arborist")
                     mocked_response.items = auth_mapping.items
 
                 if function_name == "create_resource":
@@ -261,8 +270,8 @@ def mock_arborist_requests(request):
 def arborist_authorized(mock_arborist_requests):
     """
     By default, mocked auth_mapping() calls return read access to CGCI-BLGSP.
-    To mock a different response, use fixture
-    "mock_arborist_requests(auth_mapping={...})" in the test itself
+    To mock a different response, use the fixture in the test itself:
+    "mock_arborist_requests(auth_mapping={...}, known_user=True/False)"
     """
     mock_arborist_requests(auth_mapping={
         "/programs/CGCI/projects/BLGSP": [
