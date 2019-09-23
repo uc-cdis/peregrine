@@ -28,7 +28,6 @@ here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, here)
 
 
-@pytest.fixture(scope='session')
 def pg_config():
     return dict(
         host='localhost',
