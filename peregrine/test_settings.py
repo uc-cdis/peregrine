@@ -15,8 +15,6 @@ AUTH_ADMIN_CREDS = {
     'user_domain_name': 'some_domain',
 }
 
-ARBORIST_URL = os.environ.get("ARBORIST_URL", "http://arborist-service/")
-
 SUBMISSION = {
     "bucket": 'test_submission',
     "host": 'host',
