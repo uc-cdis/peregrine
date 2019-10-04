@@ -133,7 +133,8 @@ def app_init(app):
         )
     async_pool_init(app)
 
-    arborist_url = os.environ.get("ARBORIST_URL", "http://arborist-service/")
+    # ARBORIST deprecated, replaced by ARBORIST_URL
+    arborist_url = os.environ.get("ARBORIST_URL", os.environ.get("ARBORIST"))
     if arborist_url:
         app.auth = ArboristClient(arborist_base_url=arborist_url)
     else:
