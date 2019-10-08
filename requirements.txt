@@ -10,7 +10,7 @@ functools32==3.2.3-2
 lxml==3.4.1
 python-Levenshtein==0.12.0
 python-keystoneclient==1.6.0
-fuzzywuzzy==0.6.1
+fuzzywuzzy==0.17.0
 addict==0.2.7
 Flask==1.1.1
 Flask-Cors==1.9.0
