@@ -133,8 +133,10 @@ def app_init(app):
         )
     async_pool_init(app)
 
-    if app.config.get("ARBORIST"):
-        app.auth = ArboristClient(arborist_base_url=app.config["ARBORIST"])
+    # ARBORIST deprecated, replaced by ARBORIST_URL
+    arborist_url = os.environ.get("ARBORIST_URL", os.environ.get("ARBORIST"))
+    if arborist_url:
+        app.auth = ArboristClient(arborist_base_url=arborist_url)
     else:
         app.logger.info("Using default Arborist base URL")
         app.auth = ArboristClient()
