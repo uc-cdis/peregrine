@@ -52,7 +52,7 @@ def striptags_from_dict(data):
     """
     if isinstance(data, dict):
         new_dict = {}
-        for k, v in data.iteritems():
+        for k, v in data.items():
             cleanedK = tryToInt(Markup(k).striptags())
             if isinstance(v, dict):
                 new_dict[cleanedK] = striptags_from_dict(v)
@@ -152,7 +152,7 @@ def format_response(request_options, data, mimetype):
         data = to_json(request_options, data)
 
     response = Response(data, mimetype=mimetype)
-    for key, value in get_status().iteritems():
+    for key, value in get_status().items():
         response.headers.extend({'X-GDC-{}'.format(key): value})
 
     return response

@@ -19,7 +19,7 @@ def try_drop_test_data(user, database, root_user='postgres', host=''):
     try:
         create_stmt = 'DROP DATABASE "{database}"'.format(database=database)
         conn.execute(create_stmt)
-    except Exception, msg:
+    except Exception as msg:
         logging.warn("Unable to drop test data:" + str(msg))
 
     conn.close()
@@ -43,7 +43,7 @@ def setup_database(user, password, database, root_user='postgres',
     create_stmt = 'CREATE DATABASE "{database}"'.format(database=database)
     try:
         conn.execute(create_stmt)
-    except Exception, msg:
+    except Exception as msg:
         logging.warn('Unable to create database: {}'.format(msg))
 
     if not no_user:
@@ -56,7 +56,7 @@ def setup_database(user, password, database, root_user='postgres',
                         ''.format(database=database, password=password)
             conn.execute(perm_stmt)
             conn.execute("commit")
-        except Exception, msg:
+        except Exception as msg:
             logging.warn("Unable to add user:" + str(msg))
     conn.close()
 
@@ -80,22 +80,22 @@ def create_indexes(host, user, password, database):
     index = lambda t, c: ["CREATE INDEX ON {} ({})".format(t, x) for x in c]
     for scls in Node.get_subclasses():
         tablename = scls.__tablename__
-        map(engine.execute, index(
+        list(map(engine.execute, index(
             tablename, [
                 'node_id',
-            ]))
-        map(engine.execute, [
+            ])))
+        list(map(engine.execute, [
             "CREATE INDEX ON {} USING gin (_sysan)".format(tablename),
             "CREATE INDEX ON {} USING gin (_props)".format(tablename),
             "CREATE INDEX ON {} USING gin (_sysan, _props)".format(tablename),
-        ])
+        ]))
     for scls in Edge.get_subclasses():
-        map(engine.execute, index(
+        list(map(engine.execute, index(
             scls.__tablename__, [
                 'src_id',
                 'dst_id',
                 'dst_id, src_id',
-            ]))
+            ])))
 
 
 if __name__ == '__main__':

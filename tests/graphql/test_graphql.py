@@ -66,12 +66,12 @@ def put_cgci_blgsp(client, auth=None):
 def test_node_subclasses(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     for cls in Node.get_subclasses():
-        print cls
+        print(cls)
         data = json.dumps({
             'query': """query Test {{ {} {{ id }}}}""".format(cls.label)
         })
         r = client.post(path, headers=submitter, data=data)
-        print r.data
+        print(r.data)
         assert cls.label in r.json['data'], r.data
 
 
@@ -94,7 +94,7 @@ def test_types(client, submitter, pg_driver_clean, cgci_blgsp):
         }"""
     }))
 
-    print("types data is " + str(r.json))
+    print(("types data is " + str(r.json)))
     assert isinstance(r.json['data']['boolean'][0]['is_ffpe'], bool)
     assert isinstance(r.json['data']['float'][0]['concentration'], float)
 
@@ -224,7 +224,7 @@ def test_node_interface_of_type(client, submitter, pg_driver_clean, cgci_blgsp):
         """
     })
     r = client.post(path, headers=submitter, data=data)
-    print r.data
+    print(r.data)
     types = {d['type'] for d in r.json['data']['node']}
     assert not {'case'}.symmetric_difference(types)
 
@@ -232,7 +232,7 @@ def test_node_interface_of_type(client, submitter, pg_driver_clean, cgci_blgsp):
 def test_node_interface_category(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
 
-    category = dictionary.schema.values()[0]['category']
+    category = list(dictionary.schema.values())[0]['category']
     accepted_types = [
         node
         for node in dictionary.schema
@@ -321,10 +321,10 @@ def test_project_project_id_filter(client, submitter, pg_driver_clean, cgci_blgs
 def test_arg_first(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
-        'query': """ 
-            query Test { 
+        'query': """
+            query Test {
                 case (first: 1, order_by_asc: "submitter_id") { submitter_id }
-            } 
+            }
         """}))
     assert r.json == {
         'data': {
@@ -366,7 +366,7 @@ def test_with_path(client, submitter, pg_driver_clean, cgci_blgsp):
         """
     })
     r = client.post(path, headers=submitter, data=data)
-    print r.data
+    print(r.data)
     assert len(r.json['data']['case']) == 1
     assert r.json['data']['case'][0]['submitter_id'] == "BLGSP-71-06-00019",\
         r.data
@@ -436,7 +436,7 @@ def test_with_path_to_invalid_type(client, submitter, pg_driver_clean, cgci_blgs
               with_path_to: {type: "BAD_TYPE"})
         { submitter_id } }
         """}))
-    print r.data
+    print(r.data)
     assert len(r.json['data']['case']) == 0
 
 
@@ -456,7 +456,7 @@ def test_without_path(client, submitter, pg_driver_clean, cgci_blgsp):
         """
     })
     r = client.post(path, headers=submitter, data=data)
-    print r.data
+    print(r.data)
     data = r.json['data']
     assert data['with']
     assert data['without']
@@ -482,7 +482,7 @@ def test_counts_with_path_filter_multiple_paths(
             with: _sample_count(with_path_to: {type: "aliquot"})
         }
         """}))
-    print r.data
+    print(r.data)
     data = r.json['data']
     assert data['with'] == 1
 
@@ -523,9 +523,9 @@ def test_order_by_asc_id(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { case (order_by_asc: "id") { id }}"""}))
-    print r.data
+    print(r.data)
     _original = r.json['data']['case']
-    _sorted = sorted(_original, cmp=(lambda a, b: cmp(a['id'], b['id'])))
+    _sorted = sorted(_original, key=(lambda x: x['id']))
     assert _original == _sorted, r.data
 
 
@@ -533,9 +533,9 @@ def test_order_by_desc_id(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { case (order_by_desc: "id") { id }}"""}))
-    print r.data
+    print(r.data)
     _original = r.json['data']['case']
-    _sorted = sorted(_original, cmp=(lambda a, b: cmp(b['id'], a['id'])))
+    _sorted = sorted(_original, key=(lambda x: x['id']), reverse=True)
     assert _original == _sorted, r.data
 
 
@@ -545,10 +545,9 @@ def test_order_by_asc_prop(client, submitter, pg_driver_clean, cgci_blgsp):
         'query': """query Test { case (order_by_asc: "submitter_id") {
           submitter_id
         }}"""}))
-    print r.data
+    print(r.data)
     _original = r.json['data']['case']
-    _sorted = sorted(_original, cmp=(
-        lambda a, b: cmp(a['submitter_id'], b['submitter_id'])))
+    _sorted = sorted(_original, key=(lambda x: x['submitter_id']))
     assert _original == _sorted, r.data
 
 
@@ -558,10 +557,9 @@ def test_order_by_desc_prop(client, submitter, pg_driver_clean, cgci_blgsp):
         'query': """query Test { case (order_by_desc: "submitter_id") {
           submitter_id
         }}"""}))
-    print r.data
+    print(r.data)
     _original = r.json['data']['case']
-    _sorted = sorted(_original, cmp=(
-        lambda a, b: cmp(b['submitter_id'], a['submitter_id'])))
+    _sorted = sorted(_original, key=(lambda x: x['submitter_id']), reverse=True)
     assert _original == _sorted, r.data
 
 
@@ -588,7 +586,7 @@ def test_auth_node_subclass_links(client, submitter, pg_driver_clean, cgci_blgsp
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """query Test { case (with_links: ["samples"]) {
             submitter_id samples { id } _samples_count }}"""}))
-    print r.data
+    print(r.data)
     with pg_driver_clean.session_scope():
         for case in r.json['data']['case']:
             assert len(case['samples']) == 0, r.data
@@ -706,7 +704,7 @@ def test_variable(client, submitter, pg_driver_clean, cgci_blgsp):
         'variables': {'caseId': case.node_id}
     }))
 
-    print r.data
+    print(r.data)
     assert r.json == {
         "data": {
             'a': [{"submitter_id": case.submitter_id}],
@@ -729,7 +727,7 @@ def test_null_variable(client, submitter, pg_driver_clean, cgci_blgsp):
     with pg_driver_clean.session_scope():
         cases = pg_driver_clean.nodes(models.Case).count()
 
-    print r.data
+    print(r.data)
     assert r.json == {
         "data": {
             'a': cases,
@@ -913,7 +911,7 @@ def test_special_case_project_id(
     })
 
     r = client.post(path, headers=submitter, data=data)
-    print r.data
+    print(r.data)
     assert r.json == {
         "data": {
             'valid': [{
@@ -1284,7 +1282,7 @@ def test_tx_log_comprehensive_query_failed_deletion(
 def test_nodetype_interface(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
 
-    category = dictionary.schema.values()[0]['category']
+    category = list(dictionary.schema.values())[0]['category']
 
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """
@@ -1348,9 +1346,9 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
     }
     # Lists are ordered but here order does not matter so we sort them before comparing.
     for k, v in expected_dict["data"].items():
-        expected_dict["data"][k] = sorted(v)
-    for k, v in r.json["data"].items():
-        r.json["data"][k] = sorted(v)
+        expected_dict["data"][k] = sorted(v, key=(lambda x: sorted(x.items())))
+    for k, v in list(r.json["data"].items()):
+        r.json["data"][k] = sorted(v, key=(lambda x: sorted(x.items())))
     assert json.dumps(r.json, sort_keys=True) == json.dumps(expected_dict, sort_keys=True)
 
 

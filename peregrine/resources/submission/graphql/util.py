@@ -10,7 +10,7 @@ Defines utility functions for GraphQL implementation.
 from flask import current_app as capp
 from flask import g as fg
 from peregrine.errors import AuthError, UserError
-import node
+from . import node
 from datamodelutils import models
 from graphql import GraphQLError
 

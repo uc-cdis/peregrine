@@ -3,7 +3,6 @@ import sys
 
 from gen3authz.client.arborist.errors import ArboristError
 from indexclient.client import IndexClient
-from multiprocessing import Process
 from psqlgraph import PsqlGraphDriver
 import json
 import pytest
@@ -12,8 +11,7 @@ import sheepdog
 
 import peregrine
 from peregrine.api import app as _app, app_init
-from peregrine.errors import AuthZError
-import utils
+from . import utils
 
 # Python 2 and 3 compatible
 try:
@@ -42,7 +40,7 @@ def app(request):
 
     _app.config.from_object("peregrine.test_settings")
     app_init(_app)
-    
+
     sheepdog_blueprint = sheepdog.blueprint.create_blueprint('submission')
     _app.register_blueprint(sheepdog_blueprint, url_prefix='/v0/submission')
 
@@ -114,7 +112,7 @@ def encoded_jwt(app):
         Return:
             str: JWT containing claims encoded with private key
         """
-        kid = peregrine.test_settings.JWT_KEYPAIR_FILES.keys()[0]
+        kid = list(peregrine.test_settings.JWT_KEYPAIR_FILES.keys())[0]
         scopes = ['openid']
         token = utils.generate_signed_access_token(
             kid, private_key, user, 3600, scopes, forced_exp_time=None,

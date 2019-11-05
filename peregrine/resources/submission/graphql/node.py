@@ -124,7 +124,7 @@ def with_path_to(q, value, info, union=False, name='with_path_to'):
         def end_of_traversal_filter(q, entry=entry):
             if not entry:
                 return q
-            for key, val in entry.iteritems():
+            for key, val in entry.items():
                 if key == 'id':
                     q = q.ids(val)
                 else:
@@ -254,7 +254,7 @@ def apply_query_args(q, args, info):
 
     # not: nest a NOT filter for props, filters out matches
     not_props = args.get('not', {})
-    not_props = {item.keys()[0]: item.values()[0] for item in not_props}
+    not_props = {list(item.keys())[0]: list(item.values())[0] for item in not_props}
     for key in set(not_props.keys()).intersection(pg_props):
         val = not_props[key]
         val = val if isinstance(val, list) else [val]
@@ -515,7 +515,7 @@ def lookup_graphql_type(T):
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
-        long: graphene.Float,
+        int: graphene.Float,
         int: graphene.Int,
         list: graphene.List(graphene.String),
     }.get(T, graphene.String)
@@ -528,7 +528,7 @@ def lookup_graphql_type(T):
 def get_node_class_property_args(cls, not_props_io={}):
     args = {
         name: lookup_graphql_type(types[0])
-        for name, types in cls.__pg_properties__.iteritems()
+        for name, types in cls.__pg_properties__.items()
     }
     if cls.label == 'project':
         args['project_id'] = graphene.List(graphene.String)
@@ -634,7 +634,7 @@ def get_node_class_property_attrs(cls, _cache={}):
 
     attrs = {
         name: graphene.Field(lookup_graphql_type(types[0]))
-        for name, types in cls.__pg_properties__.iteritems()
+        for name, types in cls.__pg_properties__.items()
     }
     attrs['resolve_type'] = resolve_type
 
@@ -671,11 +671,11 @@ def get_node_class_link_attrs(cls):
     attrs = {name: graphene.List(
         __name__ + '.' + link['type'].label,
         args=get_node_class_args(link['type']),
-    ) for name, link in cls._pg_edges.iteritems()}
+    ) for name, link in cls._pg_edges.items()}
 
     def resolve__related_cases(self, info, args):
         if not case_cache_enabled():
-	    return []
+            return []
         # Don't resolve related cases for cases
         if cls.label == 'case':
             return []
@@ -733,7 +733,7 @@ def get_node_class_link_attrs(cls):
 
 def get_node_class_link_resolver_attrs(cls):
     link_resolver_attrs = {}
-    for link_name, link in cls._pg_edges.iteritems():
+    for link_name, link in cls._pg_edges.items():
 
         def link_query(self, info, cls=cls, link=link, **args):
             try:
@@ -857,7 +857,7 @@ class NodeCounter:
         project_id = args['project_id']
         if isinstance(project_id, (list, tuple)) and len(project_id) == 1:
             project_id = project_id[0]
-        if not isinstance(project_id, (str, unicode)):
+        if not isinstance(project_id, str):
             # escape if multiple project_ids are given
             return None
         if project_id not in flask.g.read_access_projects:
@@ -886,14 +886,14 @@ class NodeCounter:
 
         sql = 'SELECT %s;' % ', '.join(count for _, _, count in self._queries)
         results = session.execute(
-            sql, dict((v, k) for k, v in self._project_ids.iteritems())).fetchone()
+            sql, dict((v, k) for k, v in self._project_ids.items())).fetchone()
         for key, promise, _ in self._queries:
             promise.fulfill(results[key])
 
 
 def create_root_fields(fields):
     attrs = {}
-    for cls, gql_object in fields.iteritems():
+    for cls, gql_object in fields.items():
         name = cls.label
 
         # Object resolver
@@ -946,7 +946,7 @@ def get_withpathto_type():
         **{k: graphene.Field(v) for cls_attrs in [
             get_node_class_property_args(cls)
             for cls in psqlgraph.Node.get_subclasses()
-        ] for k, v in cls_attrs.iteritems()}
+        ] for k, v in cls_attrs.items()}
     ))
 
 def get_fields():
@@ -955,7 +955,7 @@ def get_fields():
         for cls in psqlgraph.Node.get_subclasses()
     }
 
-    for cls, gql_object in __fields.iteritems():
+    for cls, gql_object in __fields.items():
         __gql_object_classes[cls.label] = gql_object
 
     return __fields
@@ -1004,8 +1004,8 @@ def get_datanode_fields_dict():
         DataNode.shared_fields = {
             field: instantiate_graphene(lookup_graphql_type(types[0]))
             for subclass in get_data_subclasses()
-            for field, types in subclass.__pg_properties__.iteritems()
-            if field not in subclass._pg_edges.keys() # don't include the links
+            for field, types in subclass.__pg_properties__.items()
+            if field not in subclass._pg_edges.keys()  # don't include the links
         }
 
         # add required node fields
@@ -1044,7 +1044,7 @@ def get_datanode_interface_args():
 
 class NodeType(graphene.Interface):
     id = graphene.ID()
-    dictionary_fields = None # all the fields in the dictionary
+    dictionary_fields = None  # all the fields in the dictionary
 
 
 def get_nodetype_fields_dict():
@@ -1052,7 +1052,7 @@ def get_nodetype_fields_dict():
 
     if not NodeType.dictionary_fields:
 
-        all_dictionary_fields = set(key for node in dictionary.schema.values() for key in node.keys())
+        all_dictionary_fields = set(key for node in list(dictionary.schema.values()) for key in list(node.keys()))
 
         # convert to graphene types
         dictionary_fields_dict = {

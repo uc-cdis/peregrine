@@ -8,7 +8,7 @@ from peregrine.resources.submission import (
     set_read_access_projects,
 )
 
-from cdiserrors import UserError, AuthZError
+from cdiserrors import UserError
 from dictionaryutils import dictionary
 
 blueprint = flask.Blueprint("datasets", "datasets")
@@ -55,7 +55,7 @@ def get_datasets():
         return flask.jsonify({"data": data, "errors": errors}), 400
     result = {project_id: {} for project_id in projects}
 
-    for name, value in data.iteritems():
+    for name, value in data.items():
         match = re.search("^i(\d+)_(.*)", name)
         index = int(match.group(1))
         node = match.group(2)

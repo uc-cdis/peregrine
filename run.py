@@ -2,7 +2,6 @@
 
 from authutils import ROLES as all_roles
 from collections import defaultdict
-from flask import current_app
 from mock import patch, PropertyMock
 import os
 from peregrine.api import run_for_development
@@ -11,7 +10,7 @@ import requests
 
 requests.packages.urllib3.disable_warnings()
 
-all_role_values = all_roles.values()
+all_role_values = list(all_roles.values())
 roles = defaultdict(lambda: all_role_values)
 
 

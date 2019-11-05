@@ -1,4 +1,4 @@
-from Queue import Queue, Full
+from queue import Queue, Full
 from threading import Thread
 
 import cdispyutils

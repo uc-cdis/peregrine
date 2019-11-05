@@ -2,7 +2,7 @@ import json
 
 import pytest
 from datamodelutils import models
-from test_graphql import post_example_entities_together
+from .test_graphql import post_example_entities_together
 
 from peregrine.resources.submission import graphql
 from tests.graphql import utils
@@ -277,7 +277,7 @@ def test_transaction_log_related_cases_filter(
     })
     r = client.post(path, headers=submitter, data=data)
     assert r.status_code == 200
-    print r.data
+    print(r.data)
     case_id = r.json['data']['a'][0]['related_cases'][0]['id']
     data = json.dumps({
         'query': """
@@ -291,7 +291,7 @@ def test_transaction_log_related_cases_filter(
     })
     r = client.post(path, headers=submitter, data=data)
     assert r.status_code == 200
-    print r.data
+    print(r.data)
     related_case_doc = r.json['data']['a'][0]['related_cases'][0]
     assert related_case_doc['id'] == case_id
     assert related_case_doc['submitter_id']
@@ -302,14 +302,14 @@ def test_transaction_log_type(client, submitter, pg_driver_clean, cgci_blgsp):
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """{ a: transaction_log { role type }}"""}))
-    print r.data
+    print(r.data)
     type_ = graphql.transaction.TransactionLog.TYPE_MAP['create']
     assert r.json['data']['a'][0]['type'] == type_
     r = client.post(path, headers=submitter, data=json.dumps({
         'query': """{
         a: transaction_log(type: "%s") { role type }
         }""" % type_}))
-    print r.data
+    print(r.data)
     assert r.json['data']['a']
 
 
@@ -407,9 +407,9 @@ def test_transaction_logs_order_asc(client, submitter, pg_driver_clean, cgci_blg
             created_datetime
           }
         }"""}))
-    print r.data
+    print(r.data)
     _original = r.json['data']['a']
-    _sorted = sorted(_original, cmp=(lambda a, b: cmp(a['id'], b['id'])))
+    _sorted = sorted(_original, key=(lambda x: x['id']))
     assert _original == _sorted, r.data
 
 
@@ -426,9 +426,9 @@ def test_transaction_logs_order_desc(client, submitter, pg_driver_clean, cgci_bl
             created_datetime
           }
         }"""}))
-    print r.data
+    print(r.data)
     _original = r.json['data']['a']
-    _sorted = sorted(_original, cmp=(lambda a, b: cmp(b['id'], a['id'])))
+    _sorted = sorted(_original, key=(lambda x: x['id']))
     assert _original == _sorted, r.data
 
 

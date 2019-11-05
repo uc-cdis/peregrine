@@ -118,7 +118,7 @@ def construct_traversals_from_node(root_node, app):
             for neighbor, edge in neighbors_dst.union(neighbors_src)
             if neighbor not in visited
         ])
-    return {label: list(paths) for label, paths in traversals.iteritems() if paths}
+    return {label: list(paths) for label, paths in traversals.items() if paths}
 
 
 def make_graph_traversal_dict(app, preload=False):

@@ -5,7 +5,7 @@ import base
 
 # Brittle, changinge this may result in circular dependencies
 import node_subclass as ns
-import transaction
+from . import transaction
 
 from .base import (
     assert_type,

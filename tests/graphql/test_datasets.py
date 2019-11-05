@@ -1,6 +1,5 @@
-from test_graphql import post_example_entities_together
+from .test_graphql import post_example_entities_together
 from datamodelutils import models
-import os
 
 
 def test_authorized_call_with_protected_config(
@@ -15,7 +14,7 @@ def test_authorized_call_with_protected_config(
             case.project_id = "OTHER-OTHER"
             s.merge(case)
     r = client.get("/datasets?nodes=case,aliquot", headers=submitter)
-    assert r.json.keys() == ["CGCI-BLGSP"]
+    assert list(r.json.keys()) == ["CGCI-BLGSP"]
     assert r.json["CGCI-BLGSP"]["case"] == case_count - 2
 
     r = client.get("/datasets/projects", headers=submitter)

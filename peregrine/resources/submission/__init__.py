@@ -169,7 +169,7 @@ def generate_schema_file(graphql_schema, app_logger):
 
 
 def wait_for_file(file_name, timeout_minutes, app_logger):
-    print('A process is waiting for {} generation.'.format(file_name))
+    print(('A process is waiting for {} generation.'.format(file_name)))
     timeout = time.time() + 60 * timeout_minutes
     while True:
         try:

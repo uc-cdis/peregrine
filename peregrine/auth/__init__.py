@@ -14,8 +14,6 @@ from datamodelutils import models
 from gen3authz.client.arborist.errors import ArboristError
 import flask
 
-from peregrine.errors import AuthNError
-
 
 logger = get_logger(__name__)
 

@@ -88,10 +88,18 @@ def populated_blgsp(client, submitter, pg_driver_clean):
 def failed_deletion_transaction(client, submitter, pg_driver_clean, populated_blgsp):
     with pg_driver_clean.session_scope():
         node_id = pg_driver_clean.nodes(models.Sample).first().node_id
+        print("node_id_91", node_id)
+    print("node_id_92", node_id)
     delete_path = '/v0/submission/CGCI/BLGSP/entities/{}'.format(node_id)
+    print(delete_path)
     r = client.delete(
         delete_path,
         headers=submitter)
+    print(client)
+    print(submitter)
+    print("95")
+    print(r.status_code)
+    print(r.json)
     assert r.status_code == 400, r.data
     return str(r.json['transaction_id'])
 
@@ -108,6 +116,8 @@ def failed_upload_transaction(client, submitter, pg_driver_clean):
             'how_heavy': 'no',
         }),
         headers=submitter)
+    print("115")
+    print(r.json)
+    print(r.status_code)
     assert r.status_code == 400, r.data
     return str(r.json['transaction_id'])
-

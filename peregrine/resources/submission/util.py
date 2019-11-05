@@ -67,7 +67,7 @@ def oph_raise_for_duplicates(object_pairs):
     """
 
     counter = Counter(p[0] for p in object_pairs)
-    duplicates = filter(lambda p: p[1] > 1, counter.iteritems())
+    duplicates = [p for p in iter(counter.items()) if p[1] > 1]
 
     if duplicates:
         raise ValueError(

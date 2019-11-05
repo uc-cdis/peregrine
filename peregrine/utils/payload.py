@@ -18,16 +18,6 @@ from functools import wraps
 from threading import Thread
 
 from peregrine.errors import UserError
-from peregrine.resources.submission.constants import (
-    project_seed,
-    program_seed,
-    ERROR_STATE,
-    FLAG_IS_ASYNC,
-    submitted_state,
-    UPLOADING_STATE,
-    SUCCESS_STATE,
-)
-
 
 def get_external_proxies():
     """Get any custom proxies set in the config.
@@ -64,7 +54,7 @@ def oph_raise_for_duplicates(object_pairs):
     """
 
     counter = Counter(p[0] for p in object_pairs)
-    duplicates = filter(lambda p: p[1] > 1, counter.iteritems())
+    duplicates = [p for p in iter(counter.items()) if p[1] > 1]
 
     if duplicates:
         raise ValueError(
@@ -196,7 +186,7 @@ def is_flag_set(flag, default=False):
     return parse_boolean(request.args.get(flag, default))
 
 
-def async(f):
+def async_decorator(f):
     """Decorator to run function in background"""
 
     @wraps(f)

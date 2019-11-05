@@ -1,4 +1,3 @@
-import json
 from peregrine.errors import UserError
 
 # Need this wrapper when `raise` is used in a lambda
@@ -28,7 +27,7 @@ def parse_request(request):
             # all values are converted into a list (because form fields can be repeated for
             # multi-value fields). Here we unbox the value for lists of one single element and
             # let the ones with multiple values remain as lists.
-            return {key: value if len(value) > 1 else value[0] for key, value in dict(request.form).items()}
+            return {key: value if len(value) > 1 else value[0] for key, value in list(dict(request.form).items())}
         elif 'application/json' in ct:
             return request.get_json() if request.data != '' else {}
         else:
@@ -38,7 +37,7 @@ def parse_request(request):
 
     all_args = [request.args.to_dict(), {} if request.method == 'GET' else handlers(request.headers.get('Content-Type', '').lower())]
     # Merges two dictionaries in all_args
-    options = { k: v for d in all_args for k, v in d.items() }
+    options = {k: v for d in all_args for k, v in list(d.items())}
 
     mimetype, is_csv = select_mimetype(request.headers, options)
     return options, mimetype, is_csv

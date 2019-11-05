@@ -39,7 +39,7 @@ def filter_to_cls_fields(cls, doc):
     fields = set(cls._meta.fields.keys())
     doc = {
         key: val
-        for key, val in doc.iteritems()
+        for key, val in doc.items()
         if key in fields
     }
     dropped = set(doc.keys()) - fields
@@ -264,7 +264,7 @@ class TransactionLog(graphene.ObjectType):
         return self.TYPE_MAP.get(self.role.lower(), self.role.lower())
 
     def resolve_related_cases(self, info, **args):
-	if not case_cache_enabled():
+        if not case_cache_enabled():
             return []
         related_cases = {}
         for document in self.documents:
@@ -366,7 +366,7 @@ def resolve_transaction_log_query(self, info, **args):
              .reset_joinpoint()
     if 'type' in args:
         inv_map = defaultdict(list)
-        for k, v in TransactionLog.TYPE_MAP.iteritems():
+        for k, v in TransactionLog.TYPE_MAP.items():
             inv_map[v].append(k)
         q = q.filter(models.submission.TransactionLog.role.in_(
             inv_map.get(args['type'], [args['type']])))
