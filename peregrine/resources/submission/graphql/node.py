@@ -9,7 +9,7 @@ using the Graphene GraphQL library
 
 
 from flask import current_app as capp
-import dateutil
+from dateutil.parser import parse
 import flask
 import graphene
 import logging
@@ -281,23 +281,23 @@ def apply_query_args(q, args, info):
 
     # created_after: filter by created datetime
     if 'created_after' in args:
-        q = q.filter(q.entity()._props['created_datetime'].cast(sa.DateTime)
-                     > dateutil.parser.parse(args['created_after']))
+        q = q.filter(q.entity()._props['created_datetime'].cast(sa.String).cast(sa.DateTime)
+                     > parse(args['created_after']))
 
     # created_before: filter by created datetime
     if 'created_before' in args:
-        q = q.filter(q.entity()._props['created_datetime'].cast(sa.DateTime)
-                     < dateutil.parser.parse(args['created_before']))
+        q = q.filter(q.entity()._props['created_datetime'].cast(sa.String).cast(sa.DateTime)
+                     < parse(args['created_before']))
 
     # updated_after: filter by update datetime
     if 'updated_after' in args:
-        q = q.filter(q.entity()._props['updated_datetime'].cast(sa.DateTime)
-                     > dateutil.parser.parse(args['updated_after']))
+        q = q.filter(q.entity()._props['updated_datetime'].cast(sa.String).cast(sa.DateTime)
+                     > parse(args['updated_after']))
 
     # updated_before: filter by update datetime
     if 'updated_before' in args:
-        q = q.filter(q.entity()._props['updated_datetime'].cast(sa.DateTime)
-                     < dateutil.parser.parse(args['updated_before']))
+        q = q.filter(q.entity()._props['updated_datetime'].cast(sa.String).cast(sa.DateTime)
+                     < parse(args['updated_before']))
 
     # with_links: (AND) (filter for those with given links)
     if 'with_links' in args:
