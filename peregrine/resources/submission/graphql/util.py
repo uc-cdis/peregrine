@@ -9,10 +9,8 @@ Defines utility functions for GraphQL implementation.
 
 from flask import current_app as capp
 from flask import g as fg
-from peregrine.errors import AuthError, UserError
 from . import node
 from datamodelutils import models
-from graphql import GraphQLError
 
 from graphql.utils.ast_to_dict import ast_to_dict
 import sqlalchemy as sa
@@ -236,6 +234,7 @@ def get_fields(info):
         fragments[name] = ast_to_dict(value)
 
     return collect_fields(node, fragments)
+
 
 def clean_count(q):
     """Returns the count from this query without pulling all the columns
