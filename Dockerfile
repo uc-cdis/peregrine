@@ -19,7 +19,7 @@ RUN python -m pip install --upgrade pip \
 
 RUN mkdir -p /var/www/peregrine \
     && mkdir /run/ngnix/ \
-    && chown www-data /var/www/peregrine
+    && chown nginx /var/www/peregrine
 
 EXPOSE 80
 
