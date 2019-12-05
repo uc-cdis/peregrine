@@ -30,5 +30,4 @@ RUN COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" >peregrine/versio
 
 WORKDIR /var/www/peregrine
 
-ENTRYPOINT [ "/bin/sh", "/dockerrun.sh" ]
-CMD []
+CMD /dockerrun.sh
