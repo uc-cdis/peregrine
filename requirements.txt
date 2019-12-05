@@ -1,7 +1,7 @@
 authutils==3.1.1
 -e git+https://git@github.com/uc-cdis/datamodelutils.git@chore/py3#egg=datamodelutils
 defusedxml==0.5.0
--e git+https://git@github.com/uc-cdis/dictionaryutils.git@chore/py3#egg=dictionaryutils
+dictionaryutils==3.0.0
 gen3dictionary==2.0.1
 SurvivalPy==1.0.2
 simplejson==3.8.1
