@@ -17,17 +17,18 @@ this_module = sys.modules[__name__]
 
 #: The data dictionary must implement these attributes.
 required_attrs = [
-    'resolvers',
-    'schema',
+    "resolvers",
+    "schema",
 ]
 
 optional_attrs = [
-    'settings',
+    "settings",
 ]
 
 resolvers = None
 schema = None
 settings = None
+
 
 def init(dictionary):
     """
@@ -45,17 +46,13 @@ def init(dictionary):
     for required_attr in required_attrs:
         try:
             # Basically do: this_module.required_attr = models.required_attr
-            setattr(
-                this_module, required_attr, getattr(dictionary, required_attr)
-            )
+            setattr(this_module, required_attr, getattr(dictionary, required_attr))
         except AttributeError:
-            raise ValueError('given dictionary does not define ' + required_attr)
+            raise ValueError("given dictionary does not define " + required_attr)
 
     for optional_attr in optional_attrs:
         try:
             # Basically do: this_module.required_attr = models.required_attr
-            setattr(
-                this_module, optional_attr, getattr(dictionary, optional_attr)
-            )
+            setattr(this_module, optional_attr, getattr(dictionary, optional_attr))
         except AttributeError:
             pass

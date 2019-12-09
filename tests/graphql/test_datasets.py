@@ -22,8 +22,8 @@ def test_authorized_call_with_protected_config(
 
 
 def test_unauthorized_call_with_protected_config(
-        client, submitter, pg_driver_clean, cgci_blgsp, mock_arborist_requests
-    ):
+    client, submitter, pg_driver_clean, cgci_blgsp, mock_arborist_requests
+):
     post_example_entities_together(client, pg_driver_clean, submitter)
 
     mock_arborist_requests(auth_mapping={})
@@ -43,7 +43,9 @@ def test_anonymous_call_with_protected_config(client, pg_driver_clean, cgci_blgs
     assert r.status_code == 401
 
 
-def test_anonymous_projects_call_with_protected_config(client, pg_driver_clean, cgci_blgsp):
+def test_anonymous_projects_call_with_protected_config(
+    client, pg_driver_clean, cgci_blgsp
+):
     r = client.get("/datasets/projects")
     assert r.status_code == 401
 
@@ -70,15 +72,15 @@ def test_anonymous_call_with_public_config(
     assert r.json["CGCI-OTHER"]["aliquot"] == 0
     assert r.json["CGCI-OTHER"]["case"] == 2
 
+
 def test_get_projects_anonymous(
-        client, submitter, pg_driver_clean, cgci_blgsp, public_dataset_api
-    ):
+    client, submitter, pg_driver_clean, cgci_blgsp, public_dataset_api
+):
 
     post_example_entities_together(client, pg_driver_clean, submitter)
     with pg_driver_clean.session_scope() as s:
         project = models.Project(
-            "other", name="name",
-            code="OTHER", dbgap_accession_number="phsid"
+            "other", name="name", code="OTHER", dbgap_accession_number="phsid"
         )
         program = pg_driver_clean.nodes(models.Program).props(name="CGCI").first()
         project.programs = [program]
@@ -86,9 +88,11 @@ def test_get_projects_anonymous(
     r = client.get("/datasets/projects")
     assert r.json == {
         "projects": [
-            {"dbgap_accession_number": "phs000527",
-             "code": "BLGSP",
-             "name": "Burkitt Lymphoma Genome Sequencing Project"},
-            {"dbgap_accession_number": "phsid",
-             "code": "OTHER", "name": "name"}]
-     }
+            {
+                "dbgap_accession_number": "phs000527",
+                "code": "BLGSP",
+                "name": "Burkitt Lymphoma Genome Sequencing Project",
+            },
+            {"dbgap_accession_number": "phsid", "code": "OTHER", "name": "name"},
+        ]
+    }

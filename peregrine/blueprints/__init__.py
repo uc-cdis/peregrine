@@ -1,3 +1,3 @@
 import flask
 
-blueprint = flask.Blueprint('graphql', 'submission_v0')
+blueprint = flask.Blueprint("graphql", "submission_v0")

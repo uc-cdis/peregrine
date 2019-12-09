@@ -4,16 +4,16 @@ from functools import reduce, partial
 
 
 def list_to_obj(k, v):
-    return {'{}_{}'.format(k, i): x for i, x in enumerate(v)}
+    return {"{}_{}".format(k, i): x for i, x in enumerate(v)}
 
 
 def flatten_nested_obj(k, v):
-    return {'{}_{}'.format(k, k2): v2 for (k2, v2) in v.items()}
+    return {"{}_{}".format(k, k2): v2 for (k2, v2) in v.items()}
 
 
 def pair_to_obj(acc, xxx_todo_changeme, parent=None):
     (k, v) = xxx_todo_changeme
-    p = '{}_{}'.format(parent, k) if parent else k
+    p = "{}_{}".format(parent, k) if parent else k
     if isinstance(v, list):
         acc.update(flatten_obj(list_to_obj(p, v)))
     elif isinstance(v, dict):
@@ -41,7 +41,7 @@ def rows_with_headers(hits):
     return reduce(row_with_headers, hits, ([], set()))
 
 
-def to_csv(hits, dialect='excel'):
+def to_csv(hits, dialect="excel"):
     s = StringIO()
     rows, headers = rows_with_headers(hits)
     writer = csv.DictWriter(s, fieldnames=headers, dialect=dialect)

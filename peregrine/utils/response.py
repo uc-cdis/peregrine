@@ -19,7 +19,7 @@ try:
     repo_subdir = os.path.dirname(os.path.realpath(__file__))
     commit_cmd = "cd {}; git rev-parse HEAD".format(repo_subdir)
     COMMIT = subprocess.check_output(commit_cmd, shell=True).strip()
-    logger.info('API from commit {}'.format(COMMIT))
+    logger.info("API from commit {}".format(COMMIT))
 except Exception as e:
     logger.warning(str(e))
     COMMIT = None
@@ -27,11 +27,16 @@ except Exception as e:
 
 def get_data_release():
     """TODO: Unhard code this"""
-    return 'Data Release 3.0 - September 21, 2016'
+    return "Data Release 3.0 - September 21, 2016"
 
 
 def get_status():
-    status = {'status': 'OK', 'version': 1, 'tag': VERSION, 'data_release': get_data_release()}
+    status = {
+        "status": "OK",
+        "version": 1,
+        "tag": VERSION,
+        "data_release": get_data_release(),
+    }
     if COMMIT:
         status["commit"] = COMMIT
     return status
@@ -62,7 +67,9 @@ def striptags_from_dict(data):
     return new_dict
 
 
-def add_content_disposition(request_headers, request_options, response, file_name="file"):
+def add_content_disposition(
+    request_headers, request_options, response, file_name="file"
+):
     """
         Returns response as a file if attachment parameter in request is true
 
@@ -75,24 +82,35 @@ def add_content_disposition(request_headers, request_options, response, file_nam
         Returns:
             A Flask Response object, with Content-Disposition set if attachment was true. Unmodified otherwise.
     """
-    if 'attachment' in request_options.keys():
-        if (isinstance(request_options['attachment'], bool) and request_options['attachment']) or request_options[
-            'attachment'].lower() == 'true':
-            file_extension = request_options.get('format', 'json').lower()
-            response.headers.add('Content-Disposition', 'attachment',
-                                 filename='{}.{}.{}'.format(request_options.get('filename', file_name),
-                                                            datetime.now().isoformat(), file_extension))
+    if "attachment" in request_options.keys():
+        if (
+            isinstance(request_options["attachment"], bool)
+            and request_options["attachment"]
+        ) or request_options["attachment"].lower() == "true":
+            file_extension = request_options.get("format", "json").lower()
+            response.headers.add(
+                "Content-Disposition",
+                "attachment",
+                filename="{}.{}.{}".format(
+                    request_options.get("filename", file_name),
+                    datetime.now().isoformat(),
+                    file_extension,
+                ),
+            )
             response = remove_download_token_from_cookie(request_options, response)
     return response
 
 
 def is_pretty(options):
-    return options.get('pretty', 'false').lower() == 'true'
+    return options.get("pretty", "false").lower() == "true"
 
 
 def to_json(options, data):
-    return (json.dumps(data, indent=2, separators=(', ', ': ')) if is_pretty(options)
-        else json.dumps(data))
+    return (
+        json.dumps(data, indent=2, separators=(", ", ": "))
+        if is_pretty(options)
+        else json.dumps(data)
+    )
 
 
 def to_xml(options, data):
@@ -125,35 +143,37 @@ def format_response(request_options, data, mimetype):
         Returns:
             A Flask Response object, with the data formatted as specified and the Content-Type set
     """
-    if (request_options.get('attachment', '').lower() == 'true' or
-            "text/csv" in mimetype or
-            "text/tab-separated-values" in mimetype):
-        if 'hits' in data['data']:
-            data = data['data']['hits']
+    if (
+        request_options.get("attachment", "").lower() == "true"
+        or "text/csv" in mimetype
+        or "text/tab-separated-values" in mimetype
+    ):
+        if "hits" in data["data"]:
+            data = data["data"]["hits"]
         else:
-            data = [data['data']]
+            data = [data["data"]]
 
     if isinstance(data, dict):
-        pagination = data.get('data', {}).get('pagination', None)
+        pagination = data.get("data", {}).get("pagination", None)
         if pagination:
-            data['data']['pagination'] = striptags_from_dict(pagination)
-        warnings = data.get('warnings', None)
+            data["data"]["pagination"] = striptags_from_dict(pagination)
+        warnings = data.get("warnings", None)
         if warnings:
-            data['warnings'] = striptags_from_dict(warnings)
+            data["warnings"] = striptags_from_dict(warnings)
 
     if "text/xml" in mimetype:
         data = to_xml(request_options, data)
     elif "text/csv" in mimetype:
-        data = to_csv(data, dialect='excel')
+        data = to_csv(data, dialect="excel")
     elif "text/tab-separated-values" in mimetype:
-        data = to_csv(data, dialect='excel-tab')
+        data = to_csv(data, dialect="excel-tab")
     else:
         mimetype = "application/json"
         data = to_json(request_options, data)
 
     response = Response(data, mimetype=mimetype)
     for key, value in get_status().items():
-        response.headers.extend({'X-GDC-{}'.format(key): value})
+        response.headers.extend({"X-GDC-{}".format(key): value})
 
     return response
 
@@ -169,10 +189,10 @@ def remove_download_token_from_cookie(options, response):
         Returns:
             The response object that is passed in
     """
-    cookie_key = options.get('downloadCookieKey', '')
-    cookie_path = options.get('downloadCookiePath', '/')
+    cookie_key = options.get("downloadCookieKey", "")
+    cookie_path = options.get("downloadCookiePath", "/")
 
-    if cookie_key != '':
+    if cookie_key != "":
         response.set_cookie(cookie_key, expires=0, path=cookie_path)
 
     return response

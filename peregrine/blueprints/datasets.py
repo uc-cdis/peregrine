@@ -82,11 +82,11 @@ def get_projects():
     # we labeled the count by project index and later parse it
     # with regex to add structure to response
     query = "{project (first: 0) { name code dbgap_accession_number "
-    for field in ['description', 'image_url']:
-        if dictionary.schema['project']['properties'].get(field):
-            query += field + ' '
+    for field in ["description", "image_url"]:
+        if dictionary.schema["project"]["properties"].get(field):
+            query += field + " "
 
-    query += '}}'
+    query += "}}"
     data, errors = graphql.execute_query(query, variables={})
     if errors:
         return flask.jsonify({"data": data, "errors": errors}), 400

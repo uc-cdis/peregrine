@@ -12,13 +12,10 @@ from .base import (
     munge,
 )
 
-from .util import (
-    clean_count,
-)
+from .util import clean_count
 
-from gdcgraphql import (
-    Query,
-)
+from gdcgraphql import Query
+
 
 class NodeCountQuery(base.GraphQLQuery):
 
@@ -38,15 +35,14 @@ class NodeCountQuery(base.GraphQLQuery):
         self.result = {self.top.key: q.count()}
 
     def get_node_count_result(self, field):
-        label = '_'.join(self.top.name.split('_')[1:-1])
+        label = "_".join(self.top.name.split("_")[1:-1])
         cls = Node.get_subclass(label)
 
         if not cls:
-            self.errors.append('Unable to execute {} count'.format(label))
+            self.errors.append("Unable to execute {} count".format(label))
             return None
 
-        node_query = ns.NodeSubclassQuery(
-            self.g, None, self.fragments)
+        node_query = ns.NodeSubclassQuery(self.g, None, self.fragments)
 
         q = self.get_authorized_query(cls)
         for arg in self.top.arguments:
@@ -76,4 +72,4 @@ class NodeCountQuery(base.GraphQLQuery):
 
     @staticmethod
     def _query_name(cls):
-        return '_{}_count'.format(cls.label)
+        return "_{}_count".format(cls.label)

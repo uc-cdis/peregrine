@@ -2,47 +2,44 @@ import os
 from collections import OrderedDict
 
 
-INDEX_CLIENT = {
-    "host": "http://localhost:8000/", 'version': 'v0',
-    "auth": None}
-AUTH = 'https://fake_auth_url'
-INTERNAL_AUTH = 'https://fake_auth_url'
+INDEX_CLIENT = {"host": "http://localhost:8000/", "version": "v0", "auth": None}
+AUTH = "https://fake_auth_url"
+INTERNAL_AUTH = "https://fake_auth_url"
 AUTH_ADMIN_CREDS = {
-    'domain_name': 'some_domain',
-    'username': 'iama_username',
-    'password': 'iama_password',
-    'auth_url': 'https://fake_auth_url',
-    'user_domain_name': 'some_domain',
+    "domain_name": "some_domain",
+    "username": "iama_username",
+    "password": "iama_password",
+    "auth_url": "https://fake_auth_url",
+    "user_domain_name": "some_domain",
 }
 
 SUBMISSION = {
-    "bucket": 'test_submission',
-    "host": 'host',
+    "bucket": "test_submission",
+    "host": "host",
 }
 STORAGE = {"s3": {"keys": {}, "kwargs": {}}}
-STORAGE["s3"]["keys"]["host"] = {"access_key": "fake",
-                                 "secret_key": "sooper_sekrit"}
+STORAGE["s3"]["keys"]["host"] = {"access_key": "fake", "secret_key": "sooper_sekrit"}
 STORAGE["s3"]["kwargs"]["host"] = {}
 
 PSQLGRAPH = {
-    'host': "localhost",
-    'user': "test",
-    'password': "test",
-    'database': "automated_test",
+    "host": "localhost",
+    "user": "test",
+    "password": "test",
+    "database": "automated_test",
 }
 
-GDC_PORTAL_ENDPOINT = 'http://fake_portal_endpoint_for_tests'
+GDC_PORTAL_ENDPOINT = "http://fake_portal_endpoint_for_tests"
 
 PEREGRINE_HOST = "localhost"
 PEREGRINE_PORT = "443"
 
 # Slicing settings
 SLICING = {
-    'host': 'localhost',
-    'gencode': 'REPLACEME',
+    "host": "localhost",
+    "gencode": "REPLACEME",
 }
 
-FLASK_SECRET_KEY = 'flask_test_key'
+FLASK_SECRET_KEY = "flask_test_key"
 
 from cryptography.fernet import Fernet
 
@@ -54,16 +51,24 @@ OAUTH2 = {
     "redirect_uri": "",
 }
 
-DICTIONARY_URL = os.environ.get('DICTIONARY_URL','https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json')
+DICTIONARY_URL = os.environ.get(
+    "DICTIONARY_URL",
+    "https://s3.amazonaws.com/dictionary-artifacts/datadictionary/develop/schema.json",
+)
 
 USER_API = "http://localhost"
 
 VERIFY_PROJECT = False
 AUTH_SUBMISSION_LIST = False
 
-JWT_KEYPAIR_FILES = OrderedDict([
-    (
-        'key-test',
-        ('resources/keys/test_public_key.pem', 'resources/keys/test_private_key.pem'),
-    )
-])
+JWT_KEYPAIR_FILES = OrderedDict(
+    [
+        (
+            "key-test",
+            (
+                "resources/keys/test_public_key.pem",
+                "resources/keys/test_private_key.pem",
+            ),
+        )
+    ]
+)

@@ -13,7 +13,5 @@ setup(
         "peregrine.resources.submission",
         "peregrine.resources.submission.graphql",
     ],
-    entry_points={
-        'console_scripts': ['peregrine=peregrine.api:main']
-    },
+    entry_points={"console_scripts": ["peregrine=peregrine.api:main"]},
 )
