@@ -33,10 +33,10 @@ promise==2.2.1
 Flask-SQLAlchemy-Session==1.1
 psqlgraph==3.0.0
 gen3datamodel==3.0.0
--e git+https://git@github.com/uc-cdis/cdis_oauth2client.git@chore/py3#egg=cdis_oauth2client
--e git+https://git@github.com/NCI-GDC/cdisutils.git@8a8e599fdab5ade9bd8c586132d974a102e5d72d#egg=cdisutils
+git+https://git@github.com/uc-cdis/cdis_oauth2client.git@chore/py3#egg=cdis_oauth2client
+git+https://git@github.com/NCI-GDC/cdisutils.git@8a8e599fdab5ade9bd8c586132d974a102e5d72d#egg=cdisutils
 cdispyutils==0.2.13
--e git+https://git@github.com/uc-cdis/storage-client.git@0.1.1#egg=storageclient
--e git+https://git@github.com/uc-cdis/graphql-core.git@cdis2.0.0#egg=graphql-core
--e git+https://git@github.com/uc-cdis/cdiserrors.git@0.1.2#egg=cdiserrors
--e git+https://git@github.com/uc-cdis/cdislogging.git@master#egg=cdislogging
+git+https://git@github.com/uc-cdis/storage-client.git@0.1.1#egg=storageclient
+git+https://git@github.com/uc-cdis/graphql-core.git@cdis2.0.0#egg=graphql-core
+git+https://git@github.com/uc-cdis/cdiserrors.git@0.1.2#egg=cdiserrors
+git+https://git@github.com/uc-cdis/cdislogging.git@master#egg=cdislogging
