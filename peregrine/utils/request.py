@@ -29,7 +29,7 @@ def parse_request(request):
             # let the ones with multiple values remain as lists.
             return {
                 key: value if len(value) > 1 else value[0]
-                for key, value in list(dict(request.form).items())
+                for key, value in dict(request.form).items()
             }
         elif "application/json" in ct:
             return request.get_json() if request.data != "" else {}
@@ -47,7 +47,7 @@ def parse_request(request):
         else handlers(request.headers.get("Content-Type", "").lower()),
     ]
     # Merges two dictionaries in all_args
-    options = {k: v for d in all_args for k, v in list(d.items())}
+    options = {k: v for d in all_args for k, v in d.items()}
 
     mimetype, is_csv = select_mimetype(request.headers, options)
     return options, mimetype, is_csv

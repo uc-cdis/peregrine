@@ -11,8 +11,7 @@ def flatten_nested_obj(k, v):
     return {"{}_{}".format(k, k2): v2 for (k2, v2) in v.items()}
 
 
-def pair_to_obj(acc, xxx_todo_changeme, parent=None):
-    (k, v) = xxx_todo_changeme
+def pair_to_obj(acc, (k, v), parent=None):
     p = "{}_{}".format(parent, k) if parent else k
     if isinstance(v, list):
         acc.update(flatten_obj(list_to_obj(p, v)))
@@ -29,8 +28,7 @@ def flatten_obj(json, parent=None):
     return reduce(p_pair_to_json, iter(json.items()), {})
 
 
-def row_with_headers(xxx_todo_changeme1, hit):
-    (rows, header) = xxx_todo_changeme1
+def row_with_headers((rows, header), hit):
     f_o = flatten_obj(hit)
     rows.append(f_o)
 

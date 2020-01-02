@@ -21,7 +21,6 @@ from .node import (
     resolve_nodetype,
 )
 
-# from .node import __fields as ns_fields
 from .node import get_fields
 from .transaction import (
     TransactionLogCountField,

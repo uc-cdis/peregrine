@@ -36,6 +36,4 @@ RUN COMMIT=`git rev-parse HEAD` && echo "COMMIT=\"${COMMIT}\"" >$appname/version
 
 WORKDIR /var/www/$appname
 
-ENTRYPOINT [ "/bin/sh", "/dockerrun.sh" ]
-
-CMD []
+CMD /dockerrun.sh

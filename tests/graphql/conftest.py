@@ -4,7 +4,6 @@ import flask
 import pytest
 from datamodelutils import models
 
-# from datamodelutils.models.submission import TransactionLog
 from tests.graphql import utils
 
 from tests.graphql.test_graphql import (
