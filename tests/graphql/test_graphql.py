@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 import json
 import os
 import random
@@ -1447,6 +1448,88 @@ def test_boolean_filter(client, submitter, pg_driver_clean, cgci_blgsp):
     print("Filtering by boolean=[true,false] should return the experiment:")
     print(r.data)
     assert len(r.json["data"]["experiment"]) == 1
+
+
+def test_datetime_filters(client, submitter, pg_driver_clean, cgci_blgsp):
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    # make sure the existing data is what is expected
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {
+                experiment {
+                    id
+                    created_datetime
+                    updated_datetime
+                }
+            }
+        """
+    }))
+    print("in DB:", r.data)
+    assert len(r.json["data"]["experiment"]) == 1
+    experiment_id = r.json["data"]["experiment"][0]["id"]
+
+    date_format = "%Y-%m-%d"
+    created_str = r.json["data"]["experiment"][0]["created_datetime"]
+    created_datetime = datetime.strptime(created_str[:10], date_format)
+
+    # creation and update dates are the same in this case so we can use
+    # this in all the queries:
+    yesterday_str = (created_datetime - timedelta(days=1)).strftime(date_format)
+
+    # test created_after filter
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {{
+                experiment (created_after: "{}") {{
+                    id
+                }}
+            }}
+        """.format(yesterday_str)
+    }))
+    print("created_after query result:", r.data)
+    assert len(r.json["data"]["experiment"]) == 1
+    assert r.json["data"]["experiment"][0]["id"] == experiment_id
+
+    # test created_before filter
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {{
+                experiment (created_before: "{}") {{
+                    id
+                }}
+            }}
+        """.format(yesterday_str)
+    }))
+    print("created_before query result:", r.data)
+    assert len(r.json["data"]["experiment"]) == 0
+
+    # test updated_after filter
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {{
+                experiment (updated_after: "{}") {{
+                    id
+                }}
+            }}
+        """.format(yesterday_str)
+    }))
+    print("updated_after query result:", r.data)
+    assert len(r.json["data"]["experiment"]) == 1
+    assert r.json["data"]["experiment"][0]["id"] == experiment_id
+
+    # test updated_before filter
+    r = client.post(path, headers=submitter, data=json.dumps({
+        'query': """
+            {{
+                experiment (updated_before: "{}") {{
+                    id
+                }}
+            }}
+        """.format(yesterday_str)
+    }))
+    print("updated_before query result:", r.data)
+    assert len(r.json["data"]["experiment"]) == 0
 
 
 def test_arborist_unknown_user(client, pg_driver_clean, submitter, cgci_blgsp, mock_arborist_requests):
