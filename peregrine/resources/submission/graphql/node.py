@@ -276,24 +276,32 @@ def apply_query_args(q, args, info):
         q = apply_arg_quicksearch(q, args, info)
 
     # created_after: filter by created datetime
-    if 'created_after' in args:
-        q = q.filter(q.entity()._props['created_datetime'].cast(sa.String).cast(sa.DateTime)
-                     > parse(args['created_after']))
+    if "created_after" in args:
+        q = q.filter(
+            q.entity()._props["created_datetime"].cast(sa.String).cast(sa.DateTime)
+            > parse(args["created_after"])
+        )
 
     # created_before: filter by created datetime
-    if 'created_before' in args:
-        q = q.filter(q.entity()._props['created_datetime'].cast(sa.String).cast(sa.DateTime)
-                     < parse(args['created_before']))
+    if "created_before" in args:
+        q = q.filter(
+            q.entity()._props["created_datetime"].cast(sa.String).cast(sa.DateTime)
+            < parse(args["created_before"])
+        )
 
     # updated_after: filter by update datetime
-    if 'updated_after' in args:
-        q = q.filter(q.entity()._props['updated_datetime'].cast(sa.String).cast(sa.DateTime)
-                     > parse(args['updated_after']))
+    if "updated_after" in args:
+        q = q.filter(
+            q.entity()._props["updated_datetime"].cast(sa.String).cast(sa.DateTime)
+            > parse(args["updated_after"])
+        )
 
     # updated_before: filter by update datetime
-    if 'updated_before' in args:
-        q = q.filter(q.entity()._props['updated_datetime'].cast(sa.String).cast(sa.DateTime)
-                     < parse(args['updated_before']))
+    if "updated_before" in args:
+        q = q.filter(
+            q.entity()._props["updated_datetime"].cast(sa.String).cast(sa.DateTime)
+            < parse(args["updated_before"])
+        )
 
     # with_links: (AND) (filter for those with given links)
     if "with_links" in args:
