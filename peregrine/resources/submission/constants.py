@@ -28,10 +28,12 @@ def case_cache_enabled():
         still import/run individual modules without raising errors.
     """
     from peregrine import dictionary
+
     try:
         return (
-            True if dictionary.settings == None
-            else dictionary.settings.get('enable_case_cache', True)
+            True
+            if dictionary.settings == None
+            else dictionary.settings.get("enable_case_cache", True)
         )
     except (AttributeError, KeyError, TypeError):
         return True
@@ -41,7 +43,7 @@ def case_cache_enabled():
 # File upload
 
 #: State a file should be put in given an error
-ERROR_STATE = 'error'
+ERROR_STATE = "error"
 
 #: Initial file state
 def submitted_state():
@@ -67,27 +69,28 @@ def submitted_state():
         still import/run individual modules without raising errors.
     """
     from peregrine import dictionary
+
     try:
-        return (
-            dictionary.resolvers['_definitions.yaml']
-            .source['file_state']['default']
-        )
+        return dictionary.resolvers["_definitions.yaml"].source["file_state"]["default"]
     except (AttributeError, KeyError, TypeError):
         return None
 
+
 #: State file enters when user begins upload
-UPLOADING_STATE = 'uploading'
+UPLOADING_STATE = "uploading"
 
 #: State file enters when user completes upload
-SUCCESS_STATE = 'uploaded'
+SUCCESS_STATE = "uploaded"
 
 # ======================================================================
 # Release/Submit workflow
 
 #: UUID seeds for program/project uuid5 generation
-uuid_regex = re.compile("^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$")
-project_seed = uuid.UUID('249b4405-2c69-45d9-96bc-7410333d5d80')
-program_seed = uuid.UUID('85b08c6a-56a6-4474-9c30-b65abfd214a8')
+uuid_regex = re.compile(
+    "^[a-fA-F0-9]{8}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{4}-[a-fA-F0-9]{12}$"
+)
+project_seed = uuid.UUID("249b4405-2c69-45d9-96bc-7410333d5d80")
+program_seed = uuid.UUID("85b08c6a-56a6-4474-9c30-b65abfd214a8")
 
 
 #: This is a list of states that an entity must be in to allow
@@ -105,9 +108,9 @@ ALLOWED_DELETION_FILE_STATES = [
 
 #: These categories should all have a ``state`` associated with each type
 ENTITY_STATE_CATEGORIES = [
-    'biospecimen',
-    'clinical',
-    'data_file',
+    "biospecimen",
+    "clinical",
+    "data_file",
     # 'cases' => cases are currently `admin` but are manually included
     #      in submission
     # 'annotations' => cases are currently `TBD` but are manually
@@ -117,39 +120,39 @@ ENTITY_STATE_CATEGORIES = [
 #: Possible entity.state transitions
 #: { to_state: from_state }
 ENTITY_STATE_TRANSITIONS = {
-    'submitted': ['validated', None],
+    "submitted": ["validated", None],
 }
 
 #: The key that specifies the high level state that a file is in the
 #: pipeline
-FILE_STATE_KEY = 'file_state'
+FILE_STATE_KEY = "file_state"
 
 #: Possible data_file.file_state transitions
 #: { to_state: from_state }
 FILE_STATE_TRANSITIONS = {
-    'submitted': ['validated'],
+    "submitted": ["validated"],
 }
 
 #: The auth role required to take action actions
-ROLE_SUBMIT = 'release'
-ROLE_REVIEW = 'release'
-ROLE_OPEN = 'release'
+ROLE_SUBMIT = "release"
+ROLE_REVIEW = "release"
+ROLE_OPEN = "release"
 
 #: The key that specifies the high level state that an entity is in the
 #: release process
-STATE_KEY = 'state'
+STATE_KEY = "state"
 
 #: Allow dry_run transactions to be committed (in a new transaction)
 #: if the TransactionLog.state is in the following
-STATES_COMITTABLE_DRY_RUN = {'SUCCEEDED'}
+STATES_COMITTABLE_DRY_RUN = {"SUCCEEDED"}
 
 # ======================================================================
 # Formats
 
-FORMAT_JSON = 'JSON'
-FORMAT_XML = 'XML'
-FORMAT_TSV = 'TSV'
-FORMAT_CSV = 'CSV'
+FORMAT_JSON = "JSON"
+FORMAT_XML = "XML"
+FORMAT_TSV = "TSV"
+FORMAT_CSV = "CSV"
 
 # ======================================================================
 # Transaction Logs
@@ -157,33 +160,33 @@ FORMAT_CSV = 'CSV'
 #: The transaction succeeded without user or system error.  If the
 #: transaction was a non-dry_run mutation, then the result should be
 #: represented in the database
-TX_LOG_STATE_SUCCEEDED = 'SUCCEEDED'
+TX_LOG_STATE_SUCCEEDED = "SUCCEEDED"
 
 #: The transaction failed due to user error
-TX_LOG_STATE_FAILED = 'FAILED'
+TX_LOG_STATE_FAILED = "FAILED"
 
 #: The transaction failed due to system error
-TX_LOG_STATE_ERRORED = 'ERRORED'
+TX_LOG_STATE_ERRORED = "ERRORED"
 
 #: The transaction is sill pending or a fatal event ended the job
 #: before it could report an ERROR status
-TX_LOG_STATE_PENDING = 'PENDING'
+TX_LOG_STATE_PENDING = "PENDING"
 
 # ======================================================================
 # Requests
 
 #: Query param flag for performing transaction in background with
 #: early return
-FLAG_IS_ASYNC = 'async'
-FLAG_IS_DRY_RUN = 'dry_run'
+FLAG_IS_ASYNC = "async"
+FLAG_IS_DRY_RUN = "dry_run"
 
 # ======================================================================
 # Error messages
 
-ERR_ASYNC_SCHEDULING = 'The API is currently under heavy load and currently has too many asynchronous tasks. Please try again later.'
+ERR_ASYNC_SCHEDULING = "The API is currently under heavy load and currently has too many asynchronous tasks. Please try again later."
 
 #: Things go wrong, let's make a message for when they do
-MESSAGE_500 = 'Internal server error. Sorry, something unexpected went wrong!'
+MESSAGE_500 = "Internal server error. Sorry, something unexpected went wrong!"
 
 
 # ======================================================================

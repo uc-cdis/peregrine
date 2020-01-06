@@ -10,6 +10,8 @@ from gdcdatamodel.models.notifications import Base
 def setup(host, user, password, database):
     engine = create_engine(
         "postgres://{user}:{password}@{host}/{database}".format(
-            user=user, host=host, password=password, database=database))
+            user=user, host=host, password=password, database=database
+        )
+    )
     Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)

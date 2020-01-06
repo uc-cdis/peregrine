@@ -56,7 +56,7 @@ def get_external_proxies():
 
     """
 
-    return capp.config.get('EXTERNAL_PROXIES', {})
+    return capp.config.get("EXTERNAL_PROXIES", {})
 
 
 def oph_raise_for_duplicates(object_pairs):
@@ -67,17 +67,16 @@ def oph_raise_for_duplicates(object_pairs):
     """
 
     counter = Counter(p[0] for p in object_pairs)
-    duplicates = filter(lambda p: p[1] > 1, counter.iteritems())
+    duplicates = [p for p in iter(counter.items()) if p[1] > 1]
 
     if duplicates:
         raise ValueError(
-            'The document contains duplicate keys: {}'
-            .format(','.join(d[0] for d in duplicates)))
+            "The document contains duplicate keys: {}".format(
+                ",".join(d[0] for d in duplicates)
+            )
+        )
 
-    return {
-        pair[0]: pair[1]
-        for pair in object_pairs
-    }
+    return {pair[0]: pair[1] for pair in object_pairs}
 
 
 def parse_json(raw):
@@ -91,10 +90,9 @@ def parse_json(raw):
     """
 
     try:
-        return simplejson.loads(
-            raw, object_pairs_hook=oph_raise_for_duplicates)
+        return simplejson.loads(raw, object_pairs_hook=oph_raise_for_duplicates)
     except Exception as e:
-        raise UserError('Unable to parse json: {}'.format(e))
+        raise UserError("Unable to parse json: {}".format(e))
 
 
 def parse_request_json(expected_types=(dict, list)):
@@ -110,8 +108,11 @@ def parse_request_json(expected_types=(dict, list)):
 
     parsed = parse_json(request.get_data())
     if not isinstance(parsed, expected_types):
-        raise UserError('JSON parsed from request is an invalid type: {}'
-                        .format(parsed.__class__.__name__))
+        raise UserError(
+            "JSON parsed from request is an invalid type: {}".format(
+                parsed.__class__.__name__
+            )
+        )
     return parsed
 
 
@@ -126,7 +127,7 @@ def parse_request_yaml():
     try:
         return yaml.safe_load(raw)
     except Exception as e:
-        raise UserError('Unable to parse yaml: {}'.format(e))
+        raise UserError("Unable to parse yaml: {}".format(e))
 
 
 def lookup_node(psql_driver, label, node_id=None, secondary_keys=None):
@@ -150,10 +151,13 @@ def lookup_node(psql_driver, label, node_id=None, secondary_keys=None):
 def lookup_project(psql_driver, program, project):
     """Return a project by Project.code if attached to Program.name"""
 
-    return (psql_driver.nodes(models.Project).props(code=project)
-            .path('programs')
-            .props(name=program)
-            .scalar())
+    return (
+        psql_driver.nodes(models.Project)
+        .props(code=project)
+        .path("programs")
+        .props(name=program)
+        .scalar()
+    )
 
 
 def lookup_program(psql_driver, program):
@@ -177,12 +181,12 @@ def parse_boolean(value):
 
     if isinstance(value, bool):
         return value
-    elif value.lower() == 'true':
+    elif value.lower() == "true":
         return True
-    elif value.lower() == 'false':
+    elif value.lower() == "false":
         return False
     else:
-        raise UserError('Boolean value not one of [true, false]')
+        raise UserError("Boolean value not one of [true, false]")
 
 
 def is_flag_set(flag, default=False):
@@ -215,12 +219,12 @@ def async(f):
 
 def get_introspection_query():
     cur_dir = os.path.dirname(os.path.realpath(__file__))
-    f = open(os.path.join(cur_dir, 'graphql', 'introspection_query.txt'), 'r')
+    f = open(os.path.join(cur_dir, "graphql", "introspection_query.txt"), "r")
     return f.read()
 
 
 def get_variables(payload):
-    var_payload = payload.get('variables')
+    var_payload = payload.get("variables")
     variables = None
     errors = None
     if isinstance(var_payload, dict):
@@ -229,5 +233,5 @@ def get_variables(payload):
         try:
             variables = json.loads(var_payload) if var_payload else {}
         except Exception as e:
-            errors = ['Unable to parse variables', str(e)]
+            errors = ["Unable to parse variables", str(e)]
     return variables, errors

@@ -9,7 +9,6 @@ from graphql.ast import FragmentSpread
 
 
 class RootQuery(GraphQLQuery):
-
     def parse(self):
         """To allow 'arbitrary' complexity but not denial of service, set both
         database and application level timeouts
@@ -33,18 +32,16 @@ class RootQuery(GraphQLQuery):
 
         """
 
-        if query_class and hasattr(query_class, 'parse'):
+        if query_class and hasattr(query_class, "parse"):
             pass
         elif isinstance(field, FragmentSpread):
             query_class = FragmentQuery
         elif Node.get_subclass(field.name):
             query_class = NodeSubclassQuery
-        elif field.name.endswith('_count'):
+        elif field.name.endswith("_count"):
             query_class = NodeCountQuery
 
         if query_class:
             self.subquery(query_class, field, self.result)
         else:
-            self.errors.append(
-                "Cannot query field '{}' on 'Root'"
-                .format(field.name))
+            self.errors.append("Cannot query field '{}' on 'Root'".format(field.name))

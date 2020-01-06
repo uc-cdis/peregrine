@@ -14,14 +14,12 @@ from datamodelutils import models
 from gen3authz.client.arborist.errors import ArboristError
 import flask
 
-from peregrine.errors import AuthNError
-
 
 logger = get_logger(__name__)
 
 
 def resource_path_to_project_ids(resource_path):
-    parts = resource_path.strip('/').split('/')
+    parts = resource_path.strip("/").split("/")
 
     # resource path ignored by peregrine
     if resource_path != "/" and parts[0] != "programs":
@@ -29,19 +27,17 @@ def resource_path_to_project_ids(resource_path):
 
     if len(parts) > 4 or (len(parts) > 2 and parts[2] != "projects"):
         logger.warn(
-            "ignoring resource path {} because peregrine cannot handle a permission more granular than program/project level".format(resource_path)
+            "ignoring resource path {} because peregrine cannot handle a permission more granular than program/project level".format(
+                resource_path
+            )
         )
         return []
 
     # "/" or "/programs": access to all programs
     if len(parts) == 1:
-        programs = (
-            flask.current_app.db
-            .nodes(models.Program)
-            .all()
-        )
+        programs = flask.current_app.db.nodes(models.Program).all()
         return [
-            program.name + '-' + project.code
+            program.name + "-" + project.code
             for program in programs
             for project in program.projects
         ]
@@ -51,39 +47,31 @@ def resource_path_to_project_ids(resource_path):
     if len(parts) < 4:
         program_name = parts[1]
         program = (
-            flask.current_app.db
-            .nodes(models.Program)
-            .props(name=program_name)
-            .first()
+            flask.current_app.db.nodes(models.Program).props(name=program_name).first()
         )
         if not program:
             logger.warn(
-                "program {} in resource path {} does not exist".format(program_name, resource_path)
+                "program {} in resource path {} does not exist".format(
+                    program_name, resource_path
+                )
             )
             return []
-        return [
-            program.name + '-' + project.code
-            for project in program.projects
-        ]
+        return [program.name + "-" + project.code for project in program.projects]
 
     # "/programs/[...]/projects/[...]": access to a specific project
     # here, len(parts) == 4 and parts[2] == "projects"
     project_code = parts[3]
     project = (
-        flask.current_app.db
-        .nodes(models.Project)
-        .props(code=project_code)
-        .first()
+        flask.current_app.db.nodes(models.Project).props(code=project_code).first()
     )
     if not project:
         logger.warn(
-            "project {} in resource path {} does not exist".format(project_code, resource_path)
+            "project {} in resource path {} does not exist".format(
+                project_code, resource_path
+            )
         )
         return []
-    return [
-        program.name + '-' + project.code
-        for program in project.programs
-    ]
+    return [program.name + "-" + project.code for program in project.programs]
 
 
 def get_read_access_projects():
@@ -95,7 +83,9 @@ def get_read_access_projects():
     except ArboristError as e:
         # Arborist errored, or this user is unknown to Arborist
         logger.warn(
-            "Unable to retrieve auth mapping for user `{}`: {}".format(current_user.username, e)
+            "Unable to retrieve auth mapping for user `{}`: {}".format(
+                current_user.username, e
+            )
         )
         mapping = {}
 
@@ -105,7 +95,11 @@ def get_read_access_projects():
             for resource_path, permissions in mapping.items()
             for project_id in resource_path_to_project_ids(resource_path)
             # ignore resource if no peregrine read access:
-            if any(permission.get("service") in ["*", "peregrine"] and permission.get("method") in ["*", "read"] for permission in permissions)
+            if any(
+                permission.get("service") in ["*", "peregrine"]
+                and permission.get("method") in ["*", "read"]
+                for permission in permissions
+            )
         ]
 
     # return unique project_ids

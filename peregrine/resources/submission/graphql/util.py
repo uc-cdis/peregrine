@@ -9,10 +9,8 @@ Defines utility functions for GraphQL implementation.
 
 from flask import current_app as capp
 from flask import g as fg
-from peregrine.errors import AuthError, UserError
-import node
+from . import node
 from datamodelutils import models
-from graphql import GraphQLError
 
 from graphql.utils.ast_to_dict import ast_to_dict
 import sqlalchemy as sa
@@ -29,14 +27,13 @@ DEFAULT_LIMIT = 10
 
 def set_session_timeout(session, timeout):
     session.execute(
-        'SET LOCAL statement_timeout = {}'
-        .format(int(float(timeout)*1000))
+        "SET LOCAL statement_timeout = {}".format(int(float(timeout) * 1000))
     )
 
 
 def get_column_names(entity):
     """Returns an iterable of column names the entity has"""
-    if hasattr(entity, '__pg_properties__'):
+    if hasattr(entity, "__pg_properties__"):
         return (k for k in entity.__pg_properties__)
 
     return (c.name for c in entity.__table__.columns)
@@ -57,18 +54,15 @@ def filtered_column_dict(row, info, fields_depend_on_columns=None):
 
     columns = get_loaded_columns(row, info, fields_depend_on_columns)
 
-    return {
-        column: getattr(row, column)
-        for column in columns
-    }
+    return {column: getattr(row, column) for column in columns}
 
 
 def get_active_project_ids():
     return [
-        '{}-{}'.format(project.programs[0].name, project.code)
+        "{}-{}".format(project.programs[0].name, project.code)
         for project in capp.db.nodes(Project)
-        .filter(models.Project._props['state'].astext != 'closed')
-        .filter(models.Project._props['state'].astext != 'legacy')
+        .filter(models.Project._props["state"].astext != "closed")
+        .filter(models.Project._props["state"].astext != "legacy")
         .all()
     ]
 
@@ -93,13 +87,14 @@ def active_project_filter(q):
 
     cls = q.entity()
 
-    if cls.label == 'project':
-        return (q.filter(models.Project._props['state'].astext != 'closed')
-                .filter(models.Project._props['state'].astext != 'legacy'))
+    if cls.label == "project":
+        return q.filter(models.Project._props["state"].astext != "closed").filter(
+            models.Project._props["state"].astext != "legacy"
+        )
 
-    fg.active_project_ids = fg.get('active_project_ids') or get_active_project_ids()
-    if cls == psqlgraph.Node or hasattr(cls, 'project_id'):
-        project_id_attr = cls._props['project_id'].astext
+    fg.active_project_ids = fg.get("active_project_ids") or get_active_project_ids()
+    if cls == psqlgraph.Node or hasattr(cls, "project_id"):
+        project_id_attr = cls._props["project_id"].astext
         q = q.filter(project_id_attr.in_(fg.active_project_ids))
 
     return q
@@ -124,10 +119,10 @@ def authorization_filter(q):
 
     cls = q.entity()
 
-    if cls == psqlgraph.Node or hasattr(cls, 'project_id'):
-        q = q.filter(cls._props['project_id'].astext.in_(fg.read_access_projects))
+    if cls == psqlgraph.Node or hasattr(cls, "project_id"):
+        q = q.filter(cls._props["project_id"].astext.in_(fg.read_access_projects))
 
-    if cls.label == 'project':
+    if cls.label == "project":
         # do not return unauthorized projects
         q = node.filter_project_project_id(q, fg.read_access_projects, None)
 
@@ -142,14 +137,14 @@ def get_authorized_query(cls):
 
 
 def apply_arg_limit(q, args, info):
-    limit = args.get('first', DEFAULT_LIMIT)
+    limit = args.get("first", DEFAULT_LIMIT)
     if limit > 0:
         q = q.limit(limit)
     return q
 
 
 def apply_arg_offset(q, args, info):
-    offset = args.get('offset', 0)
+    offset = args.get("offset", 0)
     if offset > 0:
         q = q.offset(offset)
     return q
@@ -164,11 +159,13 @@ def get_loaded_columns(entity, info, fields_depend_on_columns=None):
     fields = set(get_fields(info))
 
     if fields_depend_on_columns:
-        fields.update({
-            column
-            for field in fields
-            for column in fields_depend_on_columns.get(field, {})
-        })
+        fields.update(
+            {
+                column
+                for field in fields
+                for column in fields_depend_on_columns.get(field, {})
+            }
+        )
 
     all_columns = set(get_column_names(entity))
     used_columns = fields.intersection(all_columns)
@@ -181,7 +178,7 @@ def apply_load_only(query, info, fields_depend_on_columns=None):
 
     # if the entity doesn't have a backing table then don't do this
     # this happens when using the generic node property
-    if not hasattr(query.entity(), '__table__'):
+    if not hasattr(query.entity(), "__table__"):
         return query
 
     columns = get_loaded_columns(query.entity(), info, fields_depend_on_columns)
@@ -191,6 +188,7 @@ def apply_load_only(query, info, fields_depend_on_columns=None):
 
 # The below is lifted from
 # https://gist.github.com/mixxorz/dc36e180d1888629cf33
+
 
 def collect_fields(node, fragments):
     """Recursively collects fields from the AST
@@ -208,15 +206,14 @@ def collect_fields(node, fragments):
 
     field = {}
 
-    if node.get('selection_set'):
-        for leaf in node['selection_set']['selections']:
-            if leaf['kind'] == 'Field':
-                field.update({
-                    leaf['name']['value']: collect_fields(leaf, fragments)
-                })
-            elif leaf['kind'] == 'FragmentSpread':
-                field.update(collect_fields(fragments[leaf['name']['value']],
-                                            fragments))
+    if node.get("selection_set"):
+        for leaf in node["selection_set"]["selections"]:
+            if leaf["kind"] == "Field":
+                field.update({leaf["name"]["value"]: collect_fields(leaf, fragments)})
+            elif leaf["kind"] == "FragmentSpread":
+                field.update(
+                    collect_fields(fragments[leaf["name"]["value"]], fragments)
+                )
 
     return field
 
@@ -237,6 +234,7 @@ def get_fields(info):
 
     return collect_fields(node, fragments)
 
+
 def clean_count(q):
     """Returns the count from this query without pulling all the columns
 
@@ -248,5 +246,9 @@ def clean_count(q):
         q (psqlgraph.query.GraphQuery): The current query object.
 
     """
-    query_count = q.options(sa.orm.lazyload('*')).statement.with_only_columns([sa.func.count()]).order_by(None)
+    query_count = (
+        q.options(sa.orm.lazyload("*"))
+        .statement.with_only_columns([sa.func.count()])
+        .order_by(None)
+    )
     return q.session.execute(query_count).scalar()
