@@ -24,12 +24,7 @@ import sys
 this_module = sys.modules[__name__]
 
 #: The data model must implement these attributes.
-required_attrs = [
-    "Program",
-    "Project",
-    "submission",
-    "VersionedNode",
-]
+required_attrs = ["Program", "Project", "submission", "VersionedNode"]
 
 # These could be assigned programatically, as in:
 #

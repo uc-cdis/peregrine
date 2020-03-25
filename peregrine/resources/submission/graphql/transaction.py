@@ -180,9 +180,7 @@ class TransactionDocument(graphene.ObjectType):
     response = graphene.Field(TransactionResponse)
 
     # These fields depend on these columns being loaded
-    fields_depend_on_columns = {
-        "doc_size": {"doc"},
-    }
+    fields_depend_on_columns = {"doc_size": {"doc"}}
 
     @classmethod
     def resolve_doc_size(cls, document, *args, **kwargs):
@@ -224,10 +222,7 @@ class TransactionLog(graphene.ObjectType):
     related_cases = graphene.List(TransactionResponseEntityRelatedCases)
 
     # These fields depend on these columns being loaded
-    fields_depend_on_columns = {
-        "type": {"role"},
-        "project_id": {"project", "program"},
-    }
+    fields_depend_on_columns = {"type": {"role"}, "project_id": {"project", "program"}}
 
     TYPE_MAP = {
         "update": "upload",
@@ -457,8 +452,6 @@ def resolve_transaction_log_count(self, info, **args):
     return q.count()
 
 
-TransactionLogField = graphene.List(TransactionLog, args=get_transaction_log_args(),)
+TransactionLogField = graphene.List(TransactionLog, args=get_transaction_log_args())
 
-TransactionLogCountField = graphene.Field(
-    graphene.Int, args=get_transaction_log_args(),
-)
+TransactionLogCountField = graphene.Field(graphene.Int, args=get_transaction_log_args())

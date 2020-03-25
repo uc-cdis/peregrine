@@ -89,7 +89,7 @@ def run_with_fake_auth():
         new_callable=PropertyMock,
         return_value=lambda: True,
     ), patch(
-        "peregrine.auth.verify_hmac", new=set_user,
+        "peregrine.auth.verify_hmac", new=set_user
     ):
         run_for_development(debug=debug, threaded=True)
 
