@@ -12,7 +12,7 @@ from cdiserrors import AuthZError
 import datamodelutils.models as models
 import flask
 
-from peregrine.auth import current_user, get_read_access_projects
+from peregrine.auth import get_read_access_projects
 import peregrine.blueprints
 from peregrine.resources.submission import graphql
 
