@@ -96,7 +96,9 @@ def run_with_fake_auth():
 
 def run_with_fake_authz():
     """
-    Mocks arborist calls.
+    By mocking `get_read_access_projects`, we avoid checking the
+    Authorization header and access token, and avoid making arborist
+    calls to fetch a list of authorized resources.
     """
     # `user_projects` contains a list of `project_id`s (in format
     # "<program.name>-<project.code>") the user has access to.
