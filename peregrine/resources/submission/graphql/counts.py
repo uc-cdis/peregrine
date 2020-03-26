@@ -7,10 +7,7 @@ import base
 import node_subclass as ns
 from . import transaction
 
-from .base import (
-    assert_type,
-    munge,
-)
+from .base import assert_type, munge
 
 from .util import clean_count
 

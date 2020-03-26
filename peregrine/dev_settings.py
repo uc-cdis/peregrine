@@ -50,10 +50,7 @@ STORAGE = {
         },
     }
 }
-SUBMISSION = {
-    "bucket": "test_submission",
-    "host": CLEVERSAFE_HOST,
-}
+SUBMISSION = {"bucket": "test_submission", "host": CLEVERSAFE_HOST}
 # Postgres
 PSQLGRAPH = {
     "host": os.getenv("GDC_PG_HOST", "localhost"),

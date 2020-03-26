@@ -34,12 +34,7 @@ terminal_nodes = [
 # to annotation.
 #
 # See :func:`is_valid_direction` for more details.
-CATEGORY_LEVEL = {
-    "administrative": 0,
-    "biospecimen": 1,
-    "clinical": 1,
-    "data_file": 3,
-}
+CATEGORY_LEVEL = {"administrative": 0, "biospecimen": 1, "clinical": 1, "data_file": 3}
 
 
 def is_valid_direction(node, visited):
