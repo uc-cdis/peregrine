@@ -89,20 +89,24 @@ def run_with_fake_auth():
         new_callable=PropertyMock,
         return_value=lambda: True,
     ), patch(
-        "peregrine.auth.verify_hmac", new=set_user,
+        "peregrine.auth.verify_hmac", new=set_user
     ):
         run_for_development(debug=debug, threaded=True)
 
 
 def run_with_fake_authz():
     """
-    Mocks arborist calls.
+    By mocking `get_read_access_projects`, we avoid checking the
+    Authorization header and access token, and avoid making arborist
+    calls to fetch a list of authorized resources.
     """
-    auth_mapping = {}  # modify this to mock specific access
+    # `user_projects` contains a list of `project_id`s (in format
+    # "<program.name>-<project.code>") the user has access to.
+    # Update it to mock specific access:
+    user_projects = []
     with patch(
-        "gen3authz.client.arborist.client.ArboristClient.auth_mapping",
-        new_callable=PropertyMock,
-        return_value=lambda x: auth_mapping,
+        "peregrine.resources.submission.get_read_access_projects",
+        return_value=user_projects,
     ):
         run_for_development(debug=debug, threaded=True)
 

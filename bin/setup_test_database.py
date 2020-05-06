@@ -11,11 +11,7 @@ from setup_notifications import setup as create_notifications_table
 
 import argparse
 
-from setup_psqlgraph import (
-    setup_database,
-    create_tables,
-    create_indexes,
-)
+from setup_psqlgraph import setup_database, create_tables, create_indexes
 
 
 if __name__ == "__main__":

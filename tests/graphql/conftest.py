@@ -6,10 +6,7 @@ from datamodelutils import models
 
 from tests.graphql import utils
 
-from tests.graphql.test_graphql import (
-    put_cgci,
-    post_example_entities_together,
-)
+from tests.graphql.test_graphql import put_cgci, post_example_entities_together
 
 path = "/v0/submission/graphql"
 
@@ -20,7 +17,7 @@ def graphql_client(client, submitter):
         return client.post(
             path,
             headers=submitter,
-            data=json.dumps({"query": query, "variables": variables,}),
+            data=json.dumps({"query": query, "variables": variables}),
         )
 
     return execute

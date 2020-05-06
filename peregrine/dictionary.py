@@ -16,14 +16,9 @@ import sys
 this_module = sys.modules[__name__]
 
 #: The data dictionary must implement these attributes.
-required_attrs = [
-    "resolvers",
-    "schema",
-]
+required_attrs = ["resolvers", "schema"]
 
-optional_attrs = [
-    "settings",
-]
+optional_attrs = ["settings"]
 
 resolvers = None
 schema = None

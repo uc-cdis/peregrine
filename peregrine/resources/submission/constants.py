@@ -95,15 +95,11 @@ program_seed = uuid.UUID("85b08c6a-56a6-4474-9c30-b65abfd214a8")
 
 #: This is a list of states that an entity must be in to allow
 #: deletion
-ALLOWED_DELETION_STATES = [
-    "validated",
-]
+ALLOWED_DELETION_STATES = ["validated"]
 
 #: This is a list of file_states that a a file must be in to allow
 #: deletion
-ALLOWED_DELETION_FILE_STATES = [
-    submitted_state,
-]
+ALLOWED_DELETION_FILE_STATES = [submitted_state]
 
 
 #: These categories should all have a ``state`` associated with each type
@@ -119,9 +115,7 @@ ENTITY_STATE_CATEGORIES = [
 
 #: Possible entity.state transitions
 #: { to_state: from_state }
-ENTITY_STATE_TRANSITIONS = {
-    "submitted": ["validated", None],
-}
+ENTITY_STATE_TRANSITIONS = {"submitted": ["validated", None]}
 
 #: The key that specifies the high level state that a file is in the
 #: pipeline
@@ -129,9 +123,7 @@ FILE_STATE_KEY = "file_state"
 
 #: Possible data_file.file_state transitions
 #: { to_state: from_state }
-FILE_STATE_TRANSITIONS = {
-    "submitted": ["validated"],
-}
+FILE_STATE_TRANSITIONS = {"submitted": ["validated"]}
 
 #: The auth role required to take action actions
 ROLE_SUBMIT = "release"

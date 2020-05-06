@@ -71,14 +71,10 @@ def db_init(app):
 
 # Set CORS options on app configuration
 def cors_init(app):
-    accepted_headers = [
-        "Content-Type",
-        "X-Requested-With",
-        "X-CSRFToken",
-    ]
+    accepted_headers = ["Content-Type", "X-Requested-With", "X-CSRFToken"]
     CORS(
         app,
-        resources={r"/*": {"origins": "*"},},
+        resources={r"/*": {"origins": "*"}},
         headers=accepted_headers,
         expose_headers=["Content-Disposition"],
     )
@@ -174,11 +170,7 @@ def version():
         "version": pkg_resources.get_distribution("gen3dictionary").version,
         "commit": "",
     }
-    base = {
-        "version": VERSION,
-        "commit": COMMIT,
-        "dictionary": dictver,
-    }
+    base = {"version": VERSION, "commit": COMMIT, "dictionary": dictver}
 
     return jsonify(base), 200
 
