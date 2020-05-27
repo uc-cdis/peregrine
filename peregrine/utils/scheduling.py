@@ -4,10 +4,7 @@ from threading import Thread
 import cdispyutils
 
 from peregrine.errors import InternalError
-from peregrine.globals import (
-    ASYNC_MAX_Q_LEN,
-    ERR_ASYNC_SCHEDULING,
-)
+from peregrine.globals import ASYNC_MAX_Q_LEN, ERR_ASYNC_SCHEDULING
 
 logger = cdispyutils.log.get_logger("submission.scheduling")
 
@@ -67,7 +64,7 @@ class AsyncPool(object):
         started immediately.
         """
         workers = [
-            self.worker_class(target=async_pool_consumer, args=(self.task_queue,),)
+            self.worker_class(target=async_pool_consumer, args=(self.task_queue,))
             for _ in range(n_workers)
         ]
 

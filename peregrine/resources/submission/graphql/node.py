@@ -416,9 +416,7 @@ class Node(graphene.Interface):
     updated_datetime = graphene.String()
 
     # These fields depend on these columns being loaded
-    fields_depend_on_columns = {
-        "project_id": {"program", "code"},
-    }
+    fields_depend_on_columns = {"project_id": {"program", "code"}}
 
 
 def resolve_node(self, info, **args):
@@ -549,7 +547,7 @@ def get_node_class_property_args(cls, not_props_io={}):
         args_not = {}
         args_not.update(get_node_class_property_attrs(cls))
         not_props_io[not_props_io_name] = type(
-            not_props_io_name, (graphene.InputObjectType,), args_not,
+            not_props_io_name, (graphene.InputObjectType,), args_not
         )
         globals()[not_props_io[not_props_io_name].__name__] = not_props_io[
             not_props_io_name
@@ -689,7 +687,7 @@ def get_node_class_special_attrs(cls):
 def get_node_class_link_attrs(cls):
     attrs = {
         name: graphene.List(
-            __name__ + "." + link["type"].label, args=get_node_class_args(link["type"]),
+            __name__ + "." + link["type"].label, args=get_node_class_args(link["type"])
         )
         for name, link in cls._pg_edges.items()
     }
@@ -703,7 +701,7 @@ def get_node_class_link_attrs(cls):
 
         q = with_path_to(
             get_authorized_query(md.Case),
-            {"type": cls.label, "id": self.id,},
+            {"type": cls.label, "id": self.id},
             info,
             name="related_cases",
         )
@@ -735,7 +733,7 @@ def get_node_class_link_attrs(cls):
 
     attrs["resolve__transaction_logs_count"] = resolve_transaction_logs_count
     attrs["_transaction_logs_count"] = graphene.Field(
-        graphene.Int, args=transaction.get_transaction_log_args(),
+        graphene.Int, args=transaction.get_transaction_log_args()
     )
 
     def resolve_transaction_logs(self, info, **args):
@@ -744,7 +742,7 @@ def get_node_class_link_attrs(cls):
 
     attrs["resolve__transaction_logs"] = resolve_transaction_logs
     attrs["_transaction_logs"] = graphene.List(
-        transaction.TransactionLog, args=transaction.get_transaction_log_args(),
+        transaction.TransactionLog, args=transaction.get_transaction_log_args()
     )
 
     _links_args = get_node_interface_args()
@@ -948,9 +946,7 @@ def create_root_fields(fields):
                 capp.logger.exception(e)
                 raise
 
-        field = graphene.Field(
-            graphene.List(gql_object), args=get_node_class_args(cls),
-        )
+        field = graphene.Field(graphene.List(gql_object), args=get_node_class_args(cls))
 
         res_name = "resolve_{}".format(name)
         resolver.__name__ = res_name
@@ -1062,7 +1058,7 @@ def get_datanode_fields_dict():
 
         # add required node fields
         DataNode.shared_fields.update(
-            {"id": graphene.String(), "type": graphene.String(),}
+            {"id": graphene.String(), "type": graphene.String()}
         )
 
     return DataNode.shared_fields
@@ -1085,7 +1081,7 @@ def get_datanode_interface_args():
     args = get_base_node_args()
     args.update(get_datanode_fields_dict())
     args.update(
-        {"of_type": graphene.List(graphene.String), "project_id": graphene.String(),}
+        {"of_type": graphene.List(graphene.String), "project_id": graphene.String()}
     )
     return args
 

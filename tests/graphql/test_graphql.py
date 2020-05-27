@@ -521,7 +521,7 @@ def test_with_path_to_any(client, submitter, pg_driver_clean, cgci_blgsp):
     )
 
     assert r.status_code == 200, r.data
-    assert r.json == {"data": {"a": 2, "b": 1, "c": 1, "d": 1, "e": 1, "f": 0,}}, r.data
+    assert r.json == {"data": {"a": 2, "b": 1, "c": 1, "d": 1, "e": 1, "f": 0}}, r.data
 
 
 def test_with_path_to_invalid_type(client, submitter, pg_driver_clean, cgci_blgsp):
@@ -776,7 +776,7 @@ def test_with_links_any(client, submitter, pg_driver_clean, cgci_blgsp):
         ),
     )
     assert r.json == {
-        "data": {"a": 1, "b": 0, "c": 1, "d": 1, "e": 1, "f": ncases,}
+        "data": {"a": 1, "b": 0, "c": 1, "d": 1, "e": 1, "f": ncases}
     }, r.data
 
 
@@ -912,7 +912,7 @@ def test_null_variable(client, submitter, pg_driver_clean, cgci_blgsp):
           a: _case_count (project_id: $projectId)
           t: _transaction_log_count(project_id: $projectId)
         }
-        """,
+        """
             }
         ),
     )
@@ -920,7 +920,7 @@ def test_null_variable(client, submitter, pg_driver_clean, cgci_blgsp):
         cases = pg_driver_clean.nodes(models.Case).count()
 
     print(r.data)
-    assert r.json == {"data": {"a": cases, "t": 1,}}
+    assert r.json == {"data": {"a": cases, "t": 1}}
 
 
 def test_property_lists(client, submitter, pg_driver_clean, cgci_blgsp):
@@ -938,7 +938,7 @@ def test_property_lists(client, submitter, pg_driver_clean, cgci_blgsp):
           c1: _transaction_log_count(project_id: ["CGCI-BLGSP"])
           c2: _transaction_log_count(project_id: ["CGCI-FAKE"])
           c3: _transaction_log_count(project_id: "CGCI-BLGSP")
-        }""",
+        }"""
         }
     )
     response = client.post(path, headers=submitter, data=data)
@@ -975,13 +975,11 @@ def test_not_property(client, submitter, pg_driver_clean, cgci_blgsp):
           case (not: {submitter_id: "s1"}, submitter_id: ["s1", "s2"]) {
             id submitter_id
           }
-        }""",
+        }"""
             }
         ),
     )
-    assert r.json == {
-        "data": {"case": [{"id": "case2", "submitter_id": "s2"},],}
-    }, r.data
+    assert r.json == {"data": {"case": [{"id": "case2", "submitter_id": "s2"}]}}, r.data
 
 
 def test_schema(client, submitter, pg_driver_clean):
@@ -1166,7 +1164,7 @@ def test_filter_empty_prop_list(
         ),
     )
 
-    assert r.json == {"data": {"a": 1, "b": 1, "c": 1,}}
+    assert r.json == {"data": {"a": 1, "b": 1, "c": 1}}
 
 
 def test_submitted_unaligned_reads_with_path_to_read_group(
@@ -1282,11 +1280,11 @@ def test_read_group_with_path_to_case(client, submitter, pg_driver_clean, cgci_b
             {
                 _read_group_count (with_path_to: {type: "case"})
             }
-        """,
+        """
         }
     )
     r = client.post(path, headers=submitter, data=data)
-    assert r.json == {"data": {"_read_group_count": 1,}}
+    assert r.json == {"data": {"_read_group_count": 1}}
 
 
 def test_tx_logs_async_fields(pg_driver_clean, graphql_client, cgci_blgsp):
@@ -1302,7 +1300,7 @@ def test_tx_logs_async_fields(pg_driver_clean, graphql_client, cgci_blgsp):
             "data": {
                 "tx_log": [
                     {"is_dry_run": False, "state": "PENDING", "committed_by": None}
-                ],
+                ]
             }
         }
     )
@@ -1317,7 +1315,7 @@ def test_tx_logs_state(pg_driver_clean, graphql_client, cgci_blgsp, mock_tx_log)
         failed: _transaction_log_count(state: "FAILED")
     }"""
         ).json
-        == {"data": {"total": 1, "succeeded": 1, "failed": 0,}}
+        == {"data": {"total": 1, "succeeded": 1, "failed": 0}}
     )
 
 
@@ -1330,7 +1328,7 @@ def test_tx_logs_is_dry_run(pg_driver_clean, cgci_blgsp, mock_tx_log, graphql_cl
         isnt: _transaction_log_count(is_dry_run: false)
     }"""
         ).json
-        == {"data": {"total": 1, "is": 1, "isnt": 0,}}
+        == {"data": {"total": 1, "is": 1, "isnt": 0}}
     )
 
 
@@ -1343,7 +1341,7 @@ def test_tx_logs_committed_by(pg_driver_clean, cgci_blgsp, mock_tx_log, graphql_
         wrong: _transaction_log_count(committed_by: 54321)
     }"""
         ).json
-        == {"data": {"total": 1, "right": 1, "wrong": 0,}}
+        == {"data": {"total": 1, "right": 1, "wrong": 0}}
     )
 
 
@@ -1356,7 +1354,7 @@ def test_tx_logs_committable(pg_driver_clean, graphql_client, cgci_blgsp, mock_t
         not_committable: _transaction_log_count(committable: false)
     }"""
         ).json
-        == {"data": {"total": 1, "committable": 0, "not_committable": 1,}}
+        == {"data": {"total": 1, "committable": 0, "not_committable": 1}}
     )
 
 
@@ -1566,7 +1564,7 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
                 {"consent_codes": ["cc2"]},
                 {"consent_codes": ["cc1", "cc2", "cc3"]},
             ],
-            "case2": [{"consent_codes": ["cc1", "cc2", "cc3"]},],
+            "case2": [{"consent_codes": ["cc1", "cc2", "cc3"]}],
             "case3": [],
             "case4": [
                 {"consent_codes": ["cc1"]},
@@ -1616,7 +1614,7 @@ def test_datanode(graphql_client, client, submitter, pg_driver_clean, cgci_blgsp
 
     files = [
         models.SubmittedUnalignedReads(
-            "file_131", project_id="CGCI-BLGSP", object_id=obj_id,
+            "file_131", project_id="CGCI-BLGSP", object_id=obj_id
         )
     ]
 

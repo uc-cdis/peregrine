@@ -58,8 +58,8 @@ result_async_fields = json.loads(
         {
             "data": {
                 "tx_log": [
-                    {"is_dry_run": True, "state": "SUCCEEDED", "committed_by": "12345",}
-                ],
+                    {"is_dry_run": True, "state": "SUCCEEDED", "committed_by": "12345"}
+                ]
             }
         }
     )
@@ -75,7 +75,7 @@ result_async_fields = json.loads(
         (query_committable, result_committable),
         (query_async_fields, result_async_fields),
     ],
-    ids=["dry_run", "state", "committed_by", "committable", "async_fields",],
+    ids=["dry_run", "state", "committed_by", "committable", "async_fields"],
 )
 def test_transaction_logs_queries(
     pg_driver_clean, cgci_blgsp, mock_tx_log, graphql_client, query, expected_json
@@ -514,6 +514,4 @@ def test_transaction_logs_quick_search(client, submitter, pg_driver_clean, cgci_
             }
         ),
     )
-    assert r.json == {
-        "data": {"a": [{"id": id_}], "b": [{"id": id_}], "c": [],}
-    }, r.data
+    assert r.json == {"data": {"a": [{"id": id_}], "b": [{"id": id_}], "c": []}}, r.data

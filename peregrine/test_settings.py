@@ -13,10 +13,7 @@ AUTH_ADMIN_CREDS = {
     "user_domain_name": "some_domain",
 }
 
-SUBMISSION = {
-    "bucket": "test_submission",
-    "host": "host",
-}
+SUBMISSION = {"bucket": "test_submission", "host": "host"}
 STORAGE = {"s3": {"keys": {}, "kwargs": {}}}
 STORAGE["s3"]["keys"]["host"] = {"access_key": "fake", "secret_key": "sooper_sekrit"}
 STORAGE["s3"]["kwargs"]["host"] = {}
@@ -34,10 +31,7 @@ PEREGRINE_HOST = "localhost"
 PEREGRINE_PORT = "443"
 
 # Slicing settings
-SLICING = {
-    "host": "localhost",
-    "gencode": "REPLACEME",
-}
+SLICING = {"host": "localhost", "gencode": "REPLACEME"}
 
 FLASK_SECRET_KEY = "flask_test_key"
 

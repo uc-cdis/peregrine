@@ -28,7 +28,7 @@ sys.path.insert(0, here)
 
 def pg_config():
     return dict(
-        host="localhost", user="test", password="test", database="automated_test",
+        host="localhost", user="test", password="test", database="automated_test"
     )
 
 
@@ -164,7 +164,7 @@ def es_setup(request):
 
     def es_teardown():
         es.indices.delete(
-            index=INDEX, ignore=404,  # ignores error if index doesn't exists
+            index=INDEX, ignore=404  # ignores error if index doesn't exists
         )
 
     request.addfinalizer(es_teardown)
