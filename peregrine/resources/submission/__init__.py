@@ -12,7 +12,7 @@ from cdiserrors import AuthZError
 import datamodelutils.models as models
 import flask
 
-from peregrine.auth import current_user, get_read_access_projects
+from peregrine.auth import current_user, get_read_access_resources
 import peregrine.blueprints
 from peregrine.resources.submission import graphql
 
@@ -60,10 +60,10 @@ def set_read_access_projects_for_public_endpoint():
 
 def set_read_access_projects():
     """
-    Assign the list of projects (as strings of project ids) for which the user
-    has read access to ``flask.g.read_access_projects``.
+    Assign the list of projects and subjects for which the user
+    has read access to ``flask.g.read_access_permissions``.
 
-    The user has read access, firstly, to the projects for which they directly
+    The user has read access, firstly, to the projects and subjects for which they directly
     have read permissions, and also to projects with availability type marked
     "Open".
 
@@ -78,9 +78,12 @@ def set_read_access_projects():
         assigns result from ``get_open_project_ids`` to
         ``flask.g.read_access_projects``.
     """
-    if not hasattr(flask.g, "read_access_projects"):
-        flask.g.read_access_projects = get_read_access_projects()
+    if not hasattr(flask.g, "read_access_permissions"):
+        read_access_resources = get_read_access_resources()
+        flask.g.read_access_permissions = read_access_resources
+        flask.g.read_access_projects = list(read_access_resources.keys())
         flask.g.read_access_projects.extend(get_open_project_ids())
+    
 
 
 @peregrine.blueprints.blueprint.route("/graphql", methods=["POST"])
