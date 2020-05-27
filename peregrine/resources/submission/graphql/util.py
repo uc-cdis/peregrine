@@ -137,7 +137,7 @@ def authorization_filter(q):
                 cls = q.entity()
                 q = q.reset_joinpoint()
             else:
-                 print("ERROR: node not found")
+                 print("ERROR: node not found parent of " + str(cls))
 
     if cls == psqlgraph.Node or hasattr(cls, "project_id"):
         # add the filter for project and subject according to the permission assigned to the user
