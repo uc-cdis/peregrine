@@ -119,12 +119,13 @@ def authorization_filter(q):
     """
     cls = q.entity()
     authLeafNode = capp.node_authz_entity
+    ands = []
 
     if cls != models.Project and cls != models.Program:
         # if the node is below the subject level than find its path to the subject node and join the needed tables
         if cls != authLeafNode:
             # Assuming there is only one father for each node
-            nodeType = list(cls._pg_links.keys())[0] # "inrgs"
+            nodeType = list(cls._pg_links.keys())[0] 
             path_tmp = nodeType
             tmp = cls._pg_links[nodeType]["dst_type"]
             while tmp != authLeafNode and tmp != models.Program:
@@ -133,11 +134,10 @@ def authorization_filter(q):
                 tmp = tmp._pg_links[nodeType]["dst_type"]
             if tmp == authLeafNode:
                 q = q.path(path_tmp)
+                cls = q.entity()
+                q = q.reset_joinpoint()
             else:
                  print("ERROR: node not found")
-
-    cls = q.entity()
-    ands = []        
 
     if cls == psqlgraph.Node or hasattr(cls, "project_id"):
         # add the filter for project and subject according to the permission assigned to the user
@@ -162,9 +162,6 @@ def authorization_filter(q):
     if cls.label == "project":
         # do not return unauthorized projects
         q = node.filter_project_project_id(q, list(fg.read_access_permissions.keys()), None)
-
-    print("STOP HERE")   
-    print(q, flush=True)
 
     return q
 
