@@ -150,6 +150,8 @@ def app_init(app):
             if i.lower() == app.node_authz_entity_name.lower():
                 attribute = getattr(mymodule, i)
                 app.node_authz_entity = attribute
+    else:
+        app.node_authz_entity = None
     
 
     app.logger.info("Initialization complete.")

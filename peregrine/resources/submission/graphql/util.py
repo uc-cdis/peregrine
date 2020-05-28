@@ -121,7 +121,7 @@ def authorization_filter(q):
     authLeafNode = capp.node_authz_entity
     ands = []
 
-    if cls != models.Project and cls != models.Program:
+    if cls != models.Project and cls != models.Program and authLeafNode is not None:
         # if the node is below the subject level than find its path to the subject node and join the needed tables
         if cls != authLeafNode:
             # Assuming there is only one father for each node
@@ -145,7 +145,7 @@ def authorization_filter(q):
             filter_group = list()
             filter_group.append(cls._props["project_id"].astext == key)
             
-            if '*' not in value:
+            if '*' not in value and authLeafNode is not None:
                 if cls != models.Project and cls != models.Program and len(value) > 0:
                     if cls == authLeafNode:
                         filter_group.append(cls._props["submitter_id"].astext.in_(value))
