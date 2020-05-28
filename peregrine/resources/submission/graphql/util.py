@@ -161,7 +161,7 @@ def authorization_filter(q):
 
     if cls.label == "project":
         # do not return unauthorized projects
-        q = node.filter_project_project_id(q, list(fg.read_access_permissions.keys()), None)
+        q = node.filter_project_project_id(q, fg.read_access_projects, None)
 
     return q
 

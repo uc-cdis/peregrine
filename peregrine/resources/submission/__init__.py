@@ -81,7 +81,7 @@ def set_read_access_projects():
     if not hasattr(flask.g, "read_access_permissions"):
         read_access_resources = get_read_access_resources()
         flask.g.read_access_permissions = read_access_resources
-        flask.g.read_access_projects = list(read_access_resources.keys())
+        flask.g.read_access_projects = list(set(read_access_resources.keys()))
         flask.g.read_access_projects.extend(get_open_project_ids())
     
 
