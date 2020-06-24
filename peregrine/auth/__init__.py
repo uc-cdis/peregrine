@@ -30,7 +30,7 @@ def resource_path_to_project_ids(resource_path):
 
     if len(parts) > 6 or (len(parts) > 2 and parts[2] != "projects") or (len(parts) > 4 and (flask.current_app.node_authz_entity_name is None or flask.current_app.node_authz_entity is None or parts[4] != (flask.current_app.node_authz_entity_name + "s"))):
         logger.warn(
-            "ignoring resource path {} because peregrine cannot handle a permission more granular than program/project level".format(
+            "ignoring resource path {} because peregrine cannot handle a permission more granular than program/project/node level".format(
                 resource_path
             )
         )
