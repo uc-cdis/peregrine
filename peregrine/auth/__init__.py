@@ -28,7 +28,7 @@ def resource_path_to_project_ids(resource_path):
     if resource_path != "/" and parts[0] != "programs":
         return []
 
-    if len(parts) > 6 or (len(parts) > 2 and parts[2] != "projects") or (len(parts) > 4 and (flask.current_app.node_authz_entity_name is None or flask.current_app.node_authz_entity is None or parts[4] != (flask.current_app.node_authz_entity_name + "s"))):
+    if len(parts) > 8 or (len(parts) > 2 and parts[2] != "projects") or (len(parts) > 4 and (flask.current_app.subject_entity is None or parts[4] != "persons")) or (len(parts) > 6 and (flask.current_app.node_authz_entity_name is None or flask.current_app.node_authz_entity is None or parts[6] != (flask.current_app.node_authz_entity_name + "s"))):
         logger.warn(
             "ignoring resource path {} because peregrine cannot handle a permission more granular than program/project/node level".format(
                 resource_path
@@ -77,11 +77,30 @@ def resource_path_to_project_ids(resource_path):
             return []
         return [ { 'project_id': program.name + "-" + project.code, 'node_id': '*' } for program in project.programs]
 
+
+    #
+    #
+    if len(parts) < 8:
+        program_name = parts[1]
+        project_code = parts[3]
+        node_submitter_id = parts[5]
+        node = (
+                flask.current_app.db.nodes(flask.current_app.subject_entity).props(submitter_id=node_submitter_id, project_id=program_name + "-" + project_code).first()
+            )
+        if not node:
+            logger.warn(
+                "node {} in resource path {} does not exist".format(
+                    node_submitter_id, resource_path
+                )
+            )
+            return []
+        return [ { 'project_id': node.project_id, 'node_id': node.submitter_id } ]
+
     # "/programs/[...]/projects/[...]/{node}s/{submitter_id}": access to a specific project's child node subbranch
-    # here, len(parts) == 6 and parts[4] == (flask.current_app.node_authz_entity_name + "s")
+    # here, len(parts) == 8 and parts[4] == (flask.current_app.node_authz_entity_name + "s")
     program_name = parts[1]
     project_code = parts[3]
-    node_submitter_id = parts[5]
+    node_submitter_id = parts[7]
     node = (
             flask.current_app.db.nodes(flask.current_app.node_authz_entity).props(submitter_id=node_submitter_id, project_id=program_name + "-" + project_code).first()
         )
@@ -124,6 +143,8 @@ def get_read_access_resources():
 
         sorted_resources = sorted(access_resources, key=itemgetter('project_id'))
         read_access_resources = {key:[item["node_id"] for item in list(group)] for key, group in itertools.groupby(sorted_resources, key=lambda x:x['project_id'])}
-        
+       
+    flask.current_app.logger.warn("FINALE GRUGNA") 
+    flask.current_app.logger.warn(read_access_resources)
     # return dictionary of resources with read permissions
     return read_access_resources
