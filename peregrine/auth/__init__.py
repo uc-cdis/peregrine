@@ -40,7 +40,7 @@ def resource_path_to_project_ids(resource_path):
     if len(parts) == 1:
         programs = flask.current_app.db.nodes(models.Program).all()
         return [
-            { project_id: program.name + "-" + project.code, node_id: '*' }
+            { 'project_id': program.name + "-" + project.code, 'node_id': '*' }
             for program in programs
             for project in program.projects
         ]
@@ -59,7 +59,7 @@ def resource_path_to_project_ids(resource_path):
                 )
             )
             return []
-        return [{ project_id: program.name + "-" + project.code, node_id: '*' } for project in program.projects]
+        return [{ 'project_id': program.name + "-" + project.code, 'node_id': '*' } for project in program.projects]
 
     # "/programs/[...]/projects/[...]" or "/programs/[...]/projects/[...]/{node}s": access to a specific project
     # access to all nodes in a project
@@ -78,8 +78,8 @@ def resource_path_to_project_ids(resource_path):
         return [ { 'project_id': program.name + "-" + project.code, 'node_id': '*' } for program in project.programs]
 
 
-    #
-    #
+    #"/programs/[...]/projects/[...]/persons/[...]" or "/programs/[...]/projects/[...]/persons/[...]/{node}s": access to a specific person
+    # access to a person in the project
     if len(parts) < 8:
         program_name = parts[1]
         project_code = parts[3]
@@ -94,6 +94,7 @@ def resource_path_to_project_ids(resource_path):
                 )
             )
             return []
+        # TODO we can handle this as person or return an array of all the subject under the person
         return [ { 'project_id': node.project_id, 'node_id': node.submitter_id } ]
 
     # "/programs/[...]/projects/[...]/{node}s/{submitter_id}": access to a specific project's child node subbranch
