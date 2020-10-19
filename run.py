@@ -104,10 +104,12 @@ def run_with_fake_authz():
     # "<program.name>-<project.code>") the user has access to.
     # Update it to mock specific access:
     user_projects = []
+    user_access = {}
     with patch(
-        "peregrine.resources.submission.get_read_access_projects",
-        return_value=user_projects,
+        "peregrine.resources.submission.get_read_access_resources",
+        return_value=user_access,
     ):
+        user_projects = list(set(user_access.keys()))
         run_for_development(debug=debug, threaded=True)
 
 

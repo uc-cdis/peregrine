@@ -14,6 +14,9 @@ from datamodelutils import models
 from gen3authz.client.arborist.errors import ArboristError
 import flask
 
+import itertools
+from operator import itemgetter
+
 
 logger = get_logger(__name__)
 
@@ -25,9 +28,9 @@ def resource_path_to_project_ids(resource_path):
     if resource_path != "/" and parts[0] != "programs":
         return []
 
-    if len(parts) > 4 or (len(parts) > 2 and parts[2] != "projects"):
+    if len(parts) > 8 or (len(parts) > 2 and parts[2] != "projects") or (len(parts) > 4 and (flask.current_app.subject_entity is None or parts[4] != "persons")) or (len(parts) > 6 and (flask.current_app.node_authz_entity_name is None or flask.current_app.node_authz_entity is None or parts[6] != (flask.current_app.node_authz_entity_name + "s"))):
         logger.warn(
-            "ignoring resource path {} because peregrine cannot handle a permission more granular than program/project level".format(
+            "ignoring resource path {} because peregrine cannot handle a permission more granular than program/project/node level".format(
                 resource_path
             )
         )
@@ -37,7 +40,7 @@ def resource_path_to_project_ids(resource_path):
     if len(parts) == 1:
         programs = flask.current_app.db.nodes(models.Program).all()
         return [
-            program.name + "-" + project.code
+            { 'project_id': program.name + "-" + project.code, 'node_id': '*' }
             for program in programs
             for project in program.projects
         ]
@@ -56,27 +59,64 @@ def resource_path_to_project_ids(resource_path):
                 )
             )
             return []
-        return [program.name + "-" + project.code for project in program.projects]
+        return [{ 'project_id': program.name + "-" + project.code, 'node_id': '*' } for project in program.projects]
 
-    # "/programs/[...]/projects/[...]": access to a specific project
-    # here, len(parts) == 4 and parts[2] == "projects"
+    # "/programs/[...]/projects/[...]" or "/programs/[...]/projects/[...]/{node}s": access to a specific project
+    # access to all nodes in a project
+    if len(parts) < 6:
+        project_code = parts[3]
+        project = (
+            flask.current_app.db.nodes(models.Project).props(code=project_code).first()
+        )
+        if not project:
+            logger.warn(
+                "project {} in resource path {} does not exist".format(
+                    project_code, resource_path
+                )
+            )
+            return []
+        return [ { 'project_id': program.name + "-" + project.code, 'node_id': '*' } for program in project.programs]
+
+
+    #"/programs/[...]/projects/[...]/persons/[...]" or "/programs/[...]/projects/[...]/persons/[...]/{node}s": access to a specific person
+    # access to a person in the project
+    if len(parts) < 8:
+        program_name = parts[1]
+        project_code = parts[3]
+        node_submitter_id = parts[5]
+        node = (
+                flask.current_app.db.nodes(flask.current_app.subject_entity).props(submitter_id=node_submitter_id, project_id=program_name + "-" + project_code).first()
+            )
+        if not node:
+            logger.warn(
+                "node {} in resource path {} does not exist".format(
+                    node_submitter_id, resource_path
+                )
+            )
+            return []
+        # TODO we can handle this as person or return an array of all the subject under the person
+        return [ { 'project_id': node.project_id, 'node_id': node.submitter_id } ]
+
+    # "/programs/[...]/projects/[...]/{node}s/{submitter_id}": access to a specific project's child node subbranch
+    # here, len(parts) == 8 and parts[4] == (flask.current_app.node_authz_entity_name + "s")
+    program_name = parts[1]
     project_code = parts[3]
-    project = (
-        flask.current_app.db.nodes(models.Project).props(code=project_code).first()
-    )
-    if not project:
+    node_submitter_id = parts[7]
+    node = (
+            flask.current_app.db.nodes(flask.current_app.node_authz_entity).props(submitter_id=node_submitter_id, project_id=program_name + "-" + project_code).first()
+        )
+    if not node:
         logger.warn(
-            "project {} in resource path {} does not exist".format(
-                project_code, resource_path
+            "node {} in resource path {} does not exist".format(
+                node_submitter_id, resource_path
             )
         )
         return []
-    return [program.name + "-" + project.code for program in project.programs]
+    return [ { 'project_id': node.project_id, 'node_id': node.submitter_id } ]
 
-
-def get_read_access_projects():
+def get_read_access_resources():
     """
-    Get all resources the user has read access to and parses the Arborist resource paths into a program.name and a project.code.
+    Get all resources the user has read access to and parses the Arborist resource paths into a program.name, project.code and node id.
     """
     try:
         mapping = flask.current_app.auth.auth_mapping(current_user.username)
@@ -90,10 +130,10 @@ def get_read_access_projects():
         mapping = {}
 
     with flask.current_app.db.session_scope():
-        read_access_projects = [
-            project_id
+        access_resources = [
+            node
             for resource_path, permissions in mapping.items()
-            for project_id in resource_path_to_project_ids(resource_path)
+            for node in resource_path_to_project_ids(resource_path)
             # ignore resource if no peregrine read access:
             if any(
                 permission.get("service") in ["*", "peregrine"]
@@ -102,5 +142,10 @@ def get_read_access_projects():
             )
         ]
 
-    # return unique project_ids
-    return list(set(read_access_projects))
+        sorted_resources = sorted(access_resources, key=itemgetter('project_id'))
+        read_access_resources = {key:[item["node_id"] for item in list(group)] for key, group in itertools.groupby(sorted_resources, key=lambda x:x['project_id'])}
+       
+    flask.current_app.logger.warn("FINALE GRUGNA") 
+    flask.current_app.logger.warn(read_access_resources)
+    # return dictionary of resources with read permissions
+    return read_access_resources

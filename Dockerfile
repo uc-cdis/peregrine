@@ -17,7 +17,9 @@ WORKDIR /$appname
 RUN python -m pip install --upgrade pip \
     && python -m pip install --upgrade setuptools \
     && pip --version \
-    && pip install -r requirements.txt
+    && pip install -r requirements.txt 
+    # && pip uninstall cryptography -y \
+    # && pip install cryptography==2.8
 
 RUN mkdir -p /var/www/$appname \
     && mkdir -p /var/www/.cache/Python-Eggs/ \

@@ -18,6 +18,7 @@ from sqlalchemy.orm import load_only
 
 import psqlgraph
 
+
 # from peregrine.resources.submission.constants import (
 #     FILTER_ACTIVE,
 # )
@@ -116,18 +117,75 @@ def authorization_filter(q):
         ``project_id`` while maintaining filter correctness.
 
     """
-
     cls = q.entity()
+    sub_cls = None
+    authLeafNode = capp.node_authz_entity
+    subjectNode = capp.subject_entity
+    ands = []
+
+
+    if cls != models.Project and cls != models.Program and cls != subjectNode and authLeafNode is not None:
+        # if the node is below the subject level than find its path to the subject node and join the needed tables
+        if cls != authLeafNode:
+            # Assuming there is only one father for each node
+            nodeType = list(cls._pg_links.keys())[0] 
+            path_tmp = nodeType
+            tmp = cls._pg_links[nodeType]["dst_type"]
+            while tmp != authLeafNode and tmp != models.Program:
+                nodeType = list(tmp._pg_links.keys())[0]
+                path_tmp = path_tmp + "." + nodeType 
+                tmp = tmp._pg_links[nodeType]["dst_type"]
+            if tmp == authLeafNode:
+                q = q.path(path_tmp)
+                cls = q.entity()
+
+                # q = q.path("subjects")
+                # sub_cls = q.entity()
+
+                # q = q.reset_joinpoint()
+            else:
+                 print("WARNING: node not found parent of " + str(cls))
+        if cls == authLeafNode:
+            q = q.path("persons")
+            sub_cls = q.entity()
+            q = q.reset_joinpoint()
 
     if cls == psqlgraph.Node or hasattr(cls, "project_id"):
-        q = q.filter(cls._props["project_id"].astext.in_(fg.read_access_projects))
+        # add the filter for project and subject according to the permission assigned to the user
+        for key,value in fg.read_access_permissions.items():
+            filter_group = list()
+            filter_group.append(cls._props["project_id"].astext == key)
+            
+            if '*' not in value and authLeafNode is not None:
+                if cls != models.Project and cls != models.Program and len(value) > 0:
+                    if cls == authLeafNode and sub_cls == subjectNode:
+                        filter_group.append(sa.or_(cls._props["submitter_id"].astext.in_(value), sub_cls._props["submitter_id"].astext.in_(value)))
+                    elif cls == subjectNode:
+                        q = q.path("subjects")
+                        temp_cls = q.entity()
+                        q = q.reset_joinpoint()
+
+                        filter_group.append(sa.or_(cls._props["submitter_id"].astext.in_(value), temp_cls._props["submitter_id"].astext.in_(value)))
+                        print("STOP HERE - check children")  
+                        print(list(cls._pg_backrefs.keys()), flush=True) 
+                        print(cls._pg_backrefs["subjects"], flush=True)
+                        print(cls._pg_backrefs["subjects"]["src_type"], flush=True)
+                    else:
+                        print("ERROR: node found has wrong structure: ")
+                        print(cls)
+    
+            if filter_group and len(filter_group) > 0:
+                ands.append(sa.and_(*filter_group).self_group())
+
+        if ands and len(ands) > 0:
+            q = q.filter(sa.or_(*ands))
 
     if cls.label == "project":
         # do not return unauthorized projects
         q = node.filter_project_project_id(q, fg.read_access_projects, None)
 
-    # if FILTER_ACTIVE:
-    #     q = active_project_filter(q)
+    print("STOP HERE")   
+    print(q, flush=True)
 
     return q
 
