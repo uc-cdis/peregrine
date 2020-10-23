@@ -14,6 +14,8 @@ from datamodelutils import models
 from gen3authz.client.arborist.errors import ArboristError
 import flask
 
+# import time
+
 import itertools
 from operator import itemgetter
 
@@ -84,40 +86,44 @@ def resource_path_to_project_ids(resource_path):
         program_name = parts[1]
         project_code = parts[3]
         node_submitter_id = parts[5]
-        node = (
-                flask.current_app.db.nodes(flask.current_app.subject_entity).props(submitter_id=node_submitter_id, project_id=program_name + "-" + project_code).first()
-            )
-        if not node:
-            logger.warn(
-                "node {} in resource path {} does not exist".format(
-                    node_submitter_id, resource_path
-                )
-            )
-            return []
+        # node = (
+        #         flask.current_app.db.nodes(flask.current_app.subject_entity).props(submitter_id=node_submitter_id, project_id=program_name + "-" + project_code).first()
+        #     )
+        # if not node:
+        #     logger.warn(
+        #         "node {} in resource path {} does not exist".format(
+        #             node_submitter_id, resource_path
+        #         )
+        #     )
+        #     return []
         # TODO we can handle this as person or return an array of all the subject under the person
-        return [ { 'project_id': node.project_id, 'node_id': node.submitter_id } ]
+        # return [ { 'project_id': node.project_id, 'node_id': node.submitter_id } ]
+        return [ { 'project_id': program_name + "-" + project_code, 'node_id': node_submitter_id } ]
 
     # "/programs/[...]/projects/[...]/{node}s/{submitter_id}": access to a specific project's child node subbranch
     # here, len(parts) == 8 and parts[4] == (flask.current_app.node_authz_entity_name + "s")
     program_name = parts[1]
     project_code = parts[3]
     node_submitter_id = parts[7]
-    node = (
-            flask.current_app.db.nodes(flask.current_app.node_authz_entity).props(submitter_id=node_submitter_id, project_id=program_name + "-" + project_code).first()
-        )
-    if not node:
-        logger.warn(
-            "node {} in resource path {} does not exist".format(
-                node_submitter_id, resource_path
-            )
-        )
-        return []
-    return [ { 'project_id': node.project_id, 'node_id': node.submitter_id } ]
+    # node = (
+    #         flask.current_app.db.nodes(flask.current_app.node_authz_entity).props(submitter_id=node_submitter_id, project_id=program_name + "-" + project_code).first()
+    #     )
+    # if not node:
+    #     logger.warn(
+    #         "node {} in resource path {} does not exist".format(
+    #             node_submitter_id, resource_path
+    #         )
+    #     )
+    #     return []
+    # return [ { 'project_id': node.project_id, 'node_id': node.submitter_id } ]
+    return [ { 'project_id': program_name + "-" + project_code, 'node_id': node_submitter_id } ]
 
 def get_read_access_resources():
     """
     Get all resources the user has read access to and parses the Arborist resource paths into a program.name, project.code and node id.
     """
+    # flask.current_app.logger.warn("MAP START")
+    # flask.current_app.logger.warn(time.time())
     try:
         mapping = flask.current_app.auth.auth_mapping(current_user.username)
     except ArboristError as e:
@@ -128,6 +134,9 @@ def get_read_access_resources():
             )
         )
         mapping = {}
+    # flask.current_app.logger.warn("MAP END")
+    # flask.current_app.logger.warn(time.time())
+    # flask.current_app.logger.warn(mapping)
 
     with flask.current_app.db.session_scope():
         access_resources = [
@@ -142,10 +151,13 @@ def get_read_access_resources():
             )
         ]
 
+        # flask.current_app.logger.warn("ORGANIZE END")
+        # flask.current_app.logger.warn(time.time())
+
         sorted_resources = sorted(access_resources, key=itemgetter('project_id'))
         read_access_resources = {key:[item["node_id"] for item in list(group)] for key, group in itertools.groupby(sorted_resources, key=lambda x:x['project_id'])}
        
-    flask.current_app.logger.warn("FINALE GRUGNA") 
-    flask.current_app.logger.warn(read_access_resources)
+    # flask.current_app.logger.warn("FINALE GRUGNA") 
+    # flask.current_app.logger.warn(read_access_resources)
     # return dictionary of resources with read permissions
     return read_access_resources
