@@ -123,6 +123,10 @@ def authorization_filter(q):
     subjectNode = capp.subject_entity
     ands = []
 
+    # print("AUTH FILTER")   
+    # print(cls, flush=True)
+    # print(subjectNode, flush=True)
+    # print(authLeafNode, flush=True)
 
     if cls != models.Project and cls != models.Program and cls != subjectNode and authLeafNode is not None:
         # if the node is below the subject level than find its path to the subject node and join the needed tables
@@ -151,40 +155,45 @@ def authorization_filter(q):
             q = q.reset_joinpoint()
 
     if cls == psqlgraph.Node or hasattr(cls, "project_id"):
-        # add the filter for project and subject according to the permission assigned to the user
-        for key,value in fg.read_access_permissions.items():
-            filter_group = list()
-            filter_group.append(cls._props["project_id"].astext == key)
-            
-            if '*' not in value and authLeafNode is not None:
-                if cls != models.Project and cls != models.Program and len(value) > 0:
-                    if cls == authLeafNode and sub_cls == subjectNode:
-                        filter_group.append(sa.or_(cls._props["submitter_id"].astext.in_(value), sub_cls._props["submitter_id"].astext.in_(value)))
-                    elif cls == subjectNode:
-                        q = q.path("subjects")
-                        temp_cls = q.entity()
-                        q = q.reset_joinpoint()
+        if len(fg.read_access_permissions.items()) < 1:
+            # case where the user has no permission at all, should deny access
+            q = q.filter(sa.sql.false())
+        else: 
+            # add the filter for project and subject according to the permission assigned to the user
+            for key,value in fg.read_access_permissions.items():
+                filter_group = list()
+                filter_group.append(cls._props["project_id"].astext == key)
+                
+                if '*' not in value and authLeafNode is not None:
+                    if cls != models.Project and cls != models.Program and len(value) > 0:
+                        if cls == authLeafNode and sub_cls == subjectNode:
+                            filter_group.append(sa.or_(cls._props["submitter_id"].astext.in_(value), sub_cls._props["submitter_id"].astext.in_(value)))
+                        elif cls == subjectNode:
+                            q = q.path("subjects")
+                            temp_cls = q.entity()
+                            q = q.reset_joinpoint()
 
-                        filter_group.append(sa.or_(cls._props["submitter_id"].astext.in_(value), temp_cls._props["submitter_id"].astext.in_(value)))
-                        print("STOP HERE - check children")  
-                        print(list(cls._pg_backrefs.keys()), flush=True) 
-                        print(cls._pg_backrefs["subjects"], flush=True)
-                        print(cls._pg_backrefs["subjects"]["src_type"], flush=True)
-                    else:
-                        print("ERROR: node found has wrong structure: ")
-                        print(cls)
-    
-            if filter_group and len(filter_group) > 0:
-                ands.append(sa.and_(*filter_group).self_group())
+                            filter_group.append(sa.or_(cls._props["submitter_id"].astext.in_(value), temp_cls._props["submitter_id"].astext.in_(value)))
+                            print("STOP HERE - check children")  
+                            print(list(cls._pg_backrefs.keys()), flush=True) 
+                            print(cls._pg_backrefs["subjects"], flush=True)
+                            print(cls._pg_backrefs["subjects"]["src_type"], flush=True)
+                        else:
+                            print("ERROR: node found has wrong structure: ")
+                            print(cls)
+        
+                if filter_group and len(filter_group) > 0:
+                    ands.append(sa.and_(*filter_group).self_group())
 
-        if ands and len(ands) > 0:
-            q = q.filter(sa.or_(*ands))
+            if ands and len(ands) > 0:
+                q = q.filter(sa.or_(*ands))
 
     if cls.label == "project":
         # do not return unauthorized projects
         q = node.filter_project_project_id(q, fg.read_access_projects, None)
 
     print("STOP HERE")   
+    print(fg.read_access_permissions, flush=True) # where false in case this is empty
     print(q, flush=True)
 
     return q
