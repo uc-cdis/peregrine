@@ -79,8 +79,9 @@ def set_read_access_projects():
         ``flask.g.read_access_projects``.
     """
     if not hasattr(flask.g, "read_access_projects"):
-        flask.g.read_access_projects = get_read_access_projects()
-        flask.g.read_access_projects.extend(get_open_project_ids())
+        flask.g.read_access_projects = list(
+            set(get_read_access_projects() + get_open_project_ids())
+        )
 
 
 @peregrine.blueprints.blueprint.route("/graphql", methods=["POST"])
