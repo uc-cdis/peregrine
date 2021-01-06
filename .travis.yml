@@ -1,4 +1,4 @@
-dist: trusty
+dist: xenial
 sudo: false
 language: python
 
@@ -11,9 +11,6 @@ cache:
 
 addons:
   postgresql: '9.4'
-
-services:
-  - elasticsearch
 
 before_install:
   # bust only the the part of the cache that we are frequently changing
