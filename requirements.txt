@@ -13,7 +13,7 @@ addict~=2.1
 Flask==1.1.1
 Flask-Cors==1.9.0
 gen3authz==0.2.1
-Jinja2==2.10.1
+Jinja2==2.11.3
 lxml==4.4.1
 MarkupSafe==0.23
 PyYAML==5.1
