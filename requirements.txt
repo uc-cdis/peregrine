@@ -40,3 +40,4 @@ git+https://git@github.com/uc-cdis/storage-client.git@1.0.0#egg=storageclient
 git+https://git@github.com/uc-cdis/graphql-core.git@cdis2.0.0#egg=graphql-core
 cdiserrors==0.1.2
 cdislogging==1.0.0
+cryptography>=3.3.2 # not directly required, pinned by Snyk to avoid a vulnerability
