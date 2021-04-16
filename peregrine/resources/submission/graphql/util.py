@@ -123,11 +123,6 @@ def authorization_filter(q):
     subjectNode = capp.subject_entity
     ands = []
 
-    # print("AUTH FILTER")   
-    # print(cls, flush=True)
-    # print(subjectNode, flush=True)
-    # print(authLeafNode, flush=True)
-
     if cls != models.Project and cls != models.Program and cls != subjectNode and authLeafNode is not None:
         # if the node is below the subject level than find its path to the subject node and join the needed tables
         if cls != authLeafNode:
@@ -142,11 +137,6 @@ def authorization_filter(q):
             if tmp == authLeafNode:
                 q = q.path(path_tmp)
                 cls = q.entity()
-
-                # q = q.path("subjects")
-                # sub_cls = q.entity()
-
-                # q = q.reset_joinpoint()
             else:
                  print("WARNING: node not found parent of " + str(cls))
         if cls == authLeafNode:
@@ -174,10 +164,6 @@ def authorization_filter(q):
                             q = q.reset_joinpoint()
 
                             filter_group.append(sa.or_(cls._props["submitter_id"].astext.in_(value), temp_cls._props["submitter_id"].astext.in_(value)))
-                            print("STOP HERE - check children")  
-                            print(list(cls._pg_backrefs.keys()), flush=True) 
-                            print(cls._pg_backrefs["subjects"], flush=True)
-                            print(cls._pg_backrefs["subjects"]["src_type"], flush=True)
                         else:
                             print("ERROR: node found has wrong structure: ")
                             print(cls)
@@ -191,10 +177,6 @@ def authorization_filter(q):
     if cls.label == "project":
         # do not return unauthorized projects
         q = node.filter_project_project_id(q, fg.read_access_projects, None)
-
-    print("STOP HERE")   
-    print(fg.read_access_permissions, flush=True) # where false in case this is empty
-    print(q, flush=True)
 
     return q
 

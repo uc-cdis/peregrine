@@ -149,7 +149,7 @@ def app_init(app):
         full_module_name = "datamodelutils.models"
         mymodule = importlib.import_module(full_module_name)
         for i in dir(mymodule):
-            app.logger.warn(i)
+            # TODO look at all the nodes between node_authz_entity_name and project to generalize
             if i.lower() == "person":
                 attribute = getattr(mymodule, i)
                 app.subject_entity  = attribute
