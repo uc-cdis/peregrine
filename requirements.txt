@@ -31,7 +31,7 @@ graphene==2.0.1
 graphql-relay==0.4.5
 promise==2.2.1
 Flask-SQLAlchemy-Session==1.1
-psqlgraph==3.0.0
+psqlgraph==3.0.1
 gen3datamodel==3.0.1
 cdis_oauth2client==1.0.0
 git+https://git@github.com/NCI-GDC/cdisutils.git@8a8e599fdab5ade9bd8c586132d974a102e5d72d#egg=cdisutils
