@@ -16,7 +16,7 @@ gen3authz==0.2.1
 Jinja2==2.10.1
 lxml==4.4.1
 MarkupSafe==0.23
-PyYAML==5.1
+PyYAML==5.4
 Werkzeug==0.16.0
 boto==2.36.0
 elasticsearch==1.2.0
