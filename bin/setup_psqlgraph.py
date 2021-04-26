@@ -41,7 +41,7 @@ def setup_database(
     print("Setting up test database")
 
     if not no_drop:
-        try_drop_test_data(user, database)
+        try_drop_test_data(user, database, host=host)
 
     engine = create_engine(
         "postgres://{user}@{host}/postgres".format(user=root_user, host=host)
