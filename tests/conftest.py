@@ -28,7 +28,10 @@ sys.path.insert(0, here)
 
 def pg_config():
     return dict(
-        host="localhost", user="test", password="test", database="automated_test"
+        host=_app.config["PSQLGRAPH"]["host"],
+        user=_app.config["PSQLGRAPH"]["user"],
+        password=_app.config["PSQLGRAPH"]["password"],
+        database=_app.config["PSQLGRAPH"]["database"],
     )
 
 
@@ -248,7 +251,7 @@ def mock_arborist_requests(request):
 
                 if function_name == "auth_mapping":
                     if not known_user:
-                        raise ArboristError("User does not exist in Arborist")
+                        raise ArboristError("User does not exist in Arborist", 401)
                     mocked_response.items = auth_mapping.items
 
                 if function_name == "create_resource":
