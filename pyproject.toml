@@ -50,7 +50,7 @@ pytest-flask = "^0.15"
 pytest-cov = "^2.8"
 Envelopes = "^0.4"
 indexclient = {git = "https://git@github.com/uc-cdis/indexclient.git", rev = "2.0.0"}
-sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "chore/python3"}
+sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "2021.05"}
 
 [tool.poetry.plugins."peregrine.modules"]
 "system" = "peregrine=peregrine.api:main"
