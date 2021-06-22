@@ -1,6 +1,5 @@
 bin/*
-dev-requirements.txt
+pyproject.toml
 peregrine/*
-requirements.txt
+poetry.lock
 run.py
-setup.py

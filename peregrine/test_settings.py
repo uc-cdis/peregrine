@@ -18,6 +18,7 @@ STORAGE = {"s3": {"keys": {}, "kwargs": {}}}
 STORAGE["s3"]["keys"]["host"] = {"access_key": "fake", "secret_key": "sooper_sekrit"}
 STORAGE["s3"]["kwargs"]["host"] = {}
 
+# Postgres
 PSQLGRAPH = {
     "host": "localhost",
     "user": "test",
