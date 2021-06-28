@@ -49,6 +49,7 @@ if __name__ == "__main__":
         args.user,
         args.password,
         args.database,
+        host=args.host,
         no_drop=args.no_drop,
         no_user=args.no_user,
     )
