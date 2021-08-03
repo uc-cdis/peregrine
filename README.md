@@ -6,17 +6,39 @@
 
 Query interface to get insights into data in Gen3 Commons
 
-## Setup
-
-```bash
-# Install requirements.
-pip install -r requirements.txt
-```
-
-
 ## API Documentation
 
 [OpenAPI documentation available here.](http://petstore.swagger.io/?url=https://raw.githubusercontent.com/uc-cdis/peregrine/master/openapis/swagger.yaml)
 
 YAML file for the OpenAPI documentation is found in the `openapi` folder (in
 the root directory); see the README in that folder for more details.
+
+## Developer Setup
+
+### Run
+
+```bash
+poetry install
+./run.py
+```
+
+### Test
+
+```bash
+python bin/setup_test_database.py --host postgres
+mkdir -p tests/resources/keys; cd tests/resources/keys; openssl genrsa -out test_private_key.pem 2048; openssl rsa -in test_private_key.pem -pubout -out test_public_key.pem; cd -
+```
+
+If needed, set environment variables to point to a specific Postgres instance.
+
+```bash
+export GDC_PG_HOST=postgres
+export GDC_PG_USER=postgres
+export GDC_PG_PASSWORD=""
+```
+
+Run tests.
+
+```bash
+poetry run pytest -vv --cov=peregrine --cov-report xml tests
+```
