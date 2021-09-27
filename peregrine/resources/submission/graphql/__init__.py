@@ -123,7 +123,10 @@ def execute_query(query, variables=None, app=None):
         return data, errors
     else:
         if result.errors:
-            errors = [err.message for err in result.errors]
+            errors = [
+                err.message if hasattr(err, "message") else str(err)
+                for err in result.errors
+            ]
         # Generate response
         if "TimeoutException" in errors:
             errors.append(TIMEOUT_MESSAGE.format(GRAPHQL_TIMEOUT))
