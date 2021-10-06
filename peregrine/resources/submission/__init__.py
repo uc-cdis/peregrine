@@ -153,7 +153,10 @@ def generate_schema_file(graphql_schema, app_logger):
             result = graphql_schema.execute(query)
             data = {"data": result.data}
             if result.errors:
-                data["errors"] = [err.message for err in result.errors]
+                data["errors"] = [
+                    err.message if hasattr(err, "message") else str(err)
+                    for err in result.errors
+                ]
             json.dump(data, f)
 
             end = int(round(time.time() - start))

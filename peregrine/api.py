@@ -213,7 +213,7 @@ def _log_and_jsonify_exception(e):
     if hasattr(e, "json") and e.json:
         return jsonify(**e.json), e.code
     else:
-        return jsonify(message=e.message), e.code
+        return jsonify(message=e.message if hasattr(e, "message") else str(e)), e.code
 
 
 app.register_error_handler(APIError, _log_and_jsonify_exception)
