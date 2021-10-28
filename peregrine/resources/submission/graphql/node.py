@@ -9,7 +9,7 @@ using the Graphene GraphQL library
 
 
 from flask import current_app as capp
-import dateutil
+from dateutil.parser import parse
 import flask
 import graphene
 import logging
@@ -28,21 +28,17 @@ from .util import (
     get_authorized_query,
     get_fields as util_get_fields,
     filtered_column_dict,
-    DEFAULT_LIMIT
+    DEFAULT_LIMIT,
 )
 
 from . import transaction
-from .traversal import (
-    subq_paths,
-)
+from .traversal import subq_paths
 
-from peregrine.resources.submission.constants import (
-    case_cache_enabled,
-)
+from peregrine.resources.submission.constants import case_cache_enabled
 
 logging.root.setLevel(level=logging.ERROR)
 
-COUNT_NAME = '_{}_count'
+COUNT_NAME = "_{}_count"
 __gql_object_classes = {}
 
 
@@ -72,24 +68,22 @@ def filter_project_project_id(q, value, info):
 
     subqs = []
     for project_id in project_ids:
-        split = project_id.split('-', 1)
+        split = project_id.split("-", 1)
         if len(split) == 2:
             program_name, project_code = split
-            subq = q.props(code=project_code)\
-                    .path('programs')\
-                    .props(name=program_name)
+            subq = q.props(code=project_code).path("programs").props(name=program_name)
             subqs.append(subq)
     if not subqs:
         q = q.filter(sa.sql.false())
     else:
-        q = capp.db.nodes(q.entity()).select_entity_from(sa.union_all(*[
-            sq.subquery().select() for sq in subqs
-        ]))
+        q = capp.db.nodes(q.entity()).select_entity_from(
+            sa.union_all(*[sq.subquery().select() for sq in subqs])
+        )
 
     return q
 
 
-def with_path_to(q, value, info, union=False, name='with_path_to'):
+def with_path_to(q, value, info, union=False, name="with_path_to"):
     """This will traverse any (any meaning any paths specified in the path
     generation heuristic which prunes some redundant/wandering paths)
     from the source entity to the given target type where it will
@@ -108,41 +102,41 @@ def with_path_to(q, value, info, union=False, name='with_path_to'):
         entry = dict(entry)
 
         # Check target type
-        dst_type = entry.pop('type', None)
+        dst_type = entry.pop("type", None)
         if not dst_type:
             raise RuntimeError(
-                'Please specify a {{type: <type>}} in the {} filter.'
-                .format(name))
+                "Please specify a {{type: <type>}} in the {} filter.".format(name)
+            )
 
         # Prevent traversal to Node interface
         if q.entity() is Node:
             raise RuntimeError(
-                '{} filter cannot be used with "node" interface'
-                .format(name))
+                '{} filter cannot be used with "node" interface'.format(name)
+            )
 
         # Define end of traversal filter
         def end_of_traversal_filter(q, entry=entry):
             if not entry:
                 return q
-            for key, val in entry.iteritems():
-                if key == 'id':
+            for key, val in entry.items():
+                if key == "id":
                     q = q.ids(val)
                 else:
                     q = q.filter(q.entity()._props.contains({key: val}))
             return q
 
         # Special case for traversing TO case
-        if case_cache_enabled() and dst_type == 'case':
+        if case_cache_enabled() and dst_type == "case":
             # Rely on shortcut link to case, if it doesn't exist, then
             # this entity does not relate to any cases
-            if hasattr(q.entity(), '_related_cases'):
-                subq = q.subq_path('_related_cases', end_of_traversal_filter)
+            if hasattr(q.entity(), "_related_cases"):
+                subq = q.subq_path("_related_cases", end_of_traversal_filter)
             else:
                 subq = q.filter(sa.sql.false())
 
         # Special case for traversing FROM case
-        elif case_cache_enabled() and q.entity().label == 'case':
-            link = '_related_{}'.format(dst_type)
+        elif case_cache_enabled() and q.entity().label == "case":
+            link = "_related_{}".format(dst_type)
             q = q.limit(None)
             if hasattr(q.entity(), link):
                 subq = q.subq_path(link, end_of_traversal_filter)
@@ -193,7 +187,7 @@ def apply_arg_quicksearch(q, args, info):
 
     """
 
-    search_phrase = args.get('quick_search', None)
+    search_phrase = args.get("quick_search", None)
     if not search_phrase:
         # Safety check to make sure that the quicksearch filter is
         # actually being used
@@ -205,7 +199,7 @@ def apply_arg_quicksearch(q, args, info):
     cls = q.entity()
 
     node_id_attr = sa.func.lower(cls.node_id)
-    sub_id_attr = cls._props['submitter_id'].astext
+    sub_id_attr = cls._props["submitter_id"].astext
 
     # Search for ids that contain the search_phrase
     node_id_query = q.filter(node_id_attr.contains(search_phrase))
@@ -227,7 +221,7 @@ def apply_query_args(q, args, info):
         info: graphene object that holds the query's arguments, models and requested fields.
     """
 
-    pg_props = set(getattr(q.entity(), '__pg_properties__', {}).keys())
+    pg_props = set(getattr(q.entity(), "__pg_properties__", {}).keys())
 
     # *: filter for those with matching dictionary properties
     for key in set(args.keys()).intersection(pg_props):
@@ -243,129 +237,138 @@ def apply_query_args(q, args, info):
         field_type = q.entity().__pg_properties__[key][0]
         if field_type == list:
             # This field has type list. Return supersets of input (i.e. do AND filter)
-            q = q.filter(*[q.entity()._props[key].astext.like('%"'+v+'"%') for v in val])
+            q = q.filter(
+                *[q.entity()._props[key].astext.like('%"' + v + '"%') for v in val]
+            )
         else:
             # This field has scalar type. Treat input as several queries (i.e. do OR filter)
             if field_type == bool:
                 # convert True to "true"; False to "false"
                 val = [str(v).lower() for v in val]
-            q = q.filter(q.entity()._props[key].astext.in_([
-                str(v) for v in val]))
+            q = q.filter(q.entity()._props[key].astext.in_([str(v) for v in val]))
 
     # not: nest a NOT filter for props, filters out matches
-    not_props = args.get('not', {})
-    not_props = {item.keys()[0]: item.values()[0] for item in not_props}
+    not_props = args.get("not", {})
+    not_props = {list(item.keys())[0]: list(item.values())[0] for item in not_props}
     for key in set(not_props.keys()).intersection(pg_props):
         val = not_props[key]
         val = val if isinstance(val, list) else [val]
-        q = q.filter(sa.not_(q.entity()._props[key].astext.in_([
-            str(v) for v in val])))
+        q = q.filter(sa.not_(q.entity()._props[key].astext.in_([str(v) for v in val])))
 
     # ids: filter for those with ids in a given list
-    if 'id' in args:
-        q = q.ids(args.get('id'))
+    if "id" in args:
+        q = q.ids(args.get("id"))
 
     # ids: filter for those with ids in a given list (alias of `id` filter)
-    if 'ids' in args:
-        q = q.ids(args.get('ids'))
+    if "ids" in args:
+        q = q.ids(args.get("ids"))
 
     # submitter_id: filter for those with submitter_ids in a given list
-    if q.entity().label == 'node' and 'submitter_id' in args:
-        val = args['submitter_id']
+    if q.entity().label == "node" and "submitter_id" in args:
+        val = args["submitter_id"]
         val = val if isinstance(val, list) else [val]
-        q = q.filter(q.entity()._props['submitter_id'].astext.in_([str(v) for v in val]))
+        q = q.filter(
+            q.entity()._props["submitter_id"].astext.in_([str(v) for v in val])
+        )
 
     # quick_search: see ``apply_arg_quicksearch``
-    if 'quick_search' in args:
+    if "quick_search" in args:
         q = apply_arg_quicksearch(q, args, info)
 
     # created_after: filter by created datetime
-    if 'created_after' in args:
-        q = q.filter(q.entity()._props['created_datetime'].cast(sa.DateTime)
-                     > dateutil.parser.parse(args['created_after']))
+    if "created_after" in args:
+        q = q.filter(
+            q.entity()._props["created_datetime"].cast(sa.String).cast(sa.DateTime)
+            > parse(args["created_after"])
+        )
 
     # created_before: filter by created datetime
-    if 'created_before' in args:
-        q = q.filter(q.entity()._props['created_datetime'].cast(sa.DateTime)
-                     < dateutil.parser.parse(args['created_before']))
+    if "created_before" in args:
+        q = q.filter(
+            q.entity()._props["created_datetime"].cast(sa.String).cast(sa.DateTime)
+            < parse(args["created_before"])
+        )
 
     # updated_after: filter by update datetime
-    if 'updated_after' in args:
-        q = q.filter(q.entity()._props['updated_datetime'].cast(sa.DateTime)
-                     > dateutil.parser.parse(args['updated_after']))
+    if "updated_after" in args:
+        q = q.filter(
+            q.entity()._props["updated_datetime"].cast(sa.String).cast(sa.DateTime)
+            > parse(args["updated_after"])
+        )
 
     # updated_before: filter by update datetime
-    if 'updated_before' in args:
-        q = q.filter(q.entity()._props['updated_datetime'].cast(sa.DateTime)
-                     < dateutil.parser.parse(args['updated_before']))
+    if "updated_before" in args:
+        q = q.filter(
+            q.entity()._props["updated_datetime"].cast(sa.String).cast(sa.DateTime)
+            < parse(args["updated_before"])
+        )
 
     # with_links: (AND) (filter for those with given links)
-    if 'with_links' in args:
-        for link in set(args['with_links']):
+    if "with_links" in args:
+        for link in set(args["with_links"]):
             q = q.filter(get_link_attr(q.entity(), link).any())
 
     # with_links_any: (OR) (filter for those with given links)
-    if 'with_links_any' in args:
-        links = set(args['with_links_any'])
+    if "with_links_any" in args:
+        links = set(args["with_links_any"])
         if links:
             subqs = []
             for link in links:
                 subqs.append(q.filter(get_link_attr(q.entity(), link).any()))
-            q = capp.db.nodes(q.entity()).select_entity_from(sa.union_all(*[
-                subq.subquery().select() for subq in subqs
-            ]))
+            q = capp.db.nodes(q.entity()).select_entity_from(
+                sa.union_all(*[subq.subquery().select() for subq in subqs])
+            )
 
     # without_links (AND) (filter for those missing given links)
-    if 'without_links' in args:
-        for link in args['without_links']:
+    if "without_links" in args:
+        for link in args["without_links"]:
             q = q.filter(sa.not_(get_link_attr(q.entity(), link).any()))
 
     # with_path_to: (filter for those with a given traversal)
-    if 'with_path_to' in args:
-        q = with_path_to(q, args['with_path_to'], info, union=False)
+    if "with_path_to" in args:
+        q = with_path_to(q, args["with_path_to"], info, union=False)
 
-    if 'with_path_to_any' in args:
-        q = with_path_to(q, args['with_path_to_any'], info, union=True)
+    if "with_path_to_any" in args:
+        q = with_path_to(q, args["with_path_to_any"], info, union=True)
 
     # without_path_to: (filter for those missing a given traversal)
-    if 'without_path_to' in args:
-        q = q.except_(with_path_to(
-            q, args['without_path_to'], info, name='without_path_to'))
+    if "without_path_to" in args:
+        q = q.except_(
+            with_path_to(q, args["without_path_to"], info, name="without_path_to")
+        )
 
     # project.project_id: Filter projects by logical project_id
-    if 'project_id' in args and q.entity().label == 'project':
+    if "project_id" in args and q.entity().label == "project":
         # Special case for filtering project by project_id
-        q = filter_project_project_id(q, args['project_id'], info)
+        q = filter_project_project_id(q, args["project_id"], info)
 
     # order_by_asc: Apply an ordering to the results
     # (ascending). NOTE: should be after all other non-ordering,
     # before limit, offset queries
-    if 'order_by_asc' in args:
-        key = args['order_by_asc']
-        if key == 'id':
+    if "order_by_asc" in args:
+        key = args["order_by_asc"]
+        if key == "id":
             q = q.order_by(q.entity().node_id)
-        elif key in ['type']:
+        elif key in ["type"]:
             pass
         elif key in q.entity().__pg_properties__:
             q = q.order_by(q.entity()._props[key])
         else:
-            raise RuntimeError('Cannot order by {} on {}'.format(
-                key, q.entity().label))
+            raise RuntimeError("Cannot order by {} on {}".format(key, q.entity().label))
 
     # order_by_desc: Apply an ordering to the results (descending)
     # NOTE: should be after all other non-ordering, before limit,
     # offset queries
-    if 'order_by_desc' in args:
-        key = args['order_by_desc']
-        if key == 'id':
+    if "order_by_desc" in args:
+        key = args["order_by_desc"]
+        if key == "id":
             q = q.order_by(q.entity().node_id.desc())
-        elif key in ['type']:
+        elif key in ["type"]:
             pass
         elif key in q.entity().__pg_properties__:
             q = q.order_by(q.entity()._props[key].desc())
         else:
-            raise RuntimeError('Cannot order by {} on {}'.format(
-                key, q.entity().label))
+            raise RuntimeError("Cannot order by {} on {}".format(key, q.entity().label))
 
     # first: truncate result list
     q = apply_arg_limit(q.from_self(), args, info)
@@ -378,6 +381,7 @@ def apply_query_args(q, args, info):
 
 # ======================================================================
 # Node interface
+
 
 def load_node(n, info, fields_depend_on_columns=None):
     """Turns a node into a dictionary (including ``type, id``).  This
@@ -400,6 +404,7 @@ def load_node(n, info, fields_depend_on_columns=None):
         type=n.label,
     )
 
+
 class Node(graphene.Interface):
     """The query object that represents the psqlgraph.Node base"""
 
@@ -411,9 +416,7 @@ class Node(graphene.Interface):
     updated_datetime = graphene.String()
 
     # These fields depend on these columns being loaded
-    fields_depend_on_columns = {
-        "project_id": {"program", "code"},
-    }
+    fields_depend_on_columns = {"project_id": {"program", "code"}}
 
 
 def resolve_node(self, info, **args):
@@ -426,11 +429,11 @@ def resolve_node(self, info, **args):
     """
 
     # get the list of categories queried by the user
-    if args.get('category'):
+    if args.get("category"):
         subclasses_labels = [
             node
             for node in dictionary.schema
-            if dictionary.schema[node]['category'] in args['category']
+            if dictionary.schema[node]["category"] in args["category"]
         ]
         subclasses = [
             node
@@ -441,7 +444,12 @@ def resolve_node(self, info, **args):
     else:
         q_all = query_node_with_args(args, info)
 
-    return [__gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns)) for n in q_all]
+    return [
+        __gql_object_classes[n.label](
+            **load_node(n, info, Node.fields_depend_on_columns)
+        )
+        for n in q_all
+    ]
 
 
 def query_with_args(classes, args, info):
@@ -453,20 +461,22 @@ def query_with_args(classes, args, info):
         args: dictionary of the arguments passed to the query.
         info: graphene object that holds the query's arguments, models and requested fields.
     """
-    of_types = [psqlgraph.Node.get_subclass(label)
-                for label in set(args.get('of_type', []))]
+    of_types = [
+        psqlgraph.Node.get_subclass(label) for label in set(args.get("of_type", []))
+    ]
     rv = []
     for cls in classes:
         if not of_types or cls in of_types:
             q = get_authorized_query(cls)
-            if 'project_id' in args:
-                q = q.filter(q.entity()._props['project_id'].astext
-                             == args['project_id'])
+            if "project_id" in args:
+                q = q.filter(
+                    q.entity()._props["project_id"].astext == args["project_id"]
+                )
 
             rv.extend(apply_query_args(q, args, info).all())
     # apply_arg_limit() applied the limit to individual query results, but we
     # are concatenating several query results so we need to apply it again
-    limit = args.get('first', DEFAULT_LIMIT)
+    limit = args.get("first", DEFAULT_LIMIT)
     if limit > 0:
         return rv[:limit]
     else:
@@ -482,14 +492,14 @@ def query_node_with_args(args, info):
 
     XXX: These two methods may be rewritten in a more efficient and consistent way.
     """
-    if 'of_type' in args:
+    if "of_type" in args:
         # TODO: (jsm) find a better solution.  currently this filter
         # will do a subquery for each type AND LOAD THE IDS of all the
         # nodes, then perform a second query given those ids.  We
         # cannot do a ``select_from`` because it does not work
         # properly for the abstract base class with concrete table
         # inheritance (a.k.a it can't find the colums for Node)
-        of_types = set(args['of_type'])
+        of_types = set(args["of_type"])
         ids = []
         for label in of_types:
             entity = psqlgraph.Node.get_subclass(label)
@@ -515,7 +525,6 @@ def lookup_graphql_type(T):
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
-        long: graphene.Float,
         int: graphene.Int,
         list: graphene.List(graphene.String),
     }.get(T, graphene.String)
@@ -528,22 +537,22 @@ def lookup_graphql_type(T):
 def get_node_class_property_args(cls, not_props_io={}):
     args = {
         name: lookup_graphql_type(types[0])
-        for name, types in cls.__pg_properties__.iteritems()
+        for name, types in cls.__pg_properties__.items()
     }
-    if cls.label == 'project':
-        args['project_id'] = graphene.List(graphene.String)
+    if cls.label == "project":
+        args["project_id"] = graphene.List(graphene.String)
 
-    not_props_io_name = 'NotPropertiesInput_{}'.format(cls.label)
+    not_props_io_name = "NotPropertiesInput_{}".format(cls.label)
     if not_props_io_name not in not_props_io:
         args_not = {}
         args_not.update(get_node_class_property_attrs(cls))
         not_props_io[not_props_io_name] = type(
-            not_props_io_name,
-            (graphene.InputObjectType,),
-            args_not,
+            not_props_io_name, (graphene.InputObjectType,), args_not
         )
-        globals()[not_props_io[not_props_io_name].__name__] = not_props_io[not_props_io_name]
-    args['not'] = graphene.List(__name__ + '.' + not_props_io_name)
+        globals()[not_props_io[not_props_io_name].__name__] = not_props_io[
+            not_props_io_name
+        ]
+    args["not"] = graphene.List(__name__ + "." + not_props_io_name)
     return args
 
 
@@ -565,31 +574,36 @@ def get_base_node_args():
 
 
 def get_node_interface_args():
-    return dict(get_base_node_args(), **dict(
-        of_type=graphene.List(graphene.String),
-        project_id=graphene.String(),
-        category=graphene.String(),
-    ))
+    return dict(
+        get_base_node_args(),
+        **dict(
+            of_type=graphene.List(graphene.String),
+            project_id=graphene.String(),
+            category=graphene.String(),
+        )
+    )
 
 
 def get_node_class_args(cls, _cache={}, _type_cache={}):
-    if 'WithPathToInput' not in _type_cache:
+    if "WithPathToInput" not in _type_cache:
         WithPathToInput = get_withpathto_type()
-        _type_cache['WithPathToInput'] = WithPathToInput
+        _type_cache["WithPathToInput"] = WithPathToInput
     else:
-        WithPathToInput = _type_cache['WithPathToInput']
+        WithPathToInput = _type_cache["WithPathToInput"]
     if cls in _cache:
         return _cache[cls]
 
     args = get_base_node_args()
-    args.update(dict(
-        with_links=graphene.List(graphene.String),
-        with_links_any=graphene.List(graphene.String),
-        without_links=graphene.List(graphene.String),
-        with_path_to=graphene.List(WithPathToInput),
-        with_path_to_any=graphene.List(WithPathToInput),
-        without_path_to=graphene.List(WithPathToInput),
-    ))
+    args.update(
+        dict(
+            with_links=graphene.List(graphene.String),
+            with_links_any=graphene.List(graphene.String),
+            without_links=graphene.List(graphene.String),
+            with_path_to=graphene.List(WithPathToInput),
+            with_path_to_any=graphene.List(WithPathToInput),
+            without_path_to=graphene.List(WithPathToInput),
+        )
+    )
 
     # For dictionary fields with scalar types, e.g. submitter_id, we accept from the user
     # either a single scalar arg or a list of scalar args. The latter is treated as a bulk query
@@ -606,9 +620,7 @@ def get_node_class_args(cls, _cache={}, _type_cache={}):
     # See comments at def apply_query_args().
 
     property_args = {
-        name: graphene.List(val)
-        if not isinstance(val, graphene.List)
-        else val
+        name: graphene.List(val) if not isinstance(val, graphene.List) else val
         for name, val in get_node_class_property_args(cls).items()
     }
     args.update(property_args)
@@ -634,17 +646,22 @@ def get_node_class_property_attrs(cls, _cache={}):
 
     attrs = {
         name: graphene.Field(lookup_graphql_type(types[0]))
-        for name, types in cls.__pg_properties__.iteritems()
+        for name, types in cls.__pg_properties__.items()
     }
-    attrs['resolve_type'] = resolve_type
+    attrs["resolve_type"] = resolve_type
 
-    if cls.label == 'project':
+    if cls.label == "project":
+
         def resolve_project_id(self, info, *args):
-            program = get_authorized_query(md.Program).subq_path(
-                'projects', lambda q: q.ids(self.id)).one()
-            return '{}-{}'.format(program.name, self.code)
-        attrs['project_id'] = graphene.String()
-        attrs['resolve_project_id'] = resolve_project_id
+            program = (
+                get_authorized_query(md.Program)
+                .subq_path("projects", lambda q: q.ids(self.id))
+                .one()
+            )
+            return "{}-{}".format(program.name, self.code)
+
+        attrs["project_id"] = graphene.String()
+        attrs["resolve_project_id"] = resolve_project_id
 
     attrs.update(get_node_class_special_attrs(cls))
 
@@ -668,82 +685,87 @@ def get_node_class_special_attrs(cls):
 
 
 def get_node_class_link_attrs(cls):
-    attrs = {name: graphene.List(
-        __name__ + '.' + link['type'].label,
-        args=get_node_class_args(link['type']),
-    ) for name, link in cls._pg_edges.iteritems()}
+    attrs = {
+        name: graphene.List(
+            __name__ + "." + link["type"].label, args=get_node_class_args(link["type"])
+        )
+        for name, link in cls._pg_edges.items()
+    }
 
     def resolve__related_cases(self, info, args):
         if not case_cache_enabled():
-	    return []
+            return []
         # Don't resolve related cases for cases
-        if cls.label == 'case':
+        if cls.label == "case":
             return []
 
-        q = with_path_to(get_authorized_query(md.Case), {
-            'type': cls.label,
-            'id': self.id,
-        }, info, name='related_cases')
-        qcls = __gql_object_classes['case']
+        q = with_path_to(
+            get_authorized_query(md.Case),
+            {"type": cls.label, "id": self.id},
+            info,
+            name="related_cases",
+        )
+        qcls = __gql_object_classes["case"]
         try:
-            return [qcls(**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
+            return [
+                qcls(**load_node(n, info, Node.fields_depend_on_columns))
+                for n in q.all()
+            ]
         except Exception as e:
             capp.logger.exception(e)
             raise
 
     if case_cache_enabled():
-        attrs['resolve__related_cases'] = resolve__related_cases
-        attrs['_related_cases'] = graphene.List(
-            'peregrine.resources.submission.graphql.node.case',
-            args=get_node_class_args(md.Case)
+        attrs["resolve__related_cases"] = resolve__related_cases
+        attrs["_related_cases"] = graphene.List(
+            "peregrine.resources.submission.graphql.node.case",
+            args=get_node_class_args(md.Case),
         )
 
     for link in cls._pg_edges:
         name = COUNT_NAME.format(link)
-        attrs[name] = graphene.Field(
-            graphene.Int, args=get_node_class_args(cls))
+        attrs[name] = graphene.Field(graphene.Int, args=get_node_class_args(cls))
 
     # transaction logs that affected this node
     def resolve_transaction_logs_count(self, info, **args):
-        args = dict(args, **{'entities': [self.id]})
+        args = dict(args, **{"entities": [self.id]})
         return transaction.resolve_transaction_log_count(self, info, **args)
 
-    attrs['resolve__transaction_logs_count'] = resolve_transaction_logs_count
-    attrs['_transaction_logs_count'] = graphene.Field(
-        graphene.Int,
-        args=transaction.get_transaction_log_args(),
+    attrs["resolve__transaction_logs_count"] = resolve_transaction_logs_count
+    attrs["_transaction_logs_count"] = graphene.Field(
+        graphene.Int, args=transaction.get_transaction_log_args()
     )
 
     def resolve_transaction_logs(self, info, **args):
-        args = dict(args, **{'entities': [self.id]})
+        args = dict(args, **{"entities": [self.id]})
         return transaction.resolve_transaction_log(self, info, **args)
 
-    attrs['resolve__transaction_logs'] = resolve_transaction_logs
-    attrs['_transaction_logs'] = graphene.List(
-        transaction.TransactionLog,
-        args=transaction.get_transaction_log_args(),
+    attrs["resolve__transaction_logs"] = resolve_transaction_logs
+    attrs["_transaction_logs"] = graphene.List(
+        transaction.TransactionLog, args=transaction.get_transaction_log_args()
     )
 
     _links_args = get_node_interface_args()
-    _links_args.pop('of_type', None)
-    attrs['_links'] = graphene.List(Node, args=_links_args)
+    _links_args.pop("of_type", None)
+    attrs["_links"] = graphene.List(Node, args=_links_args)
 
     return attrs
 
 
 def get_node_class_link_resolver_attrs(cls):
     link_resolver_attrs = {}
-    for link_name, link in cls._pg_edges.iteritems():
+    for link_name, link in cls._pg_edges.items():
 
         def link_query(self, info, cls=cls, link=link, **args):
             try:
-                target, backref = link['type'], link['backref']
+                target, backref = link["type"], link["backref"]
                 # Subquery for neighor connected to node
-                sq = get_authorized_query(target).filter(
-                    getattr(target, backref)
-                    .any(node_id=self.id)).subquery()
-                q = get_authorized_query(target).filter(
-                    target.node_id == sq.c.node_id)
+                sq = (
+                    get_authorized_query(target)
+                    .filter(getattr(target, backref).any(node_id=self.id))
+                    .subquery()
+                )
+                q = get_authorized_query(target).filter(target.node_id == sq.c.node_id)
                 q = apply_query_args(q, args, info)
                 return q
             except Exception as e:
@@ -754,12 +776,16 @@ def get_node_class_link_resolver_attrs(cls):
         def resolve_link(self, info, cls=cls, link=link, **args):
             try:
                 q = link_query(self, info, cls=cls, link=link, **args)
-                qcls = __gql_object_classes[link['type'].label]
-                return [qcls(**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
+                qcls = __gql_object_classes[link["type"].label]
+                return [
+                    qcls(**load_node(n, info, Node.fields_depend_on_columns))
+                    for n in q.all()
+                ]
             except Exception as e:
                 capp.logger.exception(e)
                 raise
-        lr_name = 'resolve_{}'.format(link_name)
+
+        lr_name = "resolve_{}".format(link_name)
         resolve_link.__name__ = lr_name
         link_resolver_attrs[lr_name] = resolve_link
 
@@ -767,40 +793,47 @@ def get_node_class_link_resolver_attrs(cls):
         def resolve_link_count(self, info, cls=cls, link=link, **args):
             try:
                 q = link_query(self, info, cls=cls, link=link, **args)
-                q = q.with_entities(sa.distinct(link['type'].node_id))
+                q = q.with_entities(sa.distinct(link["type"].node_id))
                 q = q.limit(None)
                 return clean_count(q)
             except Exception as e:
                 capp.logger.exception(e)
                 raise
-        lr_count_name = 'resolve_{}'.format(COUNT_NAME.format(link_name))
+
+        lr_count_name = "resolve_{}".format(COUNT_NAME.format(link_name))
         resolve_link_count.__name__ = lr_count_name
         link_resolver_attrs[lr_count_name] = resolve_link_count
 
         # Arbitrary link
         def resolve_links(self, info, cls=cls, **args):
             try:
-                edge_out_sq = capp.db.edges().filter(
-                    psqlgraph.Edge.src_id == self.id).subquery()
-                edge_in_sq = capp.db.edges().filter(
-                    psqlgraph.Edge.dst_id == self.id).subquery()
+                edge_out_sq = (
+                    capp.db.edges().filter(psqlgraph.Edge.src_id == self.id).subquery()
+                )
+                edge_in_sq = (
+                    capp.db.edges().filter(psqlgraph.Edge.dst_id == self.id).subquery()
+                )
                 q1 = get_authorized_query(psqlgraph.Node).filter(
-                    psqlgraph.Node.node_id == edge_in_sq.c.src_id)
+                    psqlgraph.Node.node_id == edge_in_sq.c.src_id
+                )
                 q2 = get_authorized_query(psqlgraph.Node).filter(
-                    psqlgraph.Node.node_id == edge_out_sq.c.dst_id)
+                    psqlgraph.Node.node_id == edge_out_sq.c.dst_id
+                )
                 q1 = apply_query_args(q1, args, info).limit(None)
                 q2 = apply_query_args(q2, args, info).limit(None)
                 q = q1.union(q2)
                 apply_arg_limit(q, args, info)
                 return [
-                    __gql_object_classes[n.label](**load_node(n, info, Node.fields_depend_on_columns))
+                    __gql_object_classes[n.label](
+                        **load_node(n, info, Node.fields_depend_on_columns)
+                    )
                     for n in q.all()
                 ]
             except Exception as e:
                 capp.logger.exception(e)
                 raise
 
-        lr_links_name = 'resolve__links'
+        lr_links_name = "resolve__links"
         resolve_link_count.__name__ = lr_links_name
         link_resolver_attrs[lr_links_name] = resolve_links
 
@@ -809,14 +842,15 @@ def get_node_class_link_resolver_attrs(cls):
 
 def create_node_class_gql_object(cls):
     def _make_inner_meta_type():
-        return type('Meta', (), {'interfaces': (Node, )})
+        return type("Meta", (), {"interfaces": (Node,)})
+
     attrs = {}
     attrs.update(get_node_class_property_attrs(cls))
     attrs.update(get_node_class_link_attrs(cls))
     attrs.update(get_node_class_link_resolver_attrs(cls))
-    attrs['Meta'] = _make_inner_meta_type()
+    attrs["Meta"] = _make_inner_meta_type()
 
-    gql_object = type(cls.label, (graphene.ObjectType, ), attrs)
+    gql_object = type(cls.label, (graphene.ObjectType,), attrs)
 
     # Add this class to the global namespace to graphene can load it
     globals()[gql_object.__name__] = gql_object
@@ -839,25 +873,25 @@ class NodeCounter:
 
     @classmethod
     def current(cls):
-        if not hasattr(flask.g, 'node_counter'):
+        if not hasattr(flask.g, "node_counter"):
             flask.g.node_counter = cls()
         return flask.g.node_counter
 
     def add_count(self, cls, args):
         # escape non-trivial cases defined in `authorization_filter`
-        if cls != psqlgraph.Node and not hasattr(cls, 'project_id'):
+        if cls != psqlgraph.Node and not hasattr(cls, "project_id"):
             return None
-        if cls.label == 'project':
+        if cls.label == "project":
             return None
         # escape if project_id is not the only args
-        if list(args.keys()) != ['project_id']:
+        if list(args.keys()) != ["project_id"]:
             return None
 
         # extract project_id and guarantee permission
-        project_id = args['project_id']
+        project_id = args["project_id"]
         if isinstance(project_id, (list, tuple)) and len(project_id) == 1:
             project_id = project_id[0]
-        if not isinstance(project_id, (str, unicode)):
+        if not isinstance(project_id, str):
             # escape if multiple project_ids are given
             return None
         if project_id not in flask.g.read_access_projects:
@@ -866,34 +900,37 @@ class NodeCounter:
         # group project_id and name them
         project_id_name = self._project_ids.get(project_id, None)
         if project_id_name is None:
-            project_id_name = 'p_%s' % len(self._project_ids)
+            project_id_name = "p_%s" % len(self._project_ids)
             self._project_ids[project_id] = project_id_name
 
         # prepare the subquery and promise
-        key = 'c_%s' % len(self._queries)
+        key = "c_%s" % len(self._queries)
         p = Promise()
-        self._queries.append((
-            key,
-            p,
-            "(SELECT count(*) FROM %s WHERE _props->>'project_id' = :%s) AS %s"
-            % (cls.__tablename__, project_id_name, key),
-        ))
+        self._queries.append(
+            (
+                key,
+                p,
+                "(SELECT count(*) FROM %s WHERE _props->>'project_id' = :%s) AS %s"
+                % (cls.__tablename__, project_id_name, key),
+            )
+        )
         return p
 
     def run(self, session):
         if not self._queries:
             return
 
-        sql = 'SELECT %s;' % ', '.join(count for _, _, count in self._queries)
+        sql = "SELECT %s;" % ", ".join(count for _, _, count in self._queries)
         results = session.execute(
-            sql, dict((v, k) for k, v in self._project_ids.iteritems())).fetchone()
+            sql, dict((v, k) for k, v in self._project_ids.items())
+        ).fetchone()
         for key, promise, _ in self._queries:
             promise.fulfill(results[key])
 
 
 def create_root_fields(fields):
     attrs = {}
-    for cls, gql_object in fields.iteritems():
+    for cls, gql_object in fields.items():
         name = cls.label
 
         # Object resolver
@@ -901,17 +938,17 @@ def create_root_fields(fields):
             q = get_authorized_query(cls)
             q = apply_query_args(q, args, info)
             try:
-                return [gql_object(**load_node(n, info, Node.fields_depend_on_columns)) for n in q.all()]
+                return [
+                    gql_object(**load_node(n, info, Node.fields_depend_on_columns))
+                    for n in q.all()
+                ]
             except Exception as e:
                 capp.logger.exception(e)
                 raise
 
-        field = graphene.Field(
-            graphene.List(gql_object),
-            args=get_node_class_args(cls),
-        )
+        field = graphene.Field(graphene.List(gql_object), args=get_node_class_args(cls))
 
-        res_name = 'resolve_{}'.format(name)
+        res_name = "resolve_{}".format(name)
         resolver.__name__ = res_name
         attrs[name] = field
         attrs[res_name] = resolver
@@ -924,30 +961,39 @@ def create_root_fields(fields):
 
             q = get_authorized_query(cls)
             q = apply_query_args(q, args, info)
-            if 'with_path_to' in args or 'with_path_to_any' in args:
+            if "with_path_to" in args or "with_path_to_any" in args:
                 q = q.with_entities(sa.distinct(cls.node_id))
-            q = q.limit(args.get('first', None))
+            q = q.limit(args.get("first", None))
             return clean_count(q)
 
-        count_field = graphene.Field(
-            graphene.Int, args=get_node_class_args(cls))
+        count_field = graphene.Field(graphene.Int, args=get_node_class_args(cls))
         count_name = COUNT_NAME.format(name)
-        count_res_name = 'resolve_{}'.format(count_name)
+        count_res_name = "resolve_{}".format(count_name)
         count_resolver.__name__ = count_res_name
         attrs[count_name] = count_field
         attrs[count_res_name] = count_resolver
 
     return attrs
 
+
 def get_withpathto_type():
-    return  type('WithPathToInput', (graphene.InputObjectType,), dict(
-        id=graphene.String(),
-        type=graphene.String(required=True),
-        **{k: graphene.Field(v) for cls_attrs in [
-            get_node_class_property_args(cls)
-            for cls in psqlgraph.Node.get_subclasses()
-        ] for k, v in cls_attrs.iteritems()}
-    ))
+    return type(
+        "WithPathToInput",
+        (graphene.InputObjectType,),
+        dict(
+            id=graphene.String(),
+            type=graphene.String(required=True),
+            **{
+                k: graphene.Field(v)
+                for cls_attrs in [
+                    get_node_class_property_args(cls)
+                    for cls in psqlgraph.Node.get_subclasses()
+                ]
+                for k, v in cls_attrs.items()
+            }
+        ),
+    )
+
 
 def get_fields():
     __fields = {
@@ -955,10 +1001,11 @@ def get_fields():
         for cls in psqlgraph.Node.get_subclasses()
     }
 
-    for cls, gql_object in __fields.iteritems():
+    for cls, gql_object in __fields.items():
         __gql_object_classes[cls.label] = gql_object
 
     return __fields
+
 
 NodeField = graphene.List(Node, args=get_node_interface_args())
 
@@ -970,7 +1017,7 @@ NodeField = graphene.List(Node, args=get_node_interface_args())
 class DataNode(graphene.Interface):
     id = graphene.ID()
     data_subclasses = None
-    shared_fields = None # fields shared by all data nodes in the dictionary
+    shared_fields = None  # fields shared by all data nodes in the dictionary
 
 
 def get_data_subclasses():
@@ -981,7 +1028,7 @@ def get_data_subclasses():
         data_subclasses_labels = set(
             node
             for node in dictionary.schema
-            if dictionary.schema[node]['category'].endswith('_file')
+            if dictionary.schema[node]["category"].endswith("_file")
         )
         # get the subclasses for the data categories
         DataNode.data_subclasses = set(
@@ -997,6 +1044,7 @@ def get_datanode_fields_dict():
     """Return a dictionary containing the fields shared by all data nodes."""
 
     if not DataNode.shared_fields:
+
         def instantiate_graphene(t):
             return t if isinstance(t, graphene.List) else t()
 
@@ -1004,15 +1052,14 @@ def get_datanode_fields_dict():
         DataNode.shared_fields = {
             field: instantiate_graphene(lookup_graphql_type(types[0]))
             for subclass in get_data_subclasses()
-            for field, types in subclass.__pg_properties__.iteritems()
-            if field not in subclass._pg_edges.keys() # don't include the links
+            for field, types in subclass.__pg_properties__.items()
+            if field not in subclass._pg_edges.keys()  # don't include the links
         }
 
         # add required node fields
-        DataNode.shared_fields.update({
-            'id': graphene.String(),
-            'type': graphene.String(),
-        })
+        DataNode.shared_fields.update(
+            {"id": graphene.String(), "type": graphene.String()}
+        )
 
     return DataNode.shared_fields
 
@@ -1024,17 +1071,18 @@ def resolve_datanode(self, info, **args):
         A list of graphene object classes.
 
     """
-    return [__gql_object_classes[n.label](**load_node(n, info))
-            for n in query_with_args(get_data_subclasses(), args, info)]
+    return [
+        __gql_object_classes[n.label](**load_node(n, info))
+        for n in query_with_args(get_data_subclasses(), args, info)
+    ]
 
 
 def get_datanode_interface_args():
     args = get_base_node_args()
     args.update(get_datanode_fields_dict())
-    args.update({
-        'of_type': graphene.List(graphene.String),
-        'project_id': graphene.String(),
-    })
+    args.update(
+        {"of_type": graphene.List(graphene.String), "project_id": graphene.String()}
+    )
     return args
 
 
@@ -1044,7 +1092,7 @@ def get_datanode_interface_args():
 
 class NodeType(graphene.Interface):
     id = graphene.ID()
-    dictionary_fields = None # all the fields in the dictionary
+    dictionary_fields = None  # all the fields in the dictionary
 
 
 def get_nodetype_fields_dict():
@@ -1052,14 +1100,18 @@ def get_nodetype_fields_dict():
 
     if not NodeType.dictionary_fields:
 
-        all_dictionary_fields = set(key for node in dictionary.schema.values() for key in node.keys())
+        all_dictionary_fields = set(
+            key
+            for node in list(dictionary.schema.values())
+            for key in list(node.keys())
+        )
 
         # convert to graphene types
         dictionary_fields_dict = {
             field: graphene.String()
             for field in all_dictionary_fields
             # regex for field names accepted by graphql -> remove '$schema'
-            if re.match('^[_a-zA-Z][_a-zA-Z0-9]*$', field)
+            if re.match("^[_a-zA-Z][_a-zA-Z0-9]*$", field)
         }
         NodeType.dictionary_fields = dictionary_fields_dict
 
@@ -1093,18 +1145,15 @@ def resolve_nodetype(self, info, **args):
     all_data = apply_nodetype_args(all_data, args)
 
     # convert to graphene objects
-    gql_objects = [
-        type(node, (graphene.ObjectType, ), data)
-        for data in all_data
-    ]
+    gql_objects = [type(node, (graphene.ObjectType,), data) for data in all_data]
     return gql_objects
 
 
 def get_nodetype_interface_args():
     args = {
-        'first': graphene.Int(default_value=DEFAULT_LIMIT),
-        'order_by_asc': graphene.String(),
-        'order_by_desc': graphene.String()
+        "first": graphene.Int(default_value=DEFAULT_LIMIT),
+        "order_by_asc": graphene.String(),
+        "order_by_desc": graphene.String(),
     }
     args.update(get_nodetype_fields_dict())
     return args
@@ -1128,15 +1177,15 @@ def apply_nodetype_args(data, args):
 
     l = list(data)
 
-    if 'order_by_asc' in args:
-        l = sorted(l, key=lambda d: d[args['order_by_asc']])
+    if "order_by_asc" in args:
+        l = sorted(l, key=lambda d: d[args["order_by_asc"]])
 
-    if 'order_by_desc' in args:
-        l = sorted(l, key=lambda d: d[args['order_by_desc']], reverse=True)
+    if "order_by_desc" in args:
+        l = sorted(l, key=lambda d: d[args["order_by_desc"]], reverse=True)
 
     # apply_arg_limit() applied the limit to individual query results, but we
     # are concatenating several query results so we need to apply it again
-    limit = args.get('first', DEFAULT_LIMIT)
+    limit = args.get("first", DEFAULT_LIMIT)
     limit = limit if limit > 0 else None
     l = l[:limit]
 

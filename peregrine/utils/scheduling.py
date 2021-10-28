@@ -1,15 +1,10 @@
-from Queue import Queue, Full
+from queue import Queue, Full
 from threading import Thread
 
 import cdispyutils
 
-from peregrine.errors import (
-    InternalError,
-)
-from peregrine.globals import (
-    ASYNC_MAX_Q_LEN,
-    ERR_ASYNC_SCHEDULING,
-)
+from peregrine.errors import InternalError
+from peregrine.globals import ASYNC_MAX_Q_LEN, ERR_ASYNC_SCHEDULING
 
 logger = cdispyutils.log.get_logger("submission.scheduling")
 
@@ -55,11 +50,7 @@ class AsyncPool(object):
     def schedule(self, function, *args, **kwargs):
         """Add a task to the queue"""
         try:
-            self.task_queue.put_nowait(AsyncPoolTask(
-                function,
-                *args,
-                **kwargs
-            ))
+            self.task_queue.put_nowait(AsyncPoolTask(function, *args, **kwargs))
         except Full:
             raise InternalError(ERR_ASYNC_SCHEDULING)
 
@@ -73,10 +64,7 @@ class AsyncPool(object):
         started immediately.
         """
         workers = [
-            self.worker_class(
-                target=async_pool_consumer,
-                args=(self.task_queue,),
-            )
+            self.worker_class(target=async_pool_consumer, args=(self.task_queue,))
             for _ in range(n_workers)
         ]
 

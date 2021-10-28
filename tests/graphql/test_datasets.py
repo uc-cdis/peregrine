@@ -1,6 +1,5 @@
-from test_graphql import post_example_entities_together
+from .test_graphql import post_example_entities_together
 from datamodelutils import models
-import os
 
 
 def test_authorized_call_with_protected_config(
@@ -15,7 +14,7 @@ def test_authorized_call_with_protected_config(
             case.project_id = "OTHER-OTHER"
             s.merge(case)
     r = client.get("/datasets?nodes=case,aliquot", headers=submitter)
-    assert r.json.keys() == ["CGCI-BLGSP"]
+    assert list(r.json.keys()) == ["CGCI-BLGSP"]
     assert r.json["CGCI-BLGSP"]["case"] == case_count - 2
 
     r = client.get("/datasets/projects", headers=submitter)
@@ -23,14 +22,17 @@ def test_authorized_call_with_protected_config(
 
 
 def test_unauthorized_call_with_protected_config(
-        client, submitter, random_user, pg_driver_clean, cgci_blgsp
-    ):
+    client, submitter, pg_driver_clean, cgci_blgsp, mock_arborist_requests
+):
     post_example_entities_together(client, pg_driver_clean, submitter)
-    r = client.get("/datasets?nodes=case,aliquot", headers=random_user)
+
+    mock_arborist_requests(auth_mapping={})
+
+    r = client.get("/datasets?nodes=case,aliquot", headers=submitter)
     assert r.status_code == 200
     assert r.json == {}
 
-    r = client.get("/datasets/projects", headers=random_user)
+    r = client.get("/datasets/projects", headers=submitter)
 
     assert r.status_code == 200
     assert r.json == {"projects": []}
@@ -41,7 +43,9 @@ def test_anonymous_call_with_protected_config(client, pg_driver_clean, cgci_blgs
     assert r.status_code == 401
 
 
-def test_anonymous_projects_call_with_protected_config(client, pg_driver_clean, cgci_blgsp):
+def test_anonymous_projects_call_with_protected_config(
+    client, pg_driver_clean, cgci_blgsp
+):
     r = client.get("/datasets/projects")
     assert r.status_code == 401
 
@@ -68,15 +72,15 @@ def test_anonymous_call_with_public_config(
     assert r.json["CGCI-OTHER"]["aliquot"] == 0
     assert r.json["CGCI-OTHER"]["case"] == 2
 
+
 def test_get_projects_anonymous(
-        client, submitter, pg_driver_clean, cgci_blgsp, public_dataset_api
-    ):
+    client, submitter, pg_driver_clean, cgci_blgsp, public_dataset_api
+):
 
     post_example_entities_together(client, pg_driver_clean, submitter)
     with pg_driver_clean.session_scope() as s:
         project = models.Project(
-            "other", name="name",
-            code="OTHER", dbgap_accession_number="phsid"
+            "other", name="name", code="OTHER", dbgap_accession_number="phsid"
         )
         program = pg_driver_clean.nodes(models.Program).props(name="CGCI").first()
         project.programs = [program]
@@ -84,9 +88,11 @@ def test_get_projects_anonymous(
     r = client.get("/datasets/projects")
     assert r.json == {
         "projects": [
-            {"dbgap_accession_number": "phs000527",
-             "code": "BLGSP",
-             "name": "Burkitt Lymphoma Genome Sequencing Project"},
-            {"dbgap_accession_number": "phsid",
-             "code": "OTHER", "name": "name"}]
-     }
+            {
+                "dbgap_accession_number": "phs000527",
+                "code": "BLGSP",
+                "name": "Burkitt Lymphoma Genome Sequencing Project",
+            },
+            {"dbgap_accession_number": "phsid", "code": "OTHER", "name": "name"},
+        ]
+    }

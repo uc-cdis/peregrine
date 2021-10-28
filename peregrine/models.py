@@ -24,12 +24,7 @@ import sys
 this_module = sys.modules[__name__]
 
 #: The data model must implement these attributes.
-required_attrs = [
-    'Program',
-    'Project',
-    'submission',
-    'VersionedNode',
-]
+required_attrs = ["Program", "Project", "submission", "VersionedNode"]
 
 # These could be assigned programatically, as in:
 #
@@ -60,4 +55,4 @@ def init(models):
             # Basically do: this_module.required_attr = models.required_attr
             setattr(this_module, required_attr, getattr(models, required_attr))
         except AttributeError:
-            raise ValueError('given models does not define ' + required_attr)
+            raise ValueError("given models does not define " + required_attr)

@@ -13,13 +13,13 @@ import sqlalchemy as sa
 import time
 
 terminal_nodes = [
-    'annotations',
-    'centers',
-    'archives',
-    'tissue_source_sites',
-    'files',
-    'related_files',
-    'describing_files'
+    "annotations",
+    "centers",
+    "archives",
+    "tissue_source_sites",
+    "files",
+    "related_files",
+    "describing_files",
 ]
 
 # Assign categories levels
@@ -34,12 +34,7 @@ terminal_nodes = [
 # to annotation.
 #
 # See :func:`is_valid_direction` for more details.
-CATEGORY_LEVEL = {
-    'administrative': 0,
-    'biospecimen': 1,
-    'clinical': 1,
-    'data_file': 3,
-}
+CATEGORY_LEVEL = {"administrative": 0, "biospecimen": 1, "clinical": 1, "data_file": 3}
 
 
 def is_valid_direction(node, visited):
@@ -60,18 +55,9 @@ def is_valid_direction(node, visited):
         is valid.
     """
     max_level = max(CATEGORY_LEVEL.values()) + 1
-    first_level = CATEGORY_LEVEL.get(
-        visited[0]._dictionary['category'],
-        max_level
-    )
-    last_level = CATEGORY_LEVEL.get(
-        visited[-1]._dictionary['category'],
-        max_level
-    )
-    this_level = CATEGORY_LEVEL.get(
-        node._dictionary['category'],
-        max_level
-    )
+    first_level = CATEGORY_LEVEL.get(visited[0]._dictionary["category"], max_level)
+    last_level = CATEGORY_LEVEL.get(visited[-1]._dictionary["category"], max_level)
+    this_level = CATEGORY_LEVEL.get(node._dictionary["category"], max_level)
     if first_level > last_level:
         # If we are traveling from case out
         return this_level <= last_level
@@ -87,7 +73,7 @@ def construct_traversals_from_node(root_node, app):
     while to_visit:
         node, path, visited = to_visit.pop()
         if path:
-            path_string = '.'.join(path)
+            path_string = ".".join(path)
             if path_string in traversals[node.label]:
                 continue
             traversals[node.label].add(path_string)
@@ -97,11 +83,10 @@ def construct_traversals_from_node(root_node, app):
         # Don't walk back up the tree
         if not is_valid_direction(node, visited or [root_node]):
             continue
-        name_to_subclass = getattr(app, 'name_to_subclass', None)
+        name_to_subclass = getattr(app, "name_to_subclass", None)
         if name_to_subclass is None:
             name_to_subclass = app.name_to_subclass = {
-                n.__name__: n
-                for n in Node.get_subclasses()
+                n.__name__: n for n in Node.get_subclasses()
             }
         neighbors_dst = {
             (name_to_subclass[edge.__dst_class__], edge.__src_dst_assoc__)
@@ -113,12 +98,14 @@ def construct_traversals_from_node(root_node, app):
             for edge in Edge._get_edges_with_dst(node.__name__)
             if name_to_subclass[edge.__src_class__]
         }
-        to_visit.extend([
-            (neighbor, path + [edge], visited + [node])
-            for neighbor, edge in neighbors_dst.union(neighbors_src)
-            if neighbor not in visited
-        ])
-    return {label: list(paths) for label, paths in traversals.iteritems() if paths}
+        to_visit.extend(
+            [
+                (neighbor, path + [edge], visited + [node])
+                for neighbor, edge in neighbors_dst.union(neighbors_src)
+                if neighbor not in visited
+            ]
+        )
+    return {label: list(paths) for label, paths in traversals.items() if paths}
 
 
 def make_graph_traversal_dict(app, preload=False):
@@ -129,8 +116,8 @@ def make_graph_traversal_dict(app, preload=False):
 
     You may call this method with `preload=True` to manually preload the full dict.
     """
-    app.graph_traversals = getattr(app, 'graph_traversals', {})
-    if preload or not app.config.get('USE_LAZY_TRAVERSE', True):
+    app.graph_traversals = getattr(app, "graph_traversals", {})
+    if preload or not app.config.get("USE_LAZY_TRAVERSE", True):
         for node in Node.get_subclasses():
             _get_paths_from(node, app)
 
@@ -148,8 +135,11 @@ def _get_paths_from(src, app):
         app.graph_traversals[src_label] = construct_traversals_from_node(src, app)
         time_taken = int(round(time.time() - start))
         if time_taken > 0.5:
-            app.logger.info('Traversed the graph starting from "%s" in %.2f sec',
-                            src_label, time_taken)
+            app.logger.info(
+                'Traversed the graph starting from "%s" in %.2f sec',
+                src_label,
+                time_taken,
+            )
     return app.graph_traversals[src_label]
 
 
@@ -215,7 +205,6 @@ def subq_paths(q, dst_label, post_filters=None):
 
     nodes = flask.current_app.db.nodes(q.entity())
     subquery_paths = [
-        q.subq_path(path, post_filters).subquery().select()
-        for path in paths
+        q.subq_path(path, post_filters).subquery().select() for path in paths
     ]
     return nodes.select_entity_from(sa.union_all(*subquery_paths))

@@ -1,9 +1,9 @@
-dist: trusty
+dist: xenial
 sudo: false
 language: python
 
 python:
-  - "2.7"
+  - "3.6"
 
 cache:
   - pip
@@ -11,9 +11,6 @@ cache:
 
 addons:
   postgresql: '9.4'
-
-services:
-  - elasticsearch
 
 before_install:
   # bust only the the part of the cache that we are frequently changing
@@ -23,17 +20,17 @@ before_install:
 
 # command to install dependencies
 install:
-  - pip install -r requirements.txt
-  - pip install -r dev-requirements.txt
+  - curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/get-poetry.py | python
+  - source $HOME/.poetry/env
+  - poetry install -vv
 
 before_script:
-  - pip freeze
-  - python bin/setup_test_database.py
+  - poetry run python bin/setup_test_database.py
   - mkdir -p tests/resources/keys; cd tests/resources/keys; openssl genrsa -out test_private_key.pem 2048; openssl rsa -in test_private_key.pem -pubout -out test_public_key.pem; cd -
 
 # command to run tests
 script:
-  - py.test -vv --cov=peregrine --cov-report xml tests
+  - poetry run pytest -vv --cov=peregrine --cov-report xml tests
 
 after_script:
   - python-codacy-coverage -r coverage.xml
@@ -41,4 +38,3 @@ after_script:
 env:
   global:
     - GDC_ES_HOST=localhost
-

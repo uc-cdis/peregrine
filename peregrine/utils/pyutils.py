@@ -12,7 +12,7 @@ def log_duration(name="Unnamed action"):
     start_t = time.time()
     yield
     end_t = time.time()
-    msg = "Executed [{}] in {:.2f} ms".format(name, (end_t-start_t)*1000)
+    msg = "Executed [{}] in {:.2f} ms".format(name, (end_t - start_t) * 1000)
     current_app.logger.info(msg)
 
 
@@ -21,6 +21,8 @@ def get_s3_conn(host):
     current app context.
     """
     config = current_app.config["STORAGE"]["s3"]
-    return connect_s3(config["keys"][host]["access_key"],
-                      config["keys"][host]["secret_key"],
-                      **config["kwargs"][host])
+    return connect_s3(
+        config["keys"][host]["access_key"],
+        config["keys"][host]["secret_key"],
+        **config["kwargs"][host]
+    )

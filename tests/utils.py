@@ -15,8 +15,9 @@ logger = get_logger(__name__, log_level="info")
 def read_file(filename):
     """Read the contents of a file in the tests directory."""
     root_dir = os.path.dirname(os.path.realpath(__file__))
-    with open(os.path.join(root_dir, filename), 'r') as f:
+    with open(os.path.join(root_dir, filename), "r") as f:
         return f.read()
+
 
 class JWTResult(object):
     """
@@ -98,7 +99,6 @@ def generate_signed_access_token(
             "user": {
                 "name": user.username,
                 "is_admin": user.is_admin,
-                "projects": dict(user.project_access),
                 "google": {"proxy_group": user.google_proxy_group_id},
             }
         },
