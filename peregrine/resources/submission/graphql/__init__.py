@@ -32,7 +32,7 @@ from .traversal import make_graph_traversal_dict
 from .util import set_session_timeout
 
 
-GRAPHQL_TIMEOUT = float(os.environ.get("GRAPHQL_TIMEOUT", 20))  # seconds
+GRAPHQL_TIMEOUT = float(os.environ.get("GRAPHQL_TIMEOUT", 600))  # seconds
 TIMEOUT_MESSAGE = """
 
 Query exceeded {} second timeout.  Please reduce query complexity and
