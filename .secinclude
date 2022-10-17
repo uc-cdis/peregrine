@@ -1,5 +1,0 @@
-bin/*
-pyproject.toml
-peregrine/*
-poetry.lock
-run.py
