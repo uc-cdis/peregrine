@@ -1,7 +1,7 @@
 # To run: docker run -v /path/to/wsgi.py:/var/www/peregrine/wsgi.py --name=peregrine -p 81:80 peregrine
 # To check running container: docker exec -it peregrine /bin/bash
 
-FROM quay.io/cdis/python:python3.6-buster-pybase3-3.0.2
+FROM quay.io/cdis/python:python3.9-buster-2.0.0
 
 ENV appname=peregrine
 
