@@ -170,7 +170,6 @@ def health_check():
 @app.route("/_version", methods=["GET"])
 def version():
     # dictver['commit'] deprecated; see peregrine#130
-    # TODO check if we can remove this, and remove the gen3dictionary dependency
     dictver = {
         "version": pkg_resources.get_distribution("gen3dictionary").version,
         "commit": "",
