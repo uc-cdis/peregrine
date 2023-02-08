@@ -81,9 +81,9 @@ config["OAUTH2"] = {
     "redirect_uri": "https://%s/api/v0/oauth2/authorize" % conf_data["hostname"],
 }
 
-config["USER_API"] = environ.get("FENCE_URL") or "http://fence-service/"
-# use the public issuer URL to accquire JWT keys
-config["FORCE_ISSUER"] = False
+config["USER_API"] = config["OIDC_ISSUER"]  # for use by authutils
+# use the USER_API URL instead of the public issuer URL to accquire JWT keys
+config["FORCE_ISSUER"] = True
 app_init(app)
 application = app
 application.debug = environ.get("GEN3_DEBUG") == "True"
