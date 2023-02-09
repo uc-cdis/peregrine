@@ -21,7 +21,7 @@ simplejson = "^3.8"
 stopit = "^1.1"
 Flask = "^1.1"
 Flask-Cors = "^3.0.9"
-gen3authz = {git = "https://github.com/grugna/gen3authz.git", rev = "0.2.4"}
+gen3authz = {git = "https://github.com/grugna/gen3authz.git", rev = "0.2.4", subdirectory = "python"}
 PyYAML = "^5.1"
 boto = "^2.36"
 elasticsearch = "^1.2"
