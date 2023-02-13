@@ -108,6 +108,14 @@ python-versions = ">=3.6"
 pytz = ">=2015.7"
 
 [[package]]
+name = "backoff"
+version = "1.11.1"
+description = "Function decoration for backoff and retry"
+category = "main"
+optional = false
+python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*, !=3.4.*"
+
+[[package]]
 name = "boto"
 version = "2.49.0"
 description = "Amazon Web Services Library"
@@ -393,6 +401,26 @@ description = "Fuzzy string matching in python"
 category = "dev"
 optional = false
 python-versions = "*"
+
+[[package]]
+name = "gen3authz"
+version = "0.2.4"
+description = "Gen3 authz client"
+category = "main"
+optional = false
+python-versions = "*"
+develop = false
+
+[package.dependencies]
+backoff = ">=1.6,<2.0"
+cdiserrors = ">=0.1,<1.0"
+requests = ">=2.18,<3.0"
+
+[package.source]
+type = "git"
+url = "https://github.com/grugna/gen3authz.git"
+reference = "0.2.4"
+resolved_reference = "6e239b4e651156be94f6fc2c70ca3102f54d8c52"
 
 [[package]]
 name = "gen3datamodel"
@@ -1295,7 +1323,7 @@ testing = ["func-timeout", "jaraco.itertools", "pytest (>=4.6)", "pytest-black (
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.6"
-content-hash = "3c81b2bec5c95788048283c329486984708c6a7e421207fb94252c1563e55667"
+content-hash = "0270d6d8c0d175fec99e059b9f803d749b8d1f8948589b9ee36ad98f6043470c"
 
 [metadata.files]
 addict = [
@@ -1330,6 +1358,10 @@ avro = [
 babel = [
     {file = "Babel-2.11.0-py3-none-any.whl", hash = "sha256:1ad3eca1c885218f6dce2ab67291178944f810a10a9b5f3cb8382a5a232b64fe"},
     {file = "Babel-2.11.0.tar.gz", hash = "sha256:5ef4b3226b0180dedded4229651c8b0e1a3a6a2837d45a073272f313e4cf97f6"},
+]
+backoff = [
+    {file = "backoff-1.11.1-py2.py3-none-any.whl", hash = "sha256:61928f8fa48d52e4faa81875eecf308eccfb1016b018bb6bd21e05b5d90a96c5"},
+    {file = "backoff-1.11.1.tar.gz", hash = "sha256:ccb962a2378418c667b3c979b504fdeb7d9e0d29c0579e3b13b86467177728cb"},
 ]
 boto = [
     {file = "boto-2.49.0-py2.py3-none-any.whl", hash = "sha256:147758d41ae7240dc989f0039f27da8ca0d53734be0eb869ef16e3adcfa462e8"},
@@ -1550,6 +1582,7 @@ fuzzywuzzy = [
     {file = "fuzzywuzzy-0.6.2-py2-none-any.whl", hash = "sha256:359af6e0672d8727252a3c246c57f3c12c9a6e5b1a3f015e3914ca5f77cb24f3"},
     {file = "fuzzywuzzy-0.6.2.tar.gz", hash = "sha256:7c8578832eca779a163a2043e831de42f2f420c8551f16930cc018d06a2888a0"},
 ]
+gen3authz = []
 gen3datamodel = [
     {file = "gen3datamodel-3.1.2.tar.gz", hash = "sha256:288e66c466c58a79b50dc4440797c9201d48cb7dafa27ce7a2f3ffd7e4e8adee"},
 ]
