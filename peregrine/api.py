@@ -43,9 +43,13 @@ def app_register_blueprints(app):
 
 
 def app_register_duplicate_blueprints(app):
+    # we register each blueprint twice (at `/` and at `/v0/`). Flask requires the
+    # blueprint names to be unique, so rename them before registering the 2nd time.
     # TODO: (jsm) deprecate this v0 version under root endpoint.  This
     # root endpoint duplicates /v0 to allow gradual client migration
+    peregrine.blueprints.blueprint.name += "_2"
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix="/submission")
+    datasets.blueprint.name += "_2"
     app.register_blueprint(datasets.blueprint, url_prefix="/datasets")
 
 
