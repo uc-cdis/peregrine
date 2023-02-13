@@ -23,7 +23,6 @@ Flask = "^1.1"
 Flask-Cors = "^3.0.9"
 
 # gen3authz = {git = "https://github.com/grugna/gen3authz.git", rev = "0.2.4", subdirectory = "python"}
-gen3authz = {git = "https://github.com/grugna/gen3authz.git", rev = "0.2.4"}
 
 PyYAML = "^5.1"
 boto = "^2.36"
