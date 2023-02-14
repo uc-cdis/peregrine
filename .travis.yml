@@ -3,7 +3,7 @@ sudo: false
 language: python
 
 python:
-  - "3.6"
+  - "3.9"
 
 cache:
   - pip
@@ -21,7 +21,7 @@ before_install:
 # command to install dependencies
 install:
   - pip install poetry
-  - poetry install -vv --no-interaction
+  - poetry install -vv
 
 before_script:
   - poetry run python bin/setup_test_database.py
