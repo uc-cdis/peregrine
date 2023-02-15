@@ -1,3 +1,4 @@
+import html
 import json
 import logging
 import subprocess
@@ -58,10 +59,12 @@ def striptags_from_dict(data):
     if isinstance(data, dict):
         new_dict = {}
         for k, v in data.items():
+            k = html.escape(k)
             cleanedK = tryToInt(Markup(k).striptags())
             if isinstance(v, dict):
                 new_dict[cleanedK] = striptags_from_dict(v)
             else:
+                v = html.escape(v)
                 # striptags converts everything to str, so convert back to int if possible
                 new_dict[cleanedK] = tryToInt(Markup(v).striptags())
     return new_dict
