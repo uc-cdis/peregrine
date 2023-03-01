@@ -37,7 +37,6 @@ def pg_config():
 
 @pytest.fixture(scope="session")
 def app(request):
-
     _app.config.from_object("peregrine.test_settings")
     app_init(_app)
 

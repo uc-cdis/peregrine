@@ -1099,7 +1099,6 @@ def get_nodetype_fields_dict():
     """Return a dictionary containing all the fields in the dictionary."""
 
     if not NodeType.dictionary_fields:
-
         all_dictionary_fields = set(
             key
             for node in list(dictionary.schema.values())

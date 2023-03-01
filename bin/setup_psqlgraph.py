@@ -7,7 +7,6 @@ from psqlgraph import create_all, Node, Edge
 
 
 def try_drop_test_data(user, database, root_user="postgres", host=""):
-
     print("Dropping old test data")
 
     engine = create_engine(
@@ -119,7 +118,6 @@ def create_indexes(host, user, password, database):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--host", type=str, action="store", default="localhost", help="psql-server host"

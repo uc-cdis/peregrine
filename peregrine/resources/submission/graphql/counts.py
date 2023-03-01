@@ -15,7 +15,6 @@ from gdcgraphql import Query
 
 
 class NodeCountQuery(base.GraphQLQuery):
-
     DEFINES_SCHEMA = True
 
     def parse(self):
