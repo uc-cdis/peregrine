@@ -72,6 +72,7 @@ def get_core_metadata(object_id):
       404:
         description: No core metadata was found for this object_id
     """
+    object_id = html.escape(object_id)
     flask.current_app.logger.info(
         "Getting metadata for object_id: {}".format(object_id)
     )
@@ -88,7 +89,6 @@ def get_schemaorg_json_metadata(object_id):
     """
     Get core metadata as a Schema.org JSON from an object_id.
     """
-    object_id = html.escape(object_id)
     try:
         metadata = get_metadata_dict(object_id)
         schemaorg = {
