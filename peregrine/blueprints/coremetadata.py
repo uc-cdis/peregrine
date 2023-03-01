@@ -1,32 +1,10 @@
 import html
 import json
 
-from cdislogging import get_logger
+from cdiserrors import InternalError, NotFoundError
 import flask
-import requests
 
-# from pidgin.errors import *
-# from pidgin.constants import *
-
-
-app = flask.Flask(__name__)
-
-app_info = {
-    "swagger": "2.0",
-    "info": {
-        "title": "Pidgin OpenAPI Specification",
-        "description": "A core metadata API for CDIS Gen 3 data commons. Code is available on [GitHub](https://github.com/uc-cdis/pidgin).",
-        "version": "1.0",
-        "termsOfService": "http://cdis.uchicago.edu/terms/",
-        "contact": {"email": "cdis@uchicago.edu"},
-        "license": {
-            "name": "Apache 2.0",
-            "url": "http://www.apache.org/licenses/LICENSE-2.0.html",
-        },
-    },
-}
-
-logger = get_logger(__name__, log_level="debug")
+from peregrine.resources.submission import do_graphql_query
 
 
 CITATION_FIELDS = ["creator", "updated_datetime", "title", "publisher", "object_id"]
@@ -56,31 +34,10 @@ CORE_METADATA_QUERY_FIELDS = [
 ]
 
 
-class PidginException(Exception):
-    def __init__(self, message):
-        self.message = str(message)
-        self.code = 500
+blueprint = flask.Blueprint("coremetadata", "coremetadata")
 
 
-class AuthenticationException(PidginException):
-    def __init__(self, message):
-        self.message = str(message)
-        self.code = 401
-
-
-class ObjectNotFoundException(PidginException):
-    def __init__(self, message):
-        self.message = str(message)
-        self.code = 404
-
-
-class NoCoreMetadataException(PidginException):
-    def __init__(self, message):
-        self.message = str(message)
-        self.code = 404
-
-
-@app.route("/<path:object_id>")
+@blueprint.route("/<path:object_id>", methods=["GET"])
 def get_core_metadata(object_id):
     """
     Get core metadata from an object_id
@@ -115,7 +72,9 @@ def get_core_metadata(object_id):
       404:
         description: No core metadata was found for this object_id
     """
-    logger.info("Getting metadata for object_id: {}".format(object_id))
+    flask.current_app.logger.info(
+        "Getting metadata for object_id: {}".format(object_id)
+    )
     accept = flask.request.headers.get("Accept")
     if accept == "x-bibtex":
         return get_bibtex_metadata(object_id)
@@ -168,7 +127,7 @@ def get_schemaorg_json_metadata(object_id):
         # "schemaVersion": "http://datacite.org/schema/kernel-4",
 
         return json.dumps(schemaorg)  # translate dictionary to json
-    except PidginException as e:
+    except InternalError as e:
         return e.message, e.code
 
 
@@ -179,7 +138,7 @@ def get_json_metadata(object_id):
     try:
         metadata = get_metadata_dict(object_id)
         return json.dumps(metadata)  # translate dictionary to json
-    except PidginException as e:
+    except InternalError as e:
         return e.message, e.code
 
 
@@ -190,7 +149,7 @@ def get_bibtex_metadata(object_id):
     try:
         metadata = get_metadata_dict(object_id)
         return translate_dict_to_bibtex(metadata)
-    except PidginException as e:
+    except InternalError as e:
         return e.message, e.code
 
 
@@ -223,8 +182,8 @@ def flatten_dict(d):
     """
     flat_d = {}
     try:
-        data_type = list(d["data"].keys())[0]
-        for k, v in d["data"][data_type][0].items():
+        data_type = list(d.keys())[0]
+        for k, v in d[data_type][0].items():
             if k == "core_metadata_collections":
                 if v:
                     # object_id is unique so the list should only contain one item
@@ -235,7 +194,7 @@ def flatten_dict(d):
         error = "Core metadata not available for this file"
         if "errors" in d:
             error += ": " + d["errors"][0]
-        raise NoCoreMetadataException(error)
+        raise NotFoundError(error)
     return flat_d
 
 
@@ -265,9 +224,9 @@ def get_file_type(object_id):
     query_txt = '{ datanode (object_id: "' + object_id + '") { type } }'
     response = send_query(query_txt)
     try:
-        file_type = response["data"]["datanode"][0]["type"]
+        file_type = response["datanode"][0]["type"]
     except IndexError:
-        raise ObjectNotFoundException('object_id "' + object_id + '" not found')
+        raise NotFoundError('object_id "' + object_id + '" not found')
     return file_type
 
 
@@ -291,7 +250,7 @@ def has_core_metadata(response, file_type):
     """
     try:
         # try to access the core_metadata
-        response["data"][file_type][0]["core_metadata_collections"][0]
+        response[file_type][0]["core_metadata_collections"][0]
     except:
         return False
     return True
@@ -319,54 +278,8 @@ def send_query(query_txt):
     """
     Send a query to peregrine and return the jsonified response.
     """
-    logger.debug(f"Query: {query_txt}")
-    api_url = app.config.get("API_URL")
-    if not api_url:
-        raise PidginException("Pidgin is not configured with API_URL")
-
-    auth = flask.request.headers.get("Authorization")
-    query = {"query": query_txt}
-    response = requests.post(api_url, headers={"Authorization": auth}, json=query)
-
-    if response.status_code != 200:
-        logger.error(
-            f"Non-200 response from Peregrine; will still try to parse data. Status code: {response.status_code}."
-        )
-        try:
-            logger.error(f"Response: {response.text}")
-        except Exception:
-            pass
-        if response.status_code == 401 or response.status_code == 403:
-            raise AuthenticationException("Unauthorized")
-
-    try:
-        data = response.json()
-    except ValueError:
-        logger.error(f"Cannot get JSON from Peregrine response: {response.text}")
-        data = {}
-
+    flask.current_app.logger.debug(f"Query: {query_txt}")
+    data, errors = do_graphql_query(query_txt, variables={})
+    if errors:
+        raise InternalError(f"Errors querying: {errors}")
     return data
-
-
-@app.route("/_status", methods=["GET"])
-def health_check():
-    """
-    Health check endpoint
-    ---
-    tags:
-      - system
-    responses:
-      200:
-        description: Healthy
-      500:
-        description: Unhealthy (Peregrine not available)
-    """
-    api_health_url = app.config.get("API_HEALTH_URL")
-    if not api_health_url:
-        raise PidginException("Pidgin is not configured with API_HEALTH_URL")
-    try:
-        requests.get(api_health_url)
-    except requests.exceptions.ConnectionError:
-        logger.error("Peregrine not available; returning unhealthy")
-        return "Unhealthy", 500
-    return "Healthy", 200

@@ -21,7 +21,7 @@ def try_drop_test_data(user, database, root_user="postgres", host=""):
         create_stmt = 'DROP DATABASE "{database}"'.format(database=database)
         conn.execute(create_stmt)
     except Exception as msg:
-        logging.warn("Unable to drop test data:" + str(msg))
+        logging.warning("Unable to drop test data:" + str(msg))
 
     conn.close()
 
@@ -53,7 +53,7 @@ def setup_database(
     try:
         conn.execute(create_stmt)
     except Exception as msg:
-        logging.warn("Unable to create database: {}".format(msg))
+        logging.warning("Unable to create database: {}".format(msg))
 
     if not no_user:
         try:
@@ -69,7 +69,7 @@ def setup_database(
             conn.execute(perm_stmt)
             conn.execute("commit")
         except Exception as msg:
-            logging.warn("Unable to add user:" + str(msg))
+            logging.warning("Unable to add user:" + str(msg))
     conn.close()
 
 
