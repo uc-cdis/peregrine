@@ -157,10 +157,10 @@ def get_metadata_dict(object_id):
     """
     Create a dictionary containing the metadata for a given object_id.
     """
-    response = request_metadata(object_id)  # query to peregrine
+    response = request_metadata(object_id)  # graphql query
     metadata = flatten_dict(response)
 
-    if all(field in metadata for field in CITATION_FIELDS):
+    if any(field in metadata for field in CITATION_FIELDS):
         metadata["citation"] = generate_citation(metadata)
 
     return remove_unused_fields(metadata)
@@ -202,10 +202,26 @@ def generate_citation(metadata_dict):
     """
     Generate a citation from the other metadata.
     """
-    format_args = dict(metadata_dict)
-    format_args["year"] = format_args.pop("updated_datetime").split("-")[0]
-    format_string = "{creator}, {year}: {title}. {publisher}, {object_id}"
-    return format_string.format(**format_args)
+    string = ""
+    if metadata_dict.get("creator"):
+        string += f'{metadata_dict["creator"]}, '
+    if metadata_dict.get("updated_datetime"):
+        year = metadata_dict.pop("updated_datetime").split("-")[0]
+        string += f"{year}: "
+    if metadata_dict.get("title"):
+        string += f'{metadata_dict["title"]}. '
+    if metadata_dict.get("publisher"):
+        string += f'{metadata_dict["publisher"]}, '
+    if metadata_dict.get("object_id"):
+        string += f'{metadata_dict["object_id"]}'
+
+    string = string.strip()
+    if string.endswith(","):
+        string = string[:-1]
+    if not string.endswith("."):
+        string += "."
+
+    return string
 
 
 def remove_unused_fields(d):
@@ -276,7 +292,7 @@ def build_query(object_id, file_type, get_core_metadata=False):
 
 def send_query(query_txt):
     """
-    Send a query to peregrine and return the jsonified response.
+    Make a graphql query and return the jsonified response.
     """
     flask.current_app.logger.debug(f"Query: {query_txt}")
     data, errors = do_graphql_query(query_txt, variables={})

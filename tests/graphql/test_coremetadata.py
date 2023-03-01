@@ -1,4 +1,5 @@
-import random
+import json
+import uuid
 
 from cdiserrors import NotFoundError
 from datamodelutils import models
@@ -7,7 +8,6 @@ import pytest
 from peregrine.blueprints.coremetadata import (
     translate_dict_to_bibtex,
     flatten_dict,
-    send_query,
 )
 from tests.graphql import utils
 from tests.graphql.test_graphql import post_example_entities_together
@@ -79,7 +79,7 @@ def test_flatten_dict_raises_exception():
 
 
 def test_endpoint(client, submitter, pg_driver_clean, cgci_blgsp, graphql_client):
-    obj_id = str(random.random())[:8]
+    obj_id = str(uuid.uuid4())
     post_example_entities_together(client, pg_driver_clean, submitter)
     utils.put_entity_from_file(client, "read_group.json", submitter)
 
@@ -96,3 +96,9 @@ def test_endpoint(client, submitter, pg_driver_clean, cgci_blgsp, graphql_client
 
     res = client.get(f"/coremetadata/{obj_id}", headers=submitter)
     assert res.status_code == 200, res.text
+    data = json.loads(res.data)
+    assert data.get("object_id") == obj_id
+    assert data.get("project_id") == "CGCI-BLGSP"
+    assert data.get("type") == "submitted_unaligned_reads"
+    assert data.get("type") == "submitted_unaligned_reads"
+    assert obj_id in data.get("citation", "")
