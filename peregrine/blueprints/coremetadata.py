@@ -237,8 +237,9 @@ def get_file_type(object_id):
     """
     Get the type of file from the object_id.
     """
-    query_txt = '{ datanode (object_id: "' + object_id + '") { type } }'
+    query_txt = '{{ datanode (object_id: "{}") {{ type }} }}'.format(object_id)
     response = send_query(query_txt)
+    print("Response:", response)
     try:
         file_type = response["datanode"][0]["type"]
     except IndexError:
