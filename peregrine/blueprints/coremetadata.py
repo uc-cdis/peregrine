@@ -239,7 +239,6 @@ def get_file_type(object_id):
     """
     query_txt = '{{ datanode (object_id: "{}") {{ type }} }}'.format(object_id)
     response = send_query(query_txt)
-    print("Response:", response)
     try:
         file_type = response["datanode"][0]["type"]
     except IndexError:
