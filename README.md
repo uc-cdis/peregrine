@@ -94,3 +94,8 @@ helm upgrade --install gen3/peregrine
 You can also store your images in a local registry. Kind and Minikube are popular for their local registries:
 - https://kind.sigs.k8s.io/docs/user/local-registry/
 - https://minikube.sigs.k8s.io/docs/handbook/registry/#enabling-insecure-registries
+
+Dependencies:
+Please review the "Quick Start with Helm" guides to deploy these two services.
+- [Sheepdog](https://github.com/uc-cdis/sheepdog)
+- [Fence](https://github.com/uc-cdis/fence)
