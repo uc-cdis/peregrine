@@ -97,5 +97,5 @@ You can also store your images in a local registry. Kind and Minikube are popula
 
 Dependencies:
 Please review the "Quick Start with Helm" guides to deploy these two services.
-- [Sheepdog](https://github.com/uc-cdis/sheepdog)
+- [Sheepdog](https://github.com/uc-cdis/sheepdog/blob/master/docs/local_dev_environment.md)
 - [Fence](https://github.com/uc-cdis/fence)
