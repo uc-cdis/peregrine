@@ -19,7 +19,6 @@ def setup(host, user, password, database):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--host", type=str, action="store", default="localhost", help="psql-server host"

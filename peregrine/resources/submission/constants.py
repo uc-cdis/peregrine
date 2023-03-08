@@ -14,6 +14,7 @@ import uuid
 # ======================================================================
 # Dictionary Consts
 
+
 #: Do we have a cache case setting and should we do it?
 #: Do we have a cache case setting and should we do it?
 def case_cache_enabled():
@@ -44,6 +45,7 @@ def case_cache_enabled():
 
 #: State a file should be put in given an error
 ERROR_STATE = "error"
+
 
 #: Initial file state
 def submitted_state():
