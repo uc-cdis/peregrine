@@ -412,7 +412,7 @@ def resolve_transaction_log_query(self, info, **args):
 
 def apply_transaction_log_eagerload(q, info):
     """Optimize the transaction_log query to prevent an N+1 query
-       problem by eagerly loading relationships from the database
+    problem by eagerly loading relationships from the database
     """
 
     fields = get_fields(info)

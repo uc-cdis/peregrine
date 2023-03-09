@@ -18,7 +18,7 @@ from gen3authz.client.arborist.client import ArboristClient
 
 import peregrine
 from peregrine import dictionary
-from peregrine.blueprints import datasets
+from peregrine.blueprints import datasets, coremetadata
 from .errors import APIError, setup_default_handlers, UnhealthyCheck
 from .resources import submission
 from .version_data import VERSION, COMMIT
@@ -40,6 +40,7 @@ def app_register_blueprints(app):
         peregrine.blueprints.blueprint, url_prefix=v0 + "/submission"
     )
     app.register_blueprint(datasets.blueprint, url_prefix=v0 + "/datasets")
+    app.register_blueprint(coremetadata.blueprint, url_prefix=v0 + "/coremetadata")
 
 
 def app_register_duplicate_blueprints(app):
@@ -51,6 +52,8 @@ def app_register_duplicate_blueprints(app):
     app.register_blueprint(peregrine.blueprints.blueprint, url_prefix="/submission")
     datasets.blueprint.name += "_2"
     app.register_blueprint(datasets.blueprint, url_prefix="/datasets")
+    coremetadata.blueprint.name += "_2"
+    app.register_blueprint(coremetadata.blueprint, url_prefix="/coremetadata")
 
 
 def async_pool_init(app):

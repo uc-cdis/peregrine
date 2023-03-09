@@ -1,5 +1,6 @@
 from peregrine.errors import UserError
 
+
 # Need this wrapper when `raise` is used in a lambda
 def error_out(error):
     raise error
@@ -7,15 +8,15 @@ def error_out(error):
 
 def parse_request(request):
     """
-        Parses the Request object and returns a dictionary of all args and fields from the request.
-        Args:
-            request (Request): Request object
-        Returns:
-            options (dict): args or form fields from Request object
-            mimetype (string): the mimetype as a string
-            is_csv (bool): whether the requested format is CSV or not
-        Note:
-            Parameters from query string are merged with fields from request (in a form or a JSON). If a parameter appears in both query string and request body, the value from the request body overrides that in the query string.
+    Parses the Request object and returns a dictionary of all args and fields from the request.
+    Args:
+        request (Request): Request object
+    Returns:
+        options (dict): args or form fields from Request object
+        mimetype (string): the mimetype as a string
+        is_csv (bool): whether the requested format is CSV or not
+    Note:
+        Parameters from query string are merged with fields from request (in a form or a JSON). If a parameter appears in both query string and request body, the value from the request body overrides that in the query string.
     """
 
     def handlers(ct):
@@ -55,13 +56,13 @@ def parse_request(request):
 
 def select_mimetype(request_headers, request_options):
     """
-        Returns a mimetype based on the format param or Accept header
-        Args:
-            request_headers (dict): headers from the Request object
-            request_options (dict): args or form fields from Request object
-        Returns:
-            The mimetype as a string
-            is_csv (boolean): whether the requested format is CSV or not
+    Returns a mimetype based on the format param or Accept header
+    Args:
+        request_headers (dict): headers from the Request object
+        request_options (dict): args or form fields from Request object
+    Returns:
+        The mimetype as a string
+        is_csv (boolean): whether the requested format is CSV or not
     """
     mimetype = request_headers.get("Accept", "application/json")
     if "format" in request_options:

@@ -1,3 +1,4 @@
+import html
 import json
 import logging
 import subprocess
@@ -53,15 +54,17 @@ def tryToInt(value):
 
 def striptags_from_dict(data):
     """
-        Strips tags from both keys and values in a dict
+    Strips tags from both keys and values in a dict
     """
     if isinstance(data, dict):
         new_dict = {}
         for k, v in data.items():
+            k = html.escape(k)
             cleanedK = tryToInt(Markup(k).striptags())
             if isinstance(v, dict):
                 new_dict[cleanedK] = striptags_from_dict(v)
             else:
+                v = html.escape(v)
                 # striptags converts everything to str, so convert back to int if possible
                 new_dict[cleanedK] = tryToInt(Markup(v).striptags())
     return new_dict
@@ -71,16 +74,16 @@ def add_content_disposition(
     request_headers, request_options, response, file_name="file"
 ):
     """
-        Returns response as a file if attachment parameter in request is true
+    Returns response as a file if attachment parameter in request is true
 
-        Args:
-            request_headers (dict): headers from the Request object
-            request_options (dict): args or form fields from Request object
-            response (Response): the response to modify
-            file_name (string): the filename used if response is sent as a file (no extension, extension determined by content-type)
+    Args:
+        request_headers (dict): headers from the Request object
+        request_options (dict): args or form fields from Request object
+        response (Response): the response to modify
+        file_name (string): the filename used if response is sent as a file (no extension, extension determined by content-type)
 
-        Returns:
-            A Flask Response object, with Content-Disposition set if attachment was true. Unmodified otherwise.
+    Returns:
+        A Flask Response object, with Content-Disposition set if attachment was true. Unmodified otherwise.
     """
     if "attachment" in request_options.keys():
         if (
@@ -115,14 +118,14 @@ def to_json(options, data):
 
 def to_xml(options, data):
     """
-        Converts a dict to xml string with <reponse> as the root
+    Converts a dict to xml string with <reponse> as the root
 
-        Args:
-            options (dict): request options
-            hits (dict or list): the data to convert
+    Args:
+        options (dict): request options
+        hits (dict or list): the data to convert
 
-        Returns:
-            xml string
+    Returns:
+        xml string
     """
     xml = dicttoxml.dicttoxml(data, attr_type=False, custom_root="response")
     if is_pretty(options):
@@ -132,16 +135,16 @@ def to_xml(options, data):
 
 def format_response(request_options, data, mimetype):
     """
-        Returns data as a response with the format specified either as a parameter (priority)
-        or as a Accept header in the request.
+    Returns data as a response with the format specified either as a parameter (priority)
+    or as a Accept header in the request.
 
-        Args:
-            request_options (dict): args or form fields from Request object
-            data (dict): data to be formatted and returned in the Response body
-            mimetype (string)
+    Args:
+        request_options (dict): args or form fields from Request object
+        data (dict): data to be formatted and returned in the Response body
+        mimetype (string)
 
-        Returns:
-            A Flask Response object, with the data formatted as specified and the Content-Type set
+    Returns:
+        A Flask Response object, with the data formatted as specified and the Content-Type set
     """
     if (
         request_options.get("attachment", "").lower() == "true"
@@ -180,14 +183,14 @@ def format_response(request_options, data, mimetype):
 
 def remove_download_token_from_cookie(options, response):
     """
-        Removes a download token in cookie as an indicator that download is ready.
+    Removes a download token in cookie as an indicator that download is ready.
 
-        Args:
-            options (dict): args or form fields from Request object
-            response: Response object
+    Args:
+        options (dict): args or form fields from Request object
+        response: Response object
 
-        Returns:
-            The response object that is passed in
+    Returns:
+        The response object that is passed in
     """
     cookie_key = options.get("downloadCookieKey", "")
     cookie_path = options.get("downloadCookiePath", "/")

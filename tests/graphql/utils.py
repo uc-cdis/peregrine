@@ -51,7 +51,6 @@ def reset_transactions(pg_driver):
 
 
 def patch_indexclient(monkeypatch):
-
     called = {"create": False, "create_alias": False}
 
     def check_hashes(hashes):
