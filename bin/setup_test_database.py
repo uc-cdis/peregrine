@@ -15,7 +15,6 @@ from setup_psqlgraph import setup_database, create_tables, create_indexes
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--host", type=str, action="store", default="localhost", help="psql-server host"

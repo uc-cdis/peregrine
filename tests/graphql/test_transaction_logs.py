@@ -425,7 +425,6 @@ def test_transaction_log_entities_errors(
 
 
 def test_transaction_log_documents(client, submitter, pg_driver_clean, cgci_blgsp):
-
     utils.reset_transactions(pg_driver_clean)
     post_example_entities_together(client, pg_driver_clean, submitter)
     r = client.post(

@@ -36,7 +36,7 @@ from .traversal import subq_paths
 
 from peregrine.resources.submission.constants import case_cache_enabled
 
-logging.root.setLevel(level=logging.ERROR)
+logging.root.setLevel(level=logging.INFO)
 
 COUNT_NAME = "_{}_count"
 __gql_object_classes = {}
@@ -1099,7 +1099,6 @@ def get_nodetype_fields_dict():
     """Return a dictionary containing all the fields in the dictionary."""
 
     if not NodeType.dictionary_fields:
-
         all_dictionary_fields = set(
             key
             for node in list(dictionary.schema.values())

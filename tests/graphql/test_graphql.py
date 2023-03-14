@@ -1554,6 +1554,7 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
             }
         ),
     )
+    actual_dict = r.json
     expected_dict = {
         "data": {
             "case0": [
@@ -1577,11 +1578,9 @@ def test_array_type_arg(client, submitter, pg_driver_clean, cgci_blgsp):
     # Lists are ordered but here order does not matter so we sort them before comparing.
     for k, v in expected_dict["data"].items():
         expected_dict["data"][k] = sorted(v, key=(lambda x: sorted(x.items())))
-    for k, v in r.json["data"].items():
-        r.json["data"][k] = sorted(v, key=(lambda x: sorted(x.items())))
-    assert json.dumps(r.json, sort_keys=True) == json.dumps(
-        expected_dict, sort_keys=True
-    )
+    for k, v in actual_dict["data"].items():
+        actual_dict["data"][k] = sorted(v, key=(lambda x: sorted(x.items())))
+    assert actual_dict == expected_dict
 
 
 def test_invalid_array_arg(client, submitter, pg_driver_clean, cgci_blgsp):

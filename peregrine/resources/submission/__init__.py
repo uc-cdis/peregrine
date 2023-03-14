@@ -91,6 +91,15 @@ def root_graphql_query():
     """
     Run a graphql query.
     """
+    payload = peregrine.utils.parse_request_json()
+    query = payload.get("query")
+    variables, errors = peregrine.utils.get_variables(payload)
+    if errors:
+        return flask.jsonify({"data": None, "errors": errors}), 400
+    return peregrine.utils.jsonify_check_errors(do_graphql_query(query, variables))
+
+
+def do_graphql_query(query, variables):
     # Short circuit if user is not recognized. Make sure that the list of
     # projects that the user has read access to is set.
     flask.current_app.logger.warn("QUERY INIZIATA")
@@ -99,12 +108,7 @@ def root_graphql_query():
     except AuthZError:
         data = flask.jsonify({"data": {}, "errors": ["Unauthorized query."]})
         return data, 403
-    payload = peregrine.utils.parse_request_json()
-    query = payload.get("query")
-    variables, errors = peregrine.utils.get_variables(payload)
-    if errors:
-        return flask.jsonify({"data": None, "errors": errors}), 400
-    return peregrine.utils.jsonify_check_errors(graphql.execute_query(query, variables))
+    return graphql.execute_query(query, variables)
 
 
 def generate_schema_file(graphql_schema, app_logger):
