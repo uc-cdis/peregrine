@@ -37,7 +37,6 @@ def pg_config():
 
 @pytest.fixture(scope="session")
 def app(request):
-
     _app.config.from_object("peregrine.test_settings")
     app_init(_app)
 
@@ -55,7 +54,7 @@ def app(request):
     except Exception:
         _app.logger.exception("Couldn't initialize auth, continuing anyway")
 
-    _app.logger.setLevel(os.environ.get("GDC_LOG_LEVEL", "WARNING"))
+    _app.logger.setLevel(os.environ.get("GDC_LOG_LEVEL", "DEBUG"))
     _app.jwt_public_keys = {
         _app.config["USER_API"]: {
             "key-test": utils.read_file("resources/keys/test_public_key.pem")

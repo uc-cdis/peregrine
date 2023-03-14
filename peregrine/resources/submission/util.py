@@ -177,7 +177,7 @@ def get_entities(psql_driver, node_ids):
 
 
 def parse_boolean(value):
-    """Try parse boolean. raises UserError if unable. """
+    """Try parse boolean. raises UserError if unable."""
 
     if isinstance(value, bool):
         return value

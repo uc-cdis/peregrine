@@ -76,7 +76,6 @@ def test_anonymous_call_with_public_config(
 def test_get_projects_anonymous(
     client, submitter, pg_driver_clean, cgci_blgsp, public_dataset_api
 ):
-
     post_example_entities_together(client, pg_driver_clean, submitter)
     with pg_driver_clean.session_scope() as s:
         project = models.Project(
