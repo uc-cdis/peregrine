@@ -16,6 +16,8 @@ info:
 tags:
   - name: graphql
     description: GraphQL Queries
+  - name: core metadata
+  - name: datasets
   - name: system
     description: System endpoints
 paths:
@@ -64,7 +66,6 @@ paths:
           description: unauthorized request
         '400':
           description: invalid request
-
   /graphql:
     post:
       tags:
@@ -91,6 +92,59 @@ paths:
               $ref: '#/components/schemas/QueryInputInfo'
         description: The GraphQL query and parameters
         required: true
+  /{object_id}:
+    get:
+      summary: Get core metadata for an object_id
+      tags:
+      - core metadata
+      parameters:
+      - name: object_id
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: Accept
+        in: header
+        schema:
+          type: string
+          enum:
+          - application/json (default)
+          - x-bibtex
+          - application/vnd.schemaorg.ld+json
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+              example:
+                object_id: 123
+                file_name: "my-file.txt"
+                data_format: TXT
+                file_size: 10
+            application/vnd.schemaorg.ld+json:
+              schema:
+                type: object
+              example:
+                '@context': http://schema.org
+                '@type': Dataset
+                '@id': https://dataguids.org/index/123
+                identifier: [{"@type": "PropertyValue", "propertyID": "dataguid", "value": "123"}, {"@type": "PropertyValue", "propertyID": "md5", "value": "bc575394b5565a1d3fa20abe2b132896"}]
+                publisher: {"@type": "Organization", "name": "my-org"}
+                author: {"name": "my-author"}
+                description: my-description
+                additionalType: submitted_aligned_reads
+                name: my-file.txt
+                datePublished: 2019-01-24T19:40:02.537991+00:00
+            x-bibtex:
+              schema:
+                type: string
+              example: '@misc {123, file_name = "my-file.txt", data_format = "TXT", file_size = "10", object_id = "123"}'
+        '401':
+          description: Authentication error
+        '404':
+          description: No core metadata was found for this object_id
   /getschema:
     get:
       tags:
