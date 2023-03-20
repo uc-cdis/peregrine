@@ -12,6 +12,7 @@ helm upgrade --install gen3/peregrine
 These commands will add the Gen3 helm chart repo and install the peregrine service to your Kubernetes cluster. 
 
 Deploying peregrine this way will use the defaults that are defined in this [values.yaml file](https://github.com/uc-cdis/gen3-helm/blob/master/helm/peregrine/values.yaml)
+
 You can learn more about these values by accessing the peregrine [README.md](https://github.com/uc-cdis/gen3-helm/blob/master/helm/peregrine/README.md)
 
 If you would like to override any of the default values, simply copy the above values.yaml file into a local file and make any changes needed. 
