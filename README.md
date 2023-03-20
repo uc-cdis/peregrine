@@ -42,3 +42,9 @@ Run tests.
 ```bash
 poetry run pytest -vv --cov=peregrine --cov-report xml tests
 ```
+
+
+### Quickstart with Helm
+
+You can now deploy individual services via Helm! 
+Please refer to the Helm quickstart guide HERE (https://github.com/uc-cdis/peregrine/blob/master/docs/quickstart_helm.md)
