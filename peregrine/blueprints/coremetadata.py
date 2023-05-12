@@ -2,6 +2,7 @@ import html
 import json
 
 from cdiserrors import InternalError, NotFoundError
+from cdislogging import get_logger
 import flask
 
 from peregrine.resources.submission import do_graphql_query
@@ -35,6 +36,7 @@ CORE_METADATA_QUERY_FIELDS = [
 
 
 blueprint = flask.Blueprint("coremetadata", "coremetadata")
+logger = get_logger(__name__)
 
 
 @blueprint.route("/<path:object_id>", methods=["GET"])
@@ -73,9 +75,7 @@ def get_core_metadata(object_id):
         description: No core metadata was found for this object_id
     """
     object_id = html.escape(object_id)
-    flask.current_app.logger.info(
-        "Getting metadata for object_id: {}".format(object_id)
-    )
+    logger.info("Getting metadata for object_id: {}".format(object_id))
     accept = flask.request.headers.get("Accept")
     if accept == "x-bibtex":
         return get_bibtex_metadata(object_id)
@@ -194,6 +194,7 @@ def flatten_dict(d):
         error = "Core metadata not available for this file"
         if "errors" in d:
             error += ": " + d["errors"][0]
+        logger.error(error)
         raise NotFoundError(error)
     return flat_d
 
@@ -242,7 +243,9 @@ def get_file_type(object_id):
     try:
         file_type = response["datanode"][0]["type"]
     except IndexError:
-        raise NotFoundError('object_id "' + object_id + '" not found')
+        msg = 'object_id "' + object_id + '" not found'
+        logger.error(msg)
+        raise NotFoundError(msg)
     return file_type
 
 
@@ -294,8 +297,10 @@ def send_query(query_txt):
     """
     Make a graphql query and return the jsonified response.
     """
-    flask.current_app.logger.debug(f"Query: {query_txt}")
+    logger.debug(f"Query: {query_txt}")
     data, errors = do_graphql_query(query_txt, variables={})
     if errors:
-        raise InternalError(f"Errors querying: {errors}")
+        msg = f"Errors querying: {errors}"
+        logger.error(msg)
+        raise InternalError(msg)
     return data

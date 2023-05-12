@@ -50,7 +50,7 @@ def resource_path_to_project_ids(resource_path):
             flask.current_app.db.nodes(models.Program).props(name=program_name).first()
         )
         if not program:
-            logger.warn(
+            logger.debug(
                 "program {} in resource path {} does not exist".format(
                     program_name, resource_path
                 )
@@ -65,7 +65,7 @@ def resource_path_to_project_ids(resource_path):
         flask.current_app.db.nodes(models.Project).props(code=project_code).first()
     )
     if not project:
-        logger.warn(
+        logger.debug(
             "project {} in resource path {} does not exist".format(
                 project_code, resource_path
             )
