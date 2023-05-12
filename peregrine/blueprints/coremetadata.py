@@ -270,7 +270,7 @@ def has_core_metadata(response, file_type):
     try:
         # try to access the core_metadata
         response[file_type][0]["core_metadata_collections"][0]
-    except:
+    except Exception:
         return False
     return True
 
@@ -297,7 +297,7 @@ def send_query(query_txt):
     """
     Make a graphql query and return the jsonified response.
     """
-    logger.debug(f"Query: {query_txt}")
+    logger.info(f"Query: {query_txt}")
     data, errors = do_graphql_query(query_txt, variables={})
     if errors:
         msg = f"Errors querying: {errors}"
