@@ -226,6 +226,6 @@ def run_for_development(**kwargs):
 
     try:
         app_init(app)
-    except:
+    except Exception:
         app.logger.exception("Couldn't initialize application, continuing anyway")
     app.run(**kwargs)
