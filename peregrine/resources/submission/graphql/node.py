@@ -644,11 +644,10 @@ def get_node_class_property_attrs(cls, _cache={}):
     def resolve_type(self, info, *args):
         return self.__class__.__name__
 
-    attrs = {}
-    for name, types in cls.__pg_properties__.items():
-        print(f"Name: {name}")
-        print(f"Types: {types}")
-        attrs[name] = graphene.Field(lookup_graphql_type(types[0]))
+    attrs = {
+        name: graphene.Field(lookup_graphql_type(types[0]))
+        for name, types in cls.__pg_properties__.items()
+    }
     attrs["resolve_type"] = resolve_type
 
     if cls.label == "project":
