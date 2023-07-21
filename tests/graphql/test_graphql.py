@@ -1269,34 +1269,34 @@ def test_without_path_order(client, submitter, pg_driver_clean, cgci_blgsp):
         }
     }, r.data
 
-#
-# def test_file_size_long(client, submitter, pg_driver_clean, cgci_blgsp):
-#     """Assert the long type is working as float"""
-#     put_example_entities_together(client, pg_driver_clean, submitter)
-#
-#     r = client.post(
-#         path,
-#         headers=submitter,
-#         data=json.dumps(
-#             {
-#                 "query": """
-#                 query Test {
-#                     submitted_unaligned_reads (
-#                       order_by_desc: "file_size",
-#                     )
-#                     { submitter_id file_size }
-#                 }
-#             """
-#             }
-#         ),
-#     )
-    # assert r.json == {
-    #     "data": {
-    #         "submitted_unaligned_reads": [
-    #             {"submitter_id": "CGCI-file-2", "file_size": 5962718282},
-    #         ]
-    #     }
-    # }, r.data
+
+def test_file_size_long(client, submitter, pg_driver_clean, cgci_blgsp):
+    """Assert the long type is working as float"""
+    post_example_entities_together(client, pg_driver_clean, submitter)
+
+    r = client.post(
+        path,
+        headers=submitter,
+        data=json.dumps(
+            {
+                "query": """
+                query Test {
+                    read_group (
+                      order_by_desc: "read_length",
+                    )
+                    { submitter_id, read_length }
+                }
+            """
+            }
+        ),
+    )
+    assert r.json == {
+        "data": {
+            "read_group": [
+                {"submitter_id": "test-readgroup-1", "read_length": 59627182820.0},
+            ]
+        }
+    }, r.data
 
 
 def test_read_group_with_path_to_case(client, submitter, pg_driver_clean, cgci_blgsp):
