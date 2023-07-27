@@ -95,3 +95,12 @@ def test_get_projects_anonymous(
             {"dbgap_accession_number": "phsid", "code": "OTHER", "name": "name"},
         ]
     }
+
+
+def test_no_nodes_parameter(client, submitter):
+    """
+    The endpoint should require the `nodes` query parameter
+    """
+    r = client.get("/datasets", headers=submitter)
+    assert r.status_code == 400, r.text
+    assert r.json["message"] == "Need to provide target nodes in query param"
