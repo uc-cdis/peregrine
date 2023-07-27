@@ -1270,7 +1270,7 @@ def test_without_path_order(client, submitter, pg_driver_clean, cgci_blgsp):
     }, r.data
 
 
-def test_file_size_long(client, submitter, pg_driver_clean, cgci_blgsp):
+def test_long_as_float_type(client, submitter, pg_driver_clean, cgci_blgsp):
     """Assert the long type is working as float"""
     post_example_entities_together(client, pg_driver_clean, submitter)
 
