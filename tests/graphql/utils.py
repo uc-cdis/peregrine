@@ -26,7 +26,6 @@ data_fnames = [
     "exposure.json",
     "treatment.json",
     "read_group.json",
-    # "submitted_unaligned_reads.json",
 ]
 
 PATH = "/v0/submission/graphql"
