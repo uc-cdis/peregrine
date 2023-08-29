@@ -100,5 +100,4 @@ def test_endpoint(client, submitter, pg_driver_clean, cgci_blgsp, graphql_client
     assert data.get("object_id") == obj_id
     assert data.get("project_id") == "CGCI-BLGSP"
     assert data.get("type") == "submitted_unaligned_reads"
-    assert data.get("type") == "submitted_unaligned_reads"
     assert obj_id in data.get("citation", "")

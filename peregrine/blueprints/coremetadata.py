@@ -2,6 +2,7 @@ import html
 import json
 
 from cdiserrors import InternalError, NotFoundError
+from cdislogging import get_logger
 import flask
 
 from peregrine.resources.submission import do_graphql_query
@@ -35,6 +36,7 @@ CORE_METADATA_QUERY_FIELDS = [
 
 
 blueprint = flask.Blueprint("coremetadata", "coremetadata")
+logger = get_logger(__name__, log_level="info")
 
 
 @blueprint.route("/<path:object_id>", methods=["GET"])
@@ -73,9 +75,7 @@ def get_core_metadata(object_id):
         description: No core metadata was found for this object_id
     """
     object_id = html.escape(object_id)
-    flask.current_app.logger.info(
-        "Getting metadata for object_id: {}".format(object_id)
-    )
+    logger.info("Getting metadata for object_id: {}".format(object_id))
     accept = flask.request.headers.get("Accept")
     if accept == "x-bibtex":
         return get_bibtex_metadata(object_id)
@@ -194,6 +194,7 @@ def flatten_dict(d):
         error = "Core metadata not available for this file"
         if "errors" in d:
             error += ": " + d["errors"][0]
+        logger.error(error)
         raise NotFoundError(error)
     return flat_d
 
@@ -239,10 +240,16 @@ def get_file_type(object_id):
     """
     query_txt = '{{ datanode (object_id: "{}") {{ type }} }}'.format(object_id)
     response = send_query(query_txt)
-    try:
-        file_type = response["datanode"][0]["type"]
-    except IndexError:
-        raise NotFoundError('object_id "' + object_id + '" not found')
+    records = response.get("datanode", [])
+    if not records:
+        msg = 'object_id "' + object_id + '" not found'
+        logger.error(msg)
+        raise NotFoundError(msg)
+    if "type" not in records[0]:
+        msg = f"Unable to get 'type' from record: {records[0]}"
+        logger.error(msg)
+        raise InternalError(msg)
+    file_type = records[0]["type"]
     return file_type
 
 
@@ -254,6 +261,8 @@ def request_metadata(object_id):
     response = send_query(build_query(object_id, file_type, True))
 
     # if the file has no core metadata, get the other metadata only
+    # TODO inspect the node and add the fields that are there, instead of
+    # skipping all CORE_METADATA_QUERY_FIELDS when any of them is missing
     if not has_core_metadata(response, file_type):
         response = send_query(build_query(object_id, file_type))
 
@@ -267,7 +276,7 @@ def has_core_metadata(response, file_type):
     try:
         # try to access the core_metadata
         response[file_type][0]["core_metadata_collections"][0]
-    except:
+    except Exception:
         return False
     return True
 
@@ -292,10 +301,10 @@ def build_query(object_id, file_type, get_core_metadata=False):
 
 def send_query(query_txt):
     """
-    Make a graphql query and return the jsonified response.
+    Make a graphql query and return the response.
     """
-    flask.current_app.logger.debug(f"Query: {query_txt}")
+    logger.info(f"Query: {query_txt}")
     data, errors = do_graphql_query(query_txt, variables={})
     if errors:
-        raise InternalError(f"Errors querying: {errors}")
+        logger.error(f"Errors querying; will still try to parse data: {errors}")
     return data
