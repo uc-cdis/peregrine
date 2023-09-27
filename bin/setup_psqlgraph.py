@@ -7,7 +7,6 @@ from psqlgraph import create_all, Node, Edge
 
 
 def try_drop_test_data(user, database, root_user="postgres", host=""):
-
     print("Dropping old test data")
 
     engine = create_engine(
@@ -21,7 +20,7 @@ def try_drop_test_data(user, database, root_user="postgres", host=""):
         create_stmt = 'DROP DATABASE "{database}"'.format(database=database)
         conn.execute(create_stmt)
     except Exception as msg:
-        logging.warn("Unable to drop test data:" + str(msg))
+        logging.warning("Unable to drop test data:" + str(msg))
 
     conn.close()
 
@@ -53,7 +52,7 @@ def setup_database(
     try:
         conn.execute(create_stmt)
     except Exception as msg:
-        logging.warn("Unable to create database: {}".format(msg))
+        logging.warning("Unable to create database: {}".format(msg))
 
     if not no_user:
         try:
@@ -69,7 +68,7 @@ def setup_database(
             conn.execute(perm_stmt)
             conn.execute("commit")
         except Exception as msg:
-            logging.warn("Unable to add user:" + str(msg))
+            logging.warning("Unable to add user:" + str(msg))
     conn.close()
 
 
@@ -119,7 +118,6 @@ def create_indexes(host, user, password, database):
 
 
 if __name__ == "__main__":
-
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--host", type=str, action="store", default="localhost", help="psql-server host"

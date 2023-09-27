@@ -162,7 +162,7 @@ def parse_request_json(expected_types=(dict, list)):
 
 
 def parse_boolean(value):
-    """Try parse boolean. raises UserError if unable. """
+    """Try parse boolean. raises UserError if unable."""
 
     if isinstance(value, bool):
         return value

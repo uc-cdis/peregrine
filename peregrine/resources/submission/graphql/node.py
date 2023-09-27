@@ -36,7 +36,7 @@ from .traversal import subq_paths
 
 from peregrine.resources.submission.constants import case_cache_enabled
 
-logging.root.setLevel(level=logging.ERROR)
+logging.root.setLevel(level=logging.INFO)
 
 COUNT_NAME = "_{}_count"
 __gql_object_classes = {}
@@ -525,7 +525,7 @@ def lookup_graphql_type(T):
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
-        int: graphene.Int,
+        int: graphene.Float,
         list: graphene.List(graphene.String),
     }.get(T, graphene.String)
 
@@ -580,7 +580,7 @@ def get_node_interface_args():
             of_type=graphene.List(graphene.String),
             project_id=graphene.String(),
             category=graphene.String(),
-        )
+        ),
     )
 
 
@@ -990,7 +990,7 @@ def get_withpathto_type():
                     for cls in psqlgraph.Node.get_subclasses()
                 ]
                 for k, v in cls_attrs.items()
-            }
+            },
         ),
     )
 
@@ -1099,7 +1099,6 @@ def get_nodetype_fields_dict():
     """Return a dictionary containing all the fields in the dictionary."""
 
     if not NodeType.dictionary_fields:
-
         all_dictionary_fields = set(
             key
             for node in list(dictionary.schema.values())

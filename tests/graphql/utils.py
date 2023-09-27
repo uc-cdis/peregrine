@@ -25,6 +25,7 @@ data_fnames = [
     "diagnosis.json",
     "exposure.json",
     "treatment.json",
+    "read_group.json",
 ]
 
 PATH = "/v0/submission/graphql"
@@ -51,7 +52,6 @@ def reset_transactions(pg_driver):
 
 
 def patch_indexclient(monkeypatch):
-
     called = {"create": False, "create_alias": False}
 
     def check_hashes(hashes):
