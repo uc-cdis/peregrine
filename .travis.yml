@@ -1,4 +1,4 @@
-dist: jammy
+dist: xenial
 sudo: false
 language: python
 
@@ -10,14 +10,7 @@ cache:
   - apt
 
 addons:
-  postgresql: '13'
-  apt:
-    sources:
-      - sourceline: deb http://apt.postgresql.org/pub/repos/apt/ jammy-pgdg main
-          13
-        key_url: https://www.postgresql.org/media/keys/ACCC4CF8.asc
-    packages:
-      - postgresql-13
+  postgresql: '9.4'
 
 before_install:
   # bust only the the part of the cache that we are frequently changing
