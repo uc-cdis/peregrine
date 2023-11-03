@@ -1,6 +1,6 @@
 #!groovy
 
-@Library('cdis-jenkins-lib@datasim-chore/log') _
+@Library('cdis-jenkins-lib@master') _
 
 testPipeline { 
 }
