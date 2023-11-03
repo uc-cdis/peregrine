@@ -40,8 +40,9 @@ mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
-# change to latest sheepdog tag after merge
-sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", branch = "fix/flask-upgrade"}
+# TODO: Sheepdog tests have been temporarily disabled until Sheepdog (and indirectly Indexd) are updated to
+# a more recent version of Flask.
+# sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", branch = "fix/flask-upgrade"}
 
 [tool.poetry.plugins."peregrine.modules"]
 "system" = "peregrine=peregrine.api:main"
