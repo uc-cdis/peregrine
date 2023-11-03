@@ -12,8 +12,6 @@ def load_json(file_name):
 conf_data = load_json("creds.json")
 config = app.config
 
-config["SESSION_REFRESH_EACH_REQUEST"] = False
-
 config["AUTH"] = "https://auth.service.consul:5000/v3/"
 config["AUTH_ADMIN_CREDS"] = None
 config["INTERNAL_AUTH"] = None
