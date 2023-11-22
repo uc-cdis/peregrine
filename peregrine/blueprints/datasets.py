@@ -22,9 +22,9 @@ def get_datasets():
     anonymous users
     """
     nodes = flask.request.args.get("nodes", "")
-    nodes = nodes.split(",")
     if not nodes:
         raise UserError("Need to provide target nodes in query param")
+    nodes = nodes.split(",")
     if os.environ.get("PUBLIC_DATASETS", "false").lower() == "true":
         set_read_access_projects_for_public_endpoint()
     else:

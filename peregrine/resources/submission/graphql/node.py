@@ -525,7 +525,7 @@ def lookup_graphql_type(T):
     return {
         bool: graphene.Boolean,
         float: graphene.Float,
-        int: graphene.Int,
+        int: graphene.Float,
         list: graphene.List(graphene.String),
     }.get(T, graphene.String)
 
@@ -580,7 +580,7 @@ def get_node_interface_args():
             of_type=graphene.List(graphene.String),
             project_id=graphene.String(),
             category=graphene.String(),
-        )
+        ),
     )
 
 
@@ -990,7 +990,7 @@ def get_withpathto_type():
                     for cls in psqlgraph.Node.get_subclasses()
                 ]
                 for k, v in cls_attrs.items()
-            }
+            },
         ),
     )
 
