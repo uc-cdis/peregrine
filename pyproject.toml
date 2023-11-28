@@ -33,6 +33,7 @@ cdispyutils = ">=2.0.1"
 cdiserrors = ">=0.1"
 cdislogging = "<2"
 requests = "2.32.3"
+gunicorn = ">=21.2.0"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=6.0"
