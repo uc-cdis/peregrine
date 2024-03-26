@@ -22,6 +22,11 @@ stopit = ">=1.1"
 Flask = ">=2.2.5"
 Flask-Cors = ">=3.0.9"
 gen3authz = "<3"
+# gen3authz = {git = "https://github.com/grugna/gen3authz.git", rev = "0.2.4", subdirectory = "python"}
+# ATTENTION: Need to make this changes if times out.
+# gen3authz = {git = "https://github.com/grugna/gen3authz.git", rev = "1.0.6"} 
+# boto = "^2.36"
+# elasticsearch = "^1.2"
 PyYAML = ">=5.4.1"
 dicttoxml = ">=1.5"
 SQLAlchemy = "1.3.5"
