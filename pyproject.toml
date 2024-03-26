@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "peregrine"
-version = "3.2.2"
+version = "3.2.3"
 description = "Query interface to get insights into data in Gen3 Commons"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -21,7 +21,7 @@ simplejson = ">=3.8"
 stopit = ">=1.1"
 Flask = ">=2.2.5"
 Flask-Cors = ">=3.0.9"
-gen3authz = ">=0.2"
+gen3authz = "<3"
 # gen3authz = {git = "https://github.com/grugna/gen3authz.git", rev = "0.2.4", subdirectory = "python"}
 # ATTENTION: Need to make this changes if times out.
 # gen3authz = {git = "https://github.com/grugna/gen3authz.git", rev = "1.0.6"} 
@@ -34,9 +34,9 @@ graphene = ">=2.0,<3"
 promise = ">=2.2"
 Flask-SQLAlchemy-Session = ">=1.1"
 psqlgraph = ">=3.0"
-cdispyutils = ">=1.0"
+cdispyutils = ">=2.0.1"
 cdiserrors = ">=0.1"
-cdislogging = ">=1.0"
+cdislogging = "<2"
 
 [tool.poetry.dev-dependencies]
 pytest = ">=6.0"
@@ -45,7 +45,7 @@ mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
-sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "5.1.3" }
+sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "5.1.4" }
 
 [tool.poetry.plugins."peregrine.modules"]
 "system" = "peregrine=peregrine.api:main"
