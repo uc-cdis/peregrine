@@ -1,4 +1,5 @@
-from peregrine import app_init, app
+import sys
 
-app_init(app)
-application = app
+sys.path.append("/var/www/peregrine/")
+sys.path.append("/peregrine/")
+from wsgi import app as application
