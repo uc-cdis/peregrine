@@ -60,4 +60,4 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /var/www/${appname}
 
-CMD ["gunicorn", "-c", "deployment/wsgi/gunicorn.conf.py"]
+CMD ["gunicorn", "-c", "/peregrine/deployment/wsgi/gunicorn.conf.py"]
