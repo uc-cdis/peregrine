@@ -101,7 +101,7 @@ def execute_query(query, variables=None, app=None):
     # Execute query
     try:
         session_scope = app.db.session_scope()
-        timer = log_duration("GraphQL")
+        timer = log_duration(f"GraphQL: {query}, variables: {variables}")
         result = None
         with session_scope as session:
             with timer:
