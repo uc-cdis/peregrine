@@ -6,11 +6,13 @@ from gdcdatamodel.models import *
 from psqlgraph import create_all, Node, Edge
 
 
-def try_drop_test_data(user, database, root_user="postgres", host=""):
+def try_drop_test_data(user, password, database, root_user="postgres", host=""):
     print("Dropping old test data")
 
     engine = create_engine(
-        "postgres://{user}@{host}/postgres".format(user=root_user, host=host)
+        "postgres://{user}:{pwd}@{host}/postgres".format(
+            user=root_user, pwd=password, host=host
+        )
     )
 
     conn = engine.connect()
@@ -40,10 +42,12 @@ def setup_database(
     print("Setting up test database")
 
     if not no_drop:
-        try_drop_test_data(user, database, host=host)
+        try_drop_test_data(user, password, database, host=host)
 
     engine = create_engine(
-        "postgres://{user}@{host}/postgres".format(user=root_user, host=host)
+        "postgres://{user}:{pwd}@{host}/postgres".format(
+            user=root_user, pwd=password, host=host
+        )
     )
     conn = engine.connect()
     conn.execute("commit")
