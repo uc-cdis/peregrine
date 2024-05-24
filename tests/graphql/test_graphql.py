@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 import json
 import os
 import random
+import uuid
 
 import pytest
 from flask import g
@@ -1653,6 +1654,77 @@ def test_datanode(graphql_client, client, submitter, pg_driver_clean, cgci_blgsp
     j1 = graphql_client("{datanode {object_id}}").json
     j2 = graphql_client('{datanode(object_id: "%s") {object_id}}' % obj_id).json
     assert j1 == j2
+
+
+def test_datanode_query_all(
+    graphql_client, client, submitter, pg_driver_clean, cgci_blgsp
+):
+    """
+    Regression test for a bug where querying all datanode objects does not return all objects
+    because "limit" and "offset" are not applied correctly.
+    Mitigated by datanode returning the first <limit> items for each file node.
+    """
+    post_example_entities_together(client, pg_driver_clean, submitter)
+    utils.put_entity_from_file(client, "read_group.json", submitter)
+
+    # submit 20 SubmittedUnalignedReads and 25 SubmittedAlignedReads records
+    n_type_1 = 20
+    n_type_2 = 25
+    files_type_1 = {}
+    files_type_2 = {}
+    for _ in range(n_type_1):
+        unique_id = str(uuid.uuid4())
+        files_type_1[unique_id] = models.SubmittedUnalignedReads(
+            f"sub_id_{unique_id}", project_id="CGCI-BLGSP", object_id=unique_id
+        )
+    for _ in range(n_type_2):
+        unique_id = str(uuid.uuid4())
+        files_type_2[unique_id] = models.SubmittedAlignedReads(
+            f"sub_id_{unique_id}", project_id="CGCI-BLGSP", object_id=unique_id
+        )
+
+    with pg_driver_clean.session_scope() as s:
+        rg = pg_driver_clean.nodes(models.ReadGroup).one()
+        rg.submitted_unaligned_reads_files = files_type_1.values()
+        rg.submitted_aligned_reads_files = files_type_2.values()
+        s.merge(rg)
+
+    def check_results(results):
+        print("Datanode query result:", results)
+        assert len(results) == n_type_1 + n_type_2
+
+        sur_res = [e for e in results if e["type"] == "submitted_unaligned_reads"]
+        assert len(sur_res) == n_type_1
+        assert files_type_1.keys() == set((e["object_id"] for e in sur_res))
+
+        sar_res = [e for e in results if e["type"] == "submitted_aligned_reads"]
+        assert len(sar_res) == n_type_2
+        assert files_type_2.keys() == set((e["object_id"] for e in sar_res))
+
+    # query all the `datanode` records using `limit` and `offset`
+    chunk_size = 10
+    offset = 0
+    results = []
+    while True:
+        query_txt = "{datanode (first: %s, offset: %s) {object_id type}}" % (
+            chunk_size,
+            offset,
+        )
+        resp = graphql_client(query_txt).json
+        data = resp.get("data", {}).get("datanode", [])
+        if not len(data):
+            break
+        # "chunk_size * 2" because datanode returns the first <limit> items for each file node
+        assert len(data) <= chunk_size * 2
+        results = results + data
+        offset += chunk_size
+    check_results(results)
+
+    # query all the `datanode` records using `limit = 0` (query all records at once)
+    query_txt = "{datanode (first: 0) {object_id type}}"
+    resp = graphql_client(query_txt).json
+    results = resp.get("data", {}).get("datanode", [])
+    check_results(results)
 
 
 def test_boolean_filter(client, submitter, pg_driver_clean, cgci_blgsp):
