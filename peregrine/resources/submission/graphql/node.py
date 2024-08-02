@@ -464,7 +464,7 @@ def query_with_args(classes, args, info):
     of_types = [
         psqlgraph.Node.get_subclass(label) for label in set(args.get("of_type", []))
     ]
-    rv = []
+    all_items = []
     for cls in classes:
         if not of_types or cls in of_types:
             q = get_authorized_query(cls)
@@ -473,14 +473,10 @@ def query_with_args(classes, args, info):
                     q.entity()._props["project_id"].astext == args["project_id"]
                 )
 
-            rv.extend(apply_query_args(q, args, info).all())
-    # apply_arg_limit() applied the limit to individual query results, but we
-    # are concatenating several query results so we need to apply it again
-    limit = args.get("first", DEFAULT_LIMIT)
-    if limit > 0:
-        return rv[:limit]
-    else:
-        return rv
+            q = apply_query_args(q, args, info)
+            all_items.extend(q.all())
+
+    return all_items
 
 
 def query_node_with_args(args, info):
@@ -1065,7 +1061,14 @@ def get_datanode_fields_dict():
 
 
 def resolve_datanode(self, info, **args):
-    """The root query for the :class:`DataNode` node interface.
+    """
+    The root query for the :class:`DataNode` node interface.
+
+    NOTE: A limitation of `datanode` is that the `first` and `offset` filters are not applied
+    properly. Example: If there are 4 file nodes, a `datanode` query with limit=10 returns up
+    to 4*10 = 40 items. `query_with_args()` concatenates the results of all file node queries
+    _after_ the filters are applied by `apply_query_args()`. Applying limits/offsets at the end
+    of `query_with_args()` causes inconsistent and incomplete results.
 
     :returns:
         A list of graphene object classes.
