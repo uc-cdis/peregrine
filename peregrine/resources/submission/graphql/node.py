@@ -3,7 +3,7 @@
 peregrine.resources.submission.graphql.node
 ----------------------------------
 
-Implements GraphQL queries for each gdcdatamodel.model node type
+Implements GraphQL queries for each gen3datamodel.model node type
 using the Graphene GraphQL library
 """
 
@@ -424,7 +424,7 @@ def resolve_node(self, info, **args):
 
     :returns:
         A list of graphene object classes (e.g. a Case query object
-        (not a gdcdatamodel Case)).
+        (not a gen3datamodel Case)).
 
     """
 
