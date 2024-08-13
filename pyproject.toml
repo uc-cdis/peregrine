@@ -13,18 +13,18 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.9,<3.10"
 authutils = ">=6.2.0"
-datamodelutils = ">=1.0"
+datamodelutils = {git = "https://github.com/uc-cdis/datamodelutils", branch = "chore/update-gen3datamodel"}
 defusedxml = ">=0.5"
-dictionaryutils = ">=3.4.10"
-gen3dictionary = ">=2.0.3"
+dictionaryutils = {git = "https://github.com/uc-cdis/dictionaryutils", branch = "chore/update-jsonschema"}
+gen3dictionary = {git = "https://github.com/uc-cdis/datadictionary.git", branch = "chore/add-unit-tests"}
 simplejson = ">=3.8"
 stopit = ">=1.1"
 Flask = ">=2.2.5"
 Flask-Cors = ">=3.0.9"
 gen3authz = "<3"
-PyYAML = ">=5.4.1"
+PyYAML = "*"
 dicttoxml = ">=1.5"
-SQLAlchemy = "1.3.5"
+SQLAlchemy = "^1.3.0, <1.4"
 graphene = ">=2.0,<3"
 promise = ">=2.2"
 Flask-SQLAlchemy-Session = ">=1.1"
@@ -41,7 +41,7 @@ mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
-sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "5.1.4" }
+sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", branch = "chore/update-gen3datamodel" }
 
 [tool.poetry.plugins."peregrine.modules"]
 "system" = "peregrine=peregrine.api:main"
