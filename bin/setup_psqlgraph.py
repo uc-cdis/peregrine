@@ -11,7 +11,7 @@ def try_drop_test_data(user, password, database, root_user="postgres", host=""):
 
     engine = create_engine(
         "postgres://{user}:{pwd}@{host}/postgres".format(
-            user=root_user, pwd="postgres", host=host
+            user=root_user, pwd=password, host=host
         )
     )
 
@@ -46,7 +46,7 @@ def setup_database(
 
     engine = create_engine(
         "postgres://{user}:{pwd}@{host}/postgres".format(
-            user=root_user, pwd="postgres", host=host
+            user=root_user, pwd=password, host=host
         )
     )
     conn = engine.connect()
