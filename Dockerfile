@@ -78,4 +78,4 @@ ENV PYTHONUNBUFFERED=1 \
 
 WORKDIR /var/www/${appname}
 
-CMD ["/peregrine/dockerrun.bash"]
+CMD ["/bin/bash", "-c", "/peregrine/dockerrun.bash"]
