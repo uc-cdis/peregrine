@@ -807,7 +807,7 @@ zipp = "==0.6.0"
 
 [package.source]
 type = "git"
-url = "https://git@github.com/uc-cdis/gdcdatamodel.git"
+url = "https://git@github.com/uc-cdis/gen3datamodel.git"
 reference = "fix/fips-hashing"
 resolved_reference = "da545bdcebe6ed006a9b20109b2b701d391b24ac"
 
