@@ -20,12 +20,15 @@ RUN groupadd -g 1000 gen3 && \
     chown -R gen3:gen3 /$appname && \
     chown -R gen3:gen3 /venv
 
+RUN dnf update && dnf install -y \
+    python3-devel \
+    postgresql15-server-devel \
+    && rm -rf /var/cache/yum
 
 # Builder stage
 FROM base AS builder
 
 USER gen3
-
 
 RUN python -m venv /venv
 
@@ -50,7 +53,7 @@ COPY --from=builder /venv /venv
 COPY --from=builder /$appname /$appname
 
 # install nginx
-RUN yum install nginx postgresql-devel -y
+RUN yum install nginx -y
 
 # allow nginx to bind to port 80
 RUN setcap 'cap_net_bind_service=+ep' /usr/sbin/nginx
