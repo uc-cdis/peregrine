@@ -20,7 +20,7 @@ gen3dictionary = ">=2.0.3"
 simplejson = ">=3.8"
 stopit = ">=1.1"
 Flask = ">=2.2.5"
-Flask-Cors = ">=3.0.9"
+Flask-Cors = "<6"
 gen3authz = "<3"
 # gen3authz = {git = "https://github.com/grugna/gen3authz.git", rev = "0.2.4", subdirectory = "python"}
 # ATTENTION: Need to make this changes if times out.
