@@ -13,6 +13,7 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.9,<3.10"
 authutils = {git = "https://git@github.com/uc-cdis/authutils.git", branch = "feat/jq-testing"}
+botocore = "*"
 gen3datamodel = ">=3.2.1"
 datamodelutils = ">=1.0"
 defusedxml = ">=0.5"
