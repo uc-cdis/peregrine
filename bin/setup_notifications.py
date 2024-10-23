@@ -4,7 +4,7 @@ Script to set up notifcations table
 """
 
 from sqlalchemy import create_engine
-from gdcdatamodel.models.notifications import Base
+from gen3datamodel.models.notifications import Base
 
 
 def setup(host, user, password, database):

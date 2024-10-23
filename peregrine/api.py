@@ -103,8 +103,8 @@ def dictionary_init(app):
 
         d = gdcdictionary.gdcdictionary
     dictionary.init(d)
-    from gdcdatamodel import models as md
-    from gdcdatamodel import validators as vd
+    from gen3datamodel import models as md
+    from gen3datamodel import validators as vd
 
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)

@@ -1,11 +1,11 @@
 """
 This module generalizes the data model used by the peregrine blueprint, and
 must be initialized using another ``models`` module to set the attributes of
-this module. For example, using ``gdcdatamodel.models`` as the models:
+this module. For example, using ``gen3datamodel.models`` as the models:
 
 .. code-block:: python
 
-    peregrine.models.init(gdcdatamodel.models)
+    peregrine.models.init(gen3datamodel.models)
 
 Then this module can be imported elsewhere in ``peregrine``:
 
@@ -13,7 +13,7 @@ Then this module can be imported elsewhere in ``peregrine``:
 
     from peregrine import models
 
-    # This is effectively an alias of ``gdcdatamodel.models.Project``.
+    # This is effectively an alias of ``gen3datamodel.models.Project``.
     models.Project
 """
 
