@@ -103,8 +103,8 @@ def dictionary_init(app):
 
         d = gdcdictionary.gdcdictionary
     dictionary.init(d)
-    from gdcdatamodel import models as md
-    from gdcdatamodel import validators as vd
+    from gen3datamodel import models as md
+    from gen3datamodel import validators as vd
 
     datamodelutils.validators.init(vd)
     datamodelutils.models.init(md)
@@ -133,10 +133,6 @@ def app_init(app):
     submission.graphql.make_graph_traversal_dict(app)
     app.graphql_schema = submission.graphql.get_schema()
     app.schema_file = submission.generate_schema_file(app.graphql_schema, app.logger)
-    try:
-        app.secret_key = app.config["FLASK_SECRET_KEY"]
-    except KeyError:
-        app.logger.error("Secret key not set in config! Authentication will not work")
     async_pool_init(app)
 
     # ARBORIST deprecated, replaced by ARBORIST_URL
