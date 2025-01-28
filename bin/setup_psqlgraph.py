@@ -2,7 +2,7 @@ import argparse
 from sqlalchemy import create_engine
 import logging
 
-from gdcdatamodel.models import *
+from gen3datamodel.models import *
 from psqlgraph import create_all, Node, Edge
 
 
