@@ -166,7 +166,7 @@ def es_setup(request):
 
     def es_teardown():
         es.indices.delete(
-            index=INDEX, ignore=404  # ignores error if index doesn't exists
+            index=INDEX, ignore=404  # ignores error if index doesn't exist
         )
 
     request.addfinalizer(es_teardown)
