@@ -23,7 +23,7 @@ PSQLGRAPH = {
     "host": "localhost",
     "user": "test",
     "password": "test",
-    "database": "automated_test",
+    "database": "peregrine_automated_test",
 }
 
 GDC_PORTAL_ENDPOINT = "http://fake_portal_endpoint_for_tests"

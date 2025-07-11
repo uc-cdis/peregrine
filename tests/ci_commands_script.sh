@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+set -e
 
 # Set up database
 poetry run python bin/setup_test_database.py

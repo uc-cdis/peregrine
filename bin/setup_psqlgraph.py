@@ -140,7 +140,7 @@ if __name__ == "__main__":
         "--database",
         type=str,
         action="store",
-        default="automated_test",
+        default="peregrine_automated_test",
         help="psql test database",
     )
     parser.add_argument(
