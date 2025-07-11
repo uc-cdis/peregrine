@@ -184,6 +184,18 @@ files = [
 ]
 
 [[package]]
+name = "cachelib"
+version = "0.13.0"
+description = "A collection of cache libraries in the same API interface."
+optional = false
+python-versions = ">=3.8"
+groups = ["dev"]
+files = [
+    {file = "cachelib-0.13.0-py3-none-any.whl", hash = "sha256:8c8019e53b6302967d4e8329a504acf75e7bc46130291d30188a6e4e58162516"},
+    {file = "cachelib-0.13.0.tar.gz", hash = "sha256:209d8996e3c57595bee274ff97116d1d73c4980b2fd9a34c7846cd07fd2e1a48"},
+]
+
+[[package]]
 name = "cdiserrors"
 version = "1.0.0"
 description = "Gen3 shared exceptions and utilities."
@@ -1380,6 +1392,26 @@ sqlalchemy = ">=1.3,<2.0"
 xlocal = ">=0.5,<1.0"
 
 [[package]]
+name = "psycopg2"
+version = "2.9.10"
+description = "psycopg2 - Python-PostgreSQL Database Adapter"
+optional = false
+python-versions = ">=3.8"
+groups = ["dev"]
+files = [
+    {file = "psycopg2-2.9.10-cp310-cp310-win32.whl", hash = "sha256:5df2b672140f95adb453af93a7d669d7a7bf0a56bcd26f1502329166f4a61716"},
+    {file = "psycopg2-2.9.10-cp310-cp310-win_amd64.whl", hash = "sha256:c6f7b8561225f9e711a9c47087388a97fdc948211c10a4bccbf0ba68ab7b3b5a"},
+    {file = "psycopg2-2.9.10-cp311-cp311-win32.whl", hash = "sha256:47c4f9875125344f4c2b870e41b6aad585901318068acd01de93f3677a6522c2"},
+    {file = "psycopg2-2.9.10-cp311-cp311-win_amd64.whl", hash = "sha256:0435034157049f6846e95103bd8f5a668788dd913a7c30162ca9503fdf542cb4"},
+    {file = "psycopg2-2.9.10-cp312-cp312-win32.whl", hash = "sha256:65a63d7ab0e067e2cdb3cf266de39663203d38d6a8ed97f5ca0cb315c73fe067"},
+    {file = "psycopg2-2.9.10-cp312-cp312-win_amd64.whl", hash = "sha256:4a579d6243da40a7b3182e0430493dbd55950c493d8c68f4eec0b302f6bbf20e"},
+    {file = "psycopg2-2.9.10-cp313-cp313-win_amd64.whl", hash = "sha256:91fd603a2155da8d0cfcdbf8ab24a2d54bca72795b90d2a3ed2b6da8d979dee2"},
+    {file = "psycopg2-2.9.10-cp39-cp39-win32.whl", hash = "sha256:9d5b3b94b79a844a986d029eee38998232451119ad653aea42bb9220a8c5066b"},
+    {file = "psycopg2-2.9.10-cp39-cp39-win_amd64.whl", hash = "sha256:88138c8dedcbfa96408023ea2b0c369eda40fe5d75002c0964c78f46f11fa442"},
+    {file = "psycopg2-2.9.10.tar.gz", hash = "sha256:12ec0b40b0273f95296233e8750441339298e6a572f7039da5b260e3c8b60e11"},
+]
+
+[[package]]
 name = "psycopg2-binary"
 version = "2.8.6"
 description = "psycopg2 - Python-PostgreSQL Database Adapter"
@@ -1868,19 +1900,20 @@ type = ["importlib_metadata (>=7.0.2)", "jaraco.develop (>=7.21)", "mypy (==1.14
 
 [[package]]
 name = "sheepdog"
-version = "5.1.7"
+version = "5.2.2"
 description = "Gen3 Submission Service"
 optional = false
-python-versions = ">=3.9,<3.10"
+python-versions = ">=3.9.2, <3.10"
 groups = ["dev"]
 files = []
 develop = false
 
 [package.dependencies]
 authlib = "*"
-authutils = ">=6.0.0"
+authutils = ">=6.2.7"
 boto = ">=2.49.0"
 botocore = "*"
+cachelib = "^0.13.0"
 cdiserrors = ">=1.0.0"
 cdislogging = ">=1.0.0"
 cdispyutils = ">=2.0.1"
@@ -1891,7 +1924,7 @@ Flask = ">=2.2.5"
 Flask-SQLAlchemy-Session = ">=1.1"
 fuzzywuzzy = ">=0.6.1"
 gen3authz = ">=1.0.4"
-gen3datamodel = ">=3.2.1"
+gen3datamodel = ">=3.2.4"
 gen3dictionary = ">=2.0.3"
 graphene = ">=2.0.1"
 gunicorn = ">=21.2.0"
@@ -1899,7 +1932,7 @@ indexclient = ">=2.1.1"
 jsonschema = ">=3.2"
 lxml = ">=4.6.5"
 psqlgraph = ">=3.0.1"
-psycopg2-binary = ">=2.8.2,<2.9.0"
+psycopg2 = ">=2.8.2,<3"
 PyYAML = ">=5.4.1"
 requests = ">=2.31.0,<3.0.0"
 simplejson = ">=3.8.1"
@@ -1909,8 +1942,8 @@ urllib3 = "<2.0.0"
 [package.source]
 type = "git"
 url = "https://git@github.com/uc-cdis/sheepdog.git"
-reference = "5.2.0"
-resolved_reference = "dce0aecf06a809c29c805f0d1f94a5c7b880b738"
+reference = "2025.07"
+resolved_reference = "c7c1ca3772a6348221960f7033a83f9dbd7b1bc3"
 
 [[package]]
 name = "simplejson"
@@ -2236,4 +2269,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.9.2,<3.10"
-content-hash = "74d6c89391ced281933d2a51a4246cbe2756b4de23c3e1842f8f2f4a2926bbc9"
+content-hash = "533758b954e63059b2103fca61b92611ad1594fdf250b57a063c425f7de79403"

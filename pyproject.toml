@@ -47,7 +47,7 @@ mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
-sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "5.2.0" }
+sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "2025.07" }
 
 [tool.poetry.plugins."peregrine.modules"]
 "system" = "peregrine=peregrine.api:main"
