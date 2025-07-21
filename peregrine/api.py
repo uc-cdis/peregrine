@@ -89,8 +89,8 @@ def cors_init(app):
 def dictionary_init(app):
     start = time.time()
     if "DICTIONARY_URL" in app.config:
-        app.logger.info("Initializing dictionary from url")
         url = app.config["DICTIONARY_URL"]
+        app.logger.info(f"Initializing dictionary from url '{url}'")
         d = DataDictionary(url=url)
         dict_init.init(d)
     elif "PATH_TO_SCHEMA_DIR" in app.config:
