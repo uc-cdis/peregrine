@@ -12,8 +12,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.9.2,<3.10"
-#authutils = ">=6.2.7"
-authutils = {git = "https://github.com/uc-cdis/authutils", rev = "feat/no-aud-check"}
+authutils = ">=6.2.7,<8"
 botocore = ">=1.35.54"
 gen3datamodel = ">=3.2.1"
 datamodelutils = ">=1.0"
