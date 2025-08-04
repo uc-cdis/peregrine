@@ -166,7 +166,7 @@ def es_setup(request):
 
     def es_teardown():
         es.indices.delete(
-            index=INDEX, ignore=404  # ignores error if index doesn't exists
+            index=INDEX, ignore=404  # ignores error if index doesn't exist
         )
 
     request.addfinalizer(es_teardown)
@@ -255,6 +255,18 @@ def mock_arborist_requests(request):
 
                 if function_name == "create_resource":
                     mocked_response.get = lambda *args, **kwargs: None
+
+                if function_name == "auth_request":
+                    # MagicMock objects cannot be pickled. The sheepdog line `AUTHZ_CACHE.set
+                    # (cache_key, authz)` results in the errors below if `authz` is a MagicMock.
+                    # Set the response to True instead (all authz calls are authorized).
+                    #   root:serializers.py:15 An exception has been raised during a pickling
+                    #   operation: args[0] from __newobj__ args has the wrong class
+                    #   File "[...]/cachelib/serializers.py", line 46, in dumps
+                    #     return serialized
+                    #   UnboundLocalError: local variable 'serialized' referenced before assignment
+                    # See https://github.com/python/cpython/issues/100090
+                    mocked_response = True
 
                 return mocked_response
 
