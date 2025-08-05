@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "peregrine"
-version = "3.2.3"
+version = "3.2.4"
 description = "Query interface to get insights into data in Gen3 Commons"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -34,7 +34,7 @@ psqlgraph = ">=3.0"
 cdispyutils = ">=2.0.1"
 cdiserrors = ">=0.1"
 cdislogging = "<2"
-requests = "2.32.3"
+requests = ">=2.32.4,<3"
 gunicorn = ">=21.2.0"
 jinja2 = ">=3.1.5"
 setuptools = '*'
