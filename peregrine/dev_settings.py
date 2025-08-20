@@ -56,7 +56,7 @@ PSQLGRAPH = {
     "host": os.getenv("GDC_PG_HOST", "localhost"),
     "user": os.getenv("GDC_PG_USER", "test"),
     "password": os.getenv("GDC_PG_PASSWORD", "test"),
-    "database": os.getenv("GDC_PG_DBNAME", "automated_test"),
+    "database": os.getenv("GDC_PG_DBNAME", "peregrine_automated_test"),
 }
 
 # API server
