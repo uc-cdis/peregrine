@@ -38,15 +38,18 @@ requests = ">=2.32.4,<3"
 gunicorn = ">=21.2.0"
 jinja2 = ">=3.1.5"
 setuptools = '*'
+cryptography = "^44.0.1"
+python-dateutil = "^2.9.0.post0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.0"
-cryptography = "^44.0.1"
 mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
 sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "2025.07" }
+deptry = "^0.23.1"
+boto = "^2.49.0"
 
 [tool.poetry.plugins."peregrine.modules"]
 system = "peregrine.api:main"
