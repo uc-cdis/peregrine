@@ -10,11 +10,10 @@ def try_drop_test_data(user, password, database, root_user="postgres", host=""):
     print("Dropping old test data")
 
     engine = create_engine(
-        "postgres://{user}:{pwd}@{host}/postgres".format(
+        "postgresql://{user}:{pwd}@{host}/postgres".format(
             user=root_user, pwd=password, host=host
         )
     )
-
     conn = engine.connect()
     conn.execute("commit")
 
@@ -45,7 +44,7 @@ def setup_database(
         try_drop_test_data(user, password, database, host=host)
 
     engine = create_engine(
-        "postgres://{user}:{pwd}@{host}/postgres".format(
+        "postgresql://{user}:{pwd}@{host}/postgres".format(
             user=root_user, pwd=password, host=host
         )
     )
@@ -83,7 +82,7 @@ def create_tables(host, user, password, database):
     print("Creating tables in test database")
 
     engine = create_engine(
-        "postgres://{user}:{pwd}@{host}/{db}".format(
+        "postgresql://{user}:{pwd}@{host}/{db}".format(
             user=user, host=host, pwd=password, db=database
         )
     )
@@ -94,7 +93,7 @@ def create_tables(host, user, password, database):
 def create_indexes(host, user, password, database):
     print("Creating indexes")
     engine = create_engine(
-        "postgres://{user}:{pwd}@{host}/{db}".format(
+        "postgresql://{user}:{pwd}@{host}/{db}".format(
             user=user, host=host, pwd=password, db=database
         )
     )
