@@ -13,7 +13,6 @@ include = [
 [tool.poetry.dependencies]
 python = ">=3.9.2,<3.10"
 authutils = ">=6.2.7,<8"
-botocore = ">=1.35.54"
 gen3datamodel = ">=3.2.1"
 datamodelutils = ">=1.0"
 defusedxml = ">=0.5"
@@ -24,7 +23,6 @@ stopit = ">=1.1"
 Flask = ">=2.2.5"
 Flask-Cors = "<7"
 gen3authz = "<3"
-PyYAML = ">=5.4.1"
 dicttoxml = ">=1.5"
 SQLAlchemy = "1.3.*"
 graphene = ">=2.0,<3"
@@ -38,18 +36,21 @@ requests = ">=2.32.4,<3"
 gunicorn = ">=21.2.0"
 jinja2 = ">=3.1.5"
 setuptools = '*'
+cryptography = "^44.0.1"
+python-dateutil = "^2.9.0.post0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.0"
-cryptography = "^44.0.1"
 mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
 sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "2025.07" }
+deptry = "^0.23.1"
+boto = "^2.49.0"
 
 [tool.poetry.plugins."peregrine.modules"]
-"system" = "peregrine=peregrine.api:main"
+system = "peregrine.api:main"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

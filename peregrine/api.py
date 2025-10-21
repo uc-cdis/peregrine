@@ -2,7 +2,7 @@ import os
 import sys
 import time
 import logging
-import pkg_resources
+from importlib.metadata import version as importlib_version
 
 from flask import Flask, jsonify
 from flask_cors import CORS
@@ -169,7 +169,7 @@ def health_check():
 def version():
     # dictver['commit'] deprecated; see peregrine#130
     dictver = {
-        "version": pkg_resources.get_distribution("gen3dictionary").version,
+        "version": importlib_version("peregrine"),
         "commit": "",
     }
     base = {"version": VERSION, "commit": COMMIT, "dictionary": dictver}
