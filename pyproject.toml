@@ -12,8 +12,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.9.2,<3.10"
-authutils = ">=6.2.7,<8"
-gen3datamodel = ">=3.2.1"
+authutils = { git = "https://github.com/uc-cdis/authutils.git", branch = "chore/bump-authlib" }
 datamodelutils = ">=1.0"
 defusedxml = ">=0.5"
 dictionaryutils = ">=3.4.10"
