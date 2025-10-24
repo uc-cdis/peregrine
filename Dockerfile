@@ -38,6 +38,15 @@ RUN git config --global --add safe.directory ${appname} && COMMIT=`git rev-parse
 FROM base
 
 RUN  yum install -y postgresql-libs
+
+RUN yum install -y nginx
+RUN chown -R gen3:gen3 /var/log/nginx && \
+    ln -sf /dev/stdout /var/log/nginx/access.log && \
+    ln -sf /dev/stderr /var/log/nginx/error.log && \
+    mkdir -p /var/lib/nginx/tmp/client_body && \
+    chown -R gen3:gen3 /var/lib/nginx/
+COPY nginx.conf /etc/nginx/nginx.conf
+
 RUN pip install poetry
 RUN pip install gunicorn
 
