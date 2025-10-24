@@ -1,5 +1,7 @@
 import os
-from boto.s3.connection import OrdinaryCallingFormat
+
+# Match updated s3 calling format to match any updates to sheepdog
+# from boto.s3.connection import OrdinaryCallingFormat
 from os import environ as env
 
 # IndexClient
@@ -40,12 +42,10 @@ STORAGE = {
             "cleversafe.service.consul": {
                 "host": "cleversafe.service.consul",
                 "is_secure": False,
-                "calling_format": OrdinaryCallingFormat(),
             },
             "localhost": {
                 "host": "localhost",
                 "is_secure": False,
-                "calling_format": OrdinaryCallingFormat(),
             },
         },
     }
