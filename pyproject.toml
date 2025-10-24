@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "peregrine"
-version = "3.2.4"
+version = "3.2.5"
 description = "Query interface to get insights into data in Gen3 Commons"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -12,8 +12,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.9.2,<3.10"
-authutils = ">=6.2.7,<8"
-gen3datamodel = ">=3.2.1"
+authutils = ">=7.1.0"
 datamodelutils = ">=1.0"
 defusedxml = ">=0.5"
 dictionaryutils = ">=3.4.10"
