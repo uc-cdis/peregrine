@@ -11,7 +11,7 @@ include = [
 ]
 
 [tool.poetry.dependencies]
-python = ">=3.9.2,<3.10"
+python = ">=3.13,<4.0"
 authutils = ">=7.1.0"
 datamodelutils = ">=1.0"
 defusedxml = ">=0.5"
@@ -28,6 +28,7 @@ graphene = ">=2.0,<3"
 promise = ">=2.2"
 Flask-SQLAlchemy-Session = ">=1.1"
 psqlgraph = ">=3.0"
+# psqlgraph = {git = "https://git@github.com/uc-cdis/psqlgraph.git", branch = "chore/update-psycopg2-binary" }
 cdispyutils = ">=2.0.1"
 cdiserrors = ">=0.1"
 cdislogging = "<2"
@@ -37,6 +38,8 @@ jinja2 = ">=3.1.5"
 setuptools = '*'
 cryptography = "^44.0.1"
 python-dateutil = "^2.9.0.post0"
+# Temporarily add psycopg2-binary until graph and model force new version
+psycopg2-binary = ">=2.9.10,<3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.0"
@@ -44,9 +47,12 @@ mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
-sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "2025.07" }
+# sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "2025.07" }
 deptry = "^0.23.1"
 boto = "^2.49.0"
+# Needed for ./run.py
+# gen3datamodel = ">=3.2.1"
+gen3datamodel = {git = "https://git@github.com/uc-cdis/gen3datamodel.git", branch = "chore/update-psycopg2-binary" }
 
 [tool.poetry.plugins."peregrine.modules"]
 system = "peregrine.api:main"
