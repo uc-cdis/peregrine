@@ -41,6 +41,14 @@ COPY --from=builder /${appname} /${appname}
 
 RUN chown -R gen3:gen3 /venv
 
+# Create the log directory and log files
+RUN mkdir -p /var/log/nginx \
+    && touch /var/log/nginx/access.log /var/log/nginx/error.log \
+    && chown -R gen3:gen3 /var/log/nginx \
+    && chmod -R 664 /var/log/nginx/*.log \
+    && ln -sf /dev/stdout /var/log/nginx/access.log \
+    && ln -sf /dev/stderr /var/log/nginx/error.log
+
 # Switch to non-root user 'gen3' for the serving process
 USER gen3
 
