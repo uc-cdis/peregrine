@@ -54,6 +54,4 @@ WORKDIR /${appname}
 # install the app
 RUN poetry install --without dev --no-interaction
 
-# TEST disable ENTRYPOINT
-ENTRYPOINT ["sleep", "3600"]
-# CMD ["/bin/bash", "-c", "/${appname}/dockerrun.bash"]
+CMD ["/bin/bash", "-c", "/${appname}/dockerrun.bash"]
