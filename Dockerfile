@@ -13,7 +13,6 @@ FROM base AS builder
 
 USER root
 RUN dnf install -y python3-devel postgresql-devel gcc
-RUN chown -R gen3:gen3 /venv
 
 USER gen3
 
@@ -39,7 +38,6 @@ RUN  yum install -y postgresql-libs
 
 COPY --from=builder /${appname} /${appname}
 
-RUN chown -R gen3:gen3 /venv
 
 # Create the log directory and log files
 RUN mkdir -p /var/log/nginx \
