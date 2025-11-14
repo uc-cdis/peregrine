@@ -1,4 +1,6 @@
-ARG AZLINUX_BASE_VERSION=3.13-pythonnginx
+# ARG AZLINUX_BASE_VERSION=3.13-pythonnginx
+# TODO revert back to master after nginx_log PR is merged
+ARG AZLINUX_BASE_VERSION=chore_nginx_log_3.13-pythonnginx
 
 FROM quay.io/cdis/amazonlinux-base:${AZLINUX_BASE_VERSION} AS base
 
@@ -37,15 +39,6 @@ USER root
 RUN  yum install -y postgresql-libs
 
 COPY --from=builder /${appname} /${appname}
-
-
-# Create the log directory and log files
-RUN mkdir -p /var/log/nginx \
-    && touch /var/log/nginx/access.log /var/log/nginx/error.log \
-    && chown -R gen3:gen3 /var/log/nginx \
-    && chmod -R 664 /var/log/nginx/*.log \
-    && ln -sf /dev/stdout /var/log/nginx/access.log \
-    && ln -sf /dev/stderr /var/log/nginx/error.log
 
 # Switch to non-root user 'gen3' for the serving process
 USER gen3
