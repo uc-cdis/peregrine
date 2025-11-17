@@ -1,6 +1,4 @@
-# ARG AZLINUX_BASE_VERSION=3.13-pythonnginx
-# TODO revert back to master after nginx_log PR is merged
-ARG AZLINUX_BASE_VERSION=chore_nginx_log_3.13-pythonnginx
+ARG AZLINUX_BASE_VERSION=3.13-pythonnginx
 
 FROM quay.io/cdis/amazonlinux-base:${AZLINUX_BASE_VERSION} AS base
 
