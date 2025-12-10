@@ -43,7 +43,7 @@ USER gen3
 
 # Install into existing venv
 ENV VIRTUAL_ENV=/venv
-ENV PATH="/venv/bin:/usr/sbin:${PATH}"
+ENV PATH="/venv/bin:${PATH}"
 ENV POETRY_VIRTUALENVS_CREATE=false
 
 WORKDIR /${appname}
