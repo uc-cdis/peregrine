@@ -1,7 +1,5 @@
 import os
 
-# Match updated s3 calling format to match any updates to sheepdog
-# from boto.s3.connection import OrdinaryCallingFormat
 from os import environ as env
 
 # IndexClient
