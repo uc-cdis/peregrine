@@ -35,6 +35,7 @@ requests = ">=2.32.4,<3"
 gunicorn = ">=21.2.0"
 cryptography = "^44.0.1"
 python-dateutil = "^2.9.0.post0"
+graphql-core = ">=2,<3"
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.0"
