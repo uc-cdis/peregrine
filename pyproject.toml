@@ -43,7 +43,7 @@ mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
-sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", branch = "feat/python_3.13_upgrade" }
+sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", branch = "dependabot/pip/urllib3-2.6.0" }
 deptry = "^0.23.1"
 boto = "^2.49.0"
 
