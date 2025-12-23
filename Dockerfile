@@ -37,18 +37,11 @@ USER root
 RUN  yum install -y postgresql-libs
 
 COPY --from=builder /${appname} /${appname}
+COPY --from=builder /venv /venv
 
 # Switch to non-root user 'gen3' for the serving process
 USER gen3
 
-# Install into existing venv
-ENV VIRTUAL_ENV=/venv
-ENV PATH="/venv/bin:${PATH}"
-ENV POETRY_VIRTUALENVS_CREATE=false
-
 WORKDIR /${appname}
-
-# install the app
-RUN poetry install --without dev --no-interaction
 
 CMD ["/bin/bash", "-c", "/${appname}/dockerrun.bash"]
