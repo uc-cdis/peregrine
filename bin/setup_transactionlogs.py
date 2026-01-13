@@ -10,7 +10,7 @@ from gen3datamodel.models.submission import Base
 
 def setup(host, user, password, database):
     engine = create_engine(
-        "postgres://{user}:{password}@{host}/{database}".format(
+        "postgresql://{user}:{password}@{host}/{database}".format(
             user=user, host=host, password=password, database=database
         )
     )
