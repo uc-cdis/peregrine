@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "peregrine"
-version = "3.2.5"
+version = "3.3.0"
 description = "Query interface to get insights into data in Gen3 Commons"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -35,6 +35,7 @@ gunicorn = ">=21.2.0"
 cryptography = "^44.0.1"
 python-dateutil = "^2.9.0.post0"
 graphql-core = ">=2,<3"
+urllib3 = ">=2.6.3" # for PPS-2562
 
 [tool.poetry.group.dev.dependencies]
 pytest = ">=6.0"
