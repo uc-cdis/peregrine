@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "peregrine"
-version = "3.3.0"
+version = "3.2.6"
 description = "Query interface to get insights into data in Gen3 Commons"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
