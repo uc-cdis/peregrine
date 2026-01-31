@@ -83,7 +83,7 @@ def parse_json(raw):
         raise UserError("Unable to parse json: {}".format(e))
 
 
-def parse_request_json(expected_types=(dict, list)):
+def parse_request_json(raw, expected_types=(dict, list)):
     """Returns a python representation of a JSON POST body.
 
     :param str raw:
@@ -94,7 +94,7 @@ def parse_request_json(expected_types=(dict, list)):
 
     """
 
-    parsed = parse_json(request.get_data())
+    parsed = parse_json(raw)
     if not isinstance(parsed, expected_types):
         raise UserError(
             "JSON parsed from request is an invalid type: {}".format(
@@ -220,9 +220,9 @@ def jsonify_check_errors(data_and_errors, error_code=400):
     """
     data, errors = data_and_errors
     if errors:
-        return flask.jsonify({"data": data, "errors": errors}), error_code
+        return {"data": data, "errors": errors}, error_code
     else:
-        return flask.jsonify({"data": data}), 200
+        return {"data": data}, 200
 
 
 def get_variables(payload):

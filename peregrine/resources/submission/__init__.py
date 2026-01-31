@@ -10,14 +10,16 @@ import fcntl
 
 from cdiserrors import AuthZError
 import datamodelutils.models as models
-import flask
-
+from fastapi.concurrency import run_in_threadpool
+from fastapi import Depends, Request
+from fastapi.responses import FileResponse, JSONResponse
 from peregrine.auth import get_read_access_projects
-import peregrine.blueprints
+from peregrine.fast_api import get_app_context, get_request_state
+from peregrine.routes import router as submission_router
 from peregrine.resources.submission import graphql
 
 
-def get_open_project_ids():
+def get_open_project_ids(app_ctx):
     """
     List project ids corresponding to projects with ``availability_type ==
     "Open"``.
@@ -30,9 +32,9 @@ def get_open_project_ids():
     if not hasattr(models.Project, "availability_type"):
         return []
 
-    with flask.current_app.db.session_scope():
+    with app_ctx.db.session_scope():
         projects = (
-            flask.current_app.db.nodes(models.Project)
+            app_ctx.db.nodes(models.Project)
             .filter(models.Project.availability_type.astext == "Open")
             .all()
         )
@@ -43,25 +45,25 @@ def get_open_project_ids():
         ]
 
 
-def set_read_access_projects_for_public_endpoint():
+def set_read_access_projects_for_public_endpoint(app_ctx, request_state):
     """
     Set the global user project list to include all projects for endpoint
     that doesn't need authorization
     """
 
-    with flask.current_app.db.session_scope():
-        projects = flask.current_app.db.nodes(models.Project).all()
-        flask.g.read_access_projects = [
+    with app_ctx.db.session_scope():
+        projects = app_ctx.db.nodes(models.Project).all()
+        request_state.read_access_projects = [
             program["name"] + "-" + project["code"]
             for project in projects
             for program in project["programs"]
         ]
 
 
-def set_read_access_projects():
+def set_read_access_projects(app_ctx, request_state):
     """
     Assign the list of projects (as strings of project ids) for which the user
-    has read access to ``flask.g.read_access_projects``.
+    has read access to ``request_state.read_access_projects``.
 
     The user has read access, firstly, to the projects for which they directly
     have read permissions, and also to projects with availability type marked
@@ -76,36 +78,50 @@ def set_read_access_projects():
 
     Side Effects:
         assigns result from ``get_open_project_ids`` to
-        ``flask.g.read_access_projects``.
+        ``request.state.read_access_projects``.
     """
-    if not hasattr(flask.g, "read_access_projects"):
-        flask.g.read_access_projects = list(
-            set(get_read_access_projects() + get_open_project_ids())
+    if not hasattr(request_state, "read_access_projects"):
+        request_state.read_access_projects = list(
+            set(get_read_access_projects(app_ctx) + get_open_project_ids(app_ctx))
         )
 
 
-@peregrine.blueprints.blueprint.route("/graphql", methods=["POST"])
-def root_graphql_query():
+@submission_router.post("/graphql")
+async def root_graphql_query(
+    request: Request,
+    app_ctx=Depends(get_app_context),
+    req_state=Depends(get_request_state),
+):
     """
     Run a graphql query.
     """
-    payload = peregrine.utils.parse_request_json()
+    request_body = await request.body()
+    payload = peregrine.utils.parse_request_json(request_body)
     query = payload.get("query")
     variables, errors = peregrine.utils.get_variables(payload)
     if errors:
-        return flask.jsonify({"data": None, "errors": errors}), 400
-    return peregrine.utils.jsonify_check_errors(do_graphql_query(query, variables))
+        return JSONResponse({"data": None, "errors": errors}, status_code=400)
+
+    data, gql_errors, status_code = await run_in_threadpool(
+        do_graphql_query, query, variables, app_ctx, req_state
+    )
+
+    body = {"data": data}
+    if gql_errors:
+        body["errors"] = gql_errors
+
+    return JSONResponse(content=body, status_code=status_code)
 
 
-def do_graphql_query(query, variables):
+def do_graphql_query(query, variables, app_ctx, req_state):
     # Short circuit if user is not recognized. Make sure that the list of
     # projects that the user has read access to is set.
     try:
-        set_read_access_projects()
+        set_read_access_projects(app_ctx, req_state)
     except AuthZError:
-        data = flask.jsonify({"data": {}, "errors": ["Unauthorized query."]})
+        data = JSONResponse({"data": {}, "errors": ["Unauthorized query."]})
         return data, 403
-    return graphql.execute_query(query, variables)
+    return graphql.execute_query(app_ctx, query, variables)
 
 
 def generate_schema_file(graphql_schema, app_logger):
@@ -192,12 +208,12 @@ def wait_for_file(file_name, timeout_minutes, app_logger):
         time.sleep(0.5)
 
 
-@peregrine.blueprints.blueprint.route("/getschema", methods=["GET"])
-def root_graphql_schema_query():
+@submission_router.get("/getschema")
+def root_graphql_schema_query(app_ctx=Depends(get_app_context)):
     """
     Get the graphql schema.
 
     Dig up the introspection query string from file, run it through graphql,
     and jsonify the result.
     """
-    return flask.send_file(flask.current_app.schema_file)
+    return FileResponse(app_ctx.schema_file)

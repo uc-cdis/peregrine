@@ -1,6 +1,5 @@
 import os
 
-import flask
 import graphene
 import graphql
 
@@ -88,26 +87,24 @@ def get_schema():
     return Schema
 
 
-def execute_query(query, variables=None, app=None):
+def execute_query(app_ctx, query, variables=None):
     """
     Pull required parameters from global request and execute GraphQL query.
 
     :returns: a tuple (``data``, ``errors``)
     """
     variables = variables or {}
-    if app is None:
-        app = flask.current_app
 
     # Execute query
     try:
-        session_scope = app.db.session_scope()
+        session_scope = app_ctx.db.session_scope()
         timer = log_duration(f"GraphQL: {query}, variables: {variables}")
         result = None
         with session_scope as session:
             with timer:
                 set_session_timeout(session, GRAPHQL_TIMEOUT)
                 # result = Schema.execute(query, variable_values=variables)
-                result = app.graphql_schema.execute(
+                result = app_ctx.graphql_schema.execute(
                     query, variable_values=variables, return_promise=True
                 )
                 NodeCounter.current().run(session)

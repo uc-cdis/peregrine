@@ -74,7 +74,7 @@ def resource_path_to_project_ids(resource_path):
     return [program.name + "-" + project.code for program in project.programs]
 
 
-def get_read_access_projects():
+def get_read_access_projects(app_ctx):
     """
     Get all resources the user has read access to and parses the Arborist resource paths into a program.name and a project.code.
     """
@@ -89,7 +89,7 @@ def get_read_access_projects():
         )
         mapping = {}
 
-    with flask.current_app.db.session_scope():
+    with app_ctx.db.session_scope():
         read_access_projects = [
             project_id
             for resource_path, permissions in mapping.items()
