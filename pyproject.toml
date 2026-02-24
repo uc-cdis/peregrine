@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "peregrine"
-version = "3.2.5"
+version = "3.2.6"
 description = "Query interface to get insights into data in Gen3 Commons"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -12,7 +12,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.13,<4.0"
-authutils = ">=7.1.0"
+authutils = ">=7.2.2"
 datamodelutils = ">=1.0"
 dictionaryutils = ">=3.4.10"
 gen3dictionary = ">=2.0.3"
@@ -27,12 +27,12 @@ sqlalchemy = ">=1.4.54,<2"
 graphene = ">=2.0,<3"
 promise = ">=2.2"
 psqlgraph = ">=3.1.1"
-cdispyutils = ">=2.0.1"
+cdispyutils = ">=2.5.0"
 cdiserrors = ">=0.1"
 cdislogging = "<2"
 requests = ">=2.32.4,<3"
 gunicorn = ">=21.2.0"
-cryptography = "^44.0.1"
+cryptography = ">=44.0.3"
 python-dateutil = "^2.9.0.post0"
 graphql-core = ">=2,<3"
 
