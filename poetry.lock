@@ -59,14 +59,14 @@ cryptography = "*"
 
 [[package]]
 name = "authutils"
-version = "7.2.6"
+version = "7.2.7"
 description = "Gen3 auth utility functions"
 optional = false
 python-versions = "<4.0,>=3.13"
 groups = ["main", "dev"]
 files = [
-    {file = "authutils-7.2.6-py3-none-any.whl", hash = "sha256:719c0585a012b0eb3b637f21ecced643d7bed432339350e2cdb3af5e54dd9691"},
-    {file = "authutils-7.2.6.tar.gz", hash = "sha256:956066f52b0dfb28971e015749078a4b1c935b277e544268c659819f6e7b3019"},
+    {file = "authutils-7.2.7-py3-none-any.whl", hash = "sha256:c3662fcdcb3f73b2eca918192987b7131374c7b3463e1e337bec155bc06451f3"},
+    {file = "authutils-7.2.7.tar.gz", hash = "sha256:101d1dd40d4426b844bfc7c6e94ac3f8497d5b448d2d269fc98ea3e27f1df43e"},
 ]
 
 [package.dependencies]
@@ -74,7 +74,7 @@ authlib = ">=1.6.6"
 cached-property = ">=1.4,<2.0"
 cdiserrors = "*"
 cdislogging = "*"
-cryptography = ">=46.0.5"
+cryptography = ">=46.0.7"
 httpx = ">=0.23.0,<1.0.0"
 pyjwt = {version = ">=2.4.0,<3.0", extras = ["crypto"]}
 starlette = "*"
@@ -2566,4 +2566,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "777c1a17e5a3e160aa70762bc8b0f7896e7cf2c73852fd7adbe0969bdf9c02fa"
+content-hash = "e63953ad48b5b92a0686244eaf1f6ae0d2f21fa5954e968e3388eeeba840dc9a"
