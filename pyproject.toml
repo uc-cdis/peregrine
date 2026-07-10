@@ -12,7 +12,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.13,<4.0"
-authutils = ">=7.2.7"
+authutils = ">=8.0.0"
 datamodelutils = ">=1.0"
 dictionaryutils = ">=3.4.10"
 gen3dictionary = ">=2.0.3"
