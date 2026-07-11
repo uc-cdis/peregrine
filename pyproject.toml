@@ -42,7 +42,7 @@ mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
-sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "2026.04" }
+sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "5.2.6" }
 deptry = "^0.23.1"
 boto = "^2.49.0"
 
