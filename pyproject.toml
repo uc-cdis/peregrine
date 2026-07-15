@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "peregrine"
-version = "3.2.7"
+version = "3.2.8"
 description = "Query interface to get insights into data in Gen3 Commons"
 authors = ["CTDS UChicago <cdis@uchicago.edu>"]
 license = "Apache-2.0"
@@ -12,7 +12,7 @@ include = [
 
 [tool.poetry.dependencies]
 python = ">=3.13,<4.0"
-authutils = ">=7.2.7"
+authutils = ">=8.0.0"
 datamodelutils = ">=1.0"
 dictionaryutils = ">=3.4.10"
 gen3dictionary = ">=2.0.3"
@@ -42,7 +42,7 @@ mock = ">=1.0"
 pytest-flask = ">=0.15"
 pytest-cov = ">=2.8"
 indexclient = ">=2.1.1"
-sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "2026.04" }
+sheepdog = {git = "https://git@github.com/uc-cdis/sheepdog.git", rev = "5.2.6" }
 deptry = "^0.23.1"
 boto = "^2.49.0"
 
