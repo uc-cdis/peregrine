@@ -161,6 +161,25 @@ def admin(encoded_jwt):
 
 
 @pytest.fixture(scope="session")
+def client_token(app):
+    """
+    Return Authorization headers carrying a Fence ``client_credentials``-style
+    access token (no user identity; client id in the ``azp`` claim).
+    """
+    private_key = utils.read_file("resources/keys/test_private_key.pem")
+    kid = list(peregrine.test_settings.JWT_KEYPAIR_FILES.keys())[0]
+    token = utils.generate_signed_client_access_token(
+        kid,
+        private_key,
+        "test-client-id",
+        3600,
+        ["openid"],
+        iss=app.config["USER_API"],
+    )
+    return {"Authorization": "bearer " + token.token}
+
+
+@pytest.fixture(scope="session")
 def es_setup(request):
     es = Elasticsearch(["localhost"], port=9200)
 
@@ -231,19 +250,21 @@ def mock_arborist_requests(request):
     This fixture returns a function which you call to mock the call to
     arborist client's methods.
 
-    auth_mapping() is mocked because it is called by peregrine.
-    auth_request() and create_resource() are mocked because they are called
-    by sheepdog, which is a dependency of the tests.
+    auth_mapping() and client_auth_mapping() are mocked because they are called
+    by peregrine. auth_request() and create_resource() are mocked because they
+    are called by sheepdog, which is a dependency of the tests.
 
     Args:
-        auth_mapping (dict): response of the call to auth_mapping()
+        auth_mapping (dict): response of the call to auth_mapping() and
+            client_auth_mapping()
         known_user (boolean): True if the user is known to Arborist
+        known_client (boolean): True if the client is known to Arborist
 
     Returns:
         Mocked response
     """
 
-    def do_patch(auth_mapping={}, known_user=True):
+    def do_patch(auth_mapping={}, known_user=True, known_client=True):
         def make_mock_response(function_name):
             def response(*args, **kwargs):
                 mocked_response = MagicMock(requests.Response)
@@ -251,6 +272,11 @@ def mock_arborist_requests(request):
                 if function_name == "auth_mapping":
                     if not known_user:
                         raise ArboristError("User does not exist in Arborist", 401)
+                    mocked_response.items = auth_mapping.items
+
+                if function_name == "client_auth_mapping":
+                    if not known_client:
+                        raise ArboristError("Client does not exist in Arborist", 401)
                     mocked_response.items = auth_mapping.items
 
                 if function_name == "create_resource":
@@ -273,6 +299,9 @@ def mock_arborist_requests(request):
             return response
 
         mocked_auth_mapping = MagicMock(side_effect=make_mock_response("auth_mapping"))
+        mocked_client_auth_mapping = MagicMock(
+            side_effect=make_mock_response("client_auth_mapping")
+        )
         mocked_auth_request = MagicMock(side_effect=make_mock_response("auth_request"))
         mocked_create_resource = MagicMock(
             side_effect=make_mock_response("create_resource")
@@ -281,6 +310,10 @@ def mock_arborist_requests(request):
         patch_auth_mapping = patch(
             "gen3authz.client.arborist.client.ArboristClient.auth_mapping",
             mocked_auth_mapping,
+        )
+        patch_client_auth_mapping = patch(
+            "gen3authz.client.arborist.client.ArboristClient.client_auth_mapping",
+            mocked_client_auth_mapping,
         )
         patch_auth_request = patch(
             "gen3authz.client.arborist.client.ArboristClient.auth_request",
@@ -292,10 +325,12 @@ def mock_arborist_requests(request):
         )
 
         patch_auth_mapping.start()
+        patch_client_auth_mapping.start()
         patch_auth_request.start()
         patch_create_resource.start()
 
         request.addfinalizer(patch_auth_mapping.stop)
+        request.addfinalizer(patch_client_auth_mapping.stop)
         request.addfinalizer(patch_auth_request.stop)
         request.addfinalizer(patch_create_resource.stop)
 

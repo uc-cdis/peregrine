@@ -8,7 +8,6 @@ import jwt
 
 from cdislogging import get_logger
 
-
 logger = get_logger(__name__, log_level="info")
 
 
@@ -121,5 +120,69 @@ def generate_signed_access_token(
     # Browser may clip cookies larger than 4096 bytes
     if len(token) > 4096:
         raise JWTSizeError("JWT exceeded 4096 bytes")
+
+    return JWTResult(token=token, kid=kid, claims=claims)
+
+
+def generate_signed_client_access_token(
+    kid,
+    private_key,
+    client_id,
+    expires_in,
+    scopes,
+    iss=None,
+    forced_exp_time=None,
+):
+    """
+    Generate a JWT access token that mimics Fence's ``client_credentials`` grant.
+
+    Unlike a user access token, a client_credentials token has no user identity
+    (no ``context.user.name``); the client id is carried in the ``azp`` claim.
+
+    Args:
+        kid (str): key id of the keypair used to generate token
+        private_key (str): RSA private key to sign and encode the JWT with
+        client_id (str): OAuth2 client id (placed in both ``sub`` and ``azp``)
+        expires_in (int): seconds until expiration
+        scopes (List[str]): oauth scopes for the client
+
+    Return:
+        JWTResult: encoded JWT access token signed with ``private_key``
+    """
+    headers = {"kid": kid}
+    iat, exp = issued_and_expiration_times(expires_in)
+    exp = forced_exp_time or exp
+    jti = str(uuid.uuid4())
+    if not iss:
+        try:
+            iss = config.get("BASE_URL")
+        except RuntimeError:
+            raise ValueError(
+                "must provide value for `iss` (issuer) field if"
+                " running outside of flask application"
+            )
+
+    claims = {
+        "pur": "access",
+        "aud": [iss],
+        "sub": str(client_id),
+        "iss": iss,
+        "iat": iat,
+        "exp": exp,
+        "jti": jti,
+        # no `context.user`: client_credentials tokens have no user identity
+        "azp": client_id,
+        "scope": scopes,
+    }
+
+    logger.info(
+        "issuing JWT client access token with id [{}] to client [{}]".format(
+            jti, client_id
+        )
+    )
+    logger.debug("issuing JWT client access token\n" + json.dumps(claims, indent=4))
+
+    token = jwt.encode(claims, private_key, headers=headers, algorithm="RS256")
+    token = to_unicode(token, "UTF-8")
 
     return JWTResult(token=token, kid=kid, claims=claims)
