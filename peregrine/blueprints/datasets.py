@@ -2,6 +2,8 @@ import flask
 import os
 import re
 
+import psqlgraph
+
 from peregrine.resources.submission import (
     graphql,
     set_read_access_projects_for_public_endpoint,
@@ -12,6 +14,25 @@ from cdiserrors import UserError
 from dictionaryutils import dictionary
 
 blueprint = flask.Blueprint("datasets", "datasets")
+
+
+def validate_nodes(nodes):
+    """
+    Validate the requested node names against the set of real node types
+    before they are interpolated into a GraphQL query.
+
+    Each requested node is spliced verbatim into a GraphQL alias and
+    field-name position when the count query is built, so an unvalidated
+    value allows arbitrary GraphQL to be injected into the query. Only
+    accept names that correspond to actual node types in the data model.
+
+    Raises:
+        cdiserrors.UserError: if any requested node is not a valid node type
+    """
+    valid_nodes = {node.label for node in psqlgraph.Node.get_subclasses()}
+    invalid = [node for node in nodes if node not in valid_nodes]
+    if invalid:
+        raise UserError("Invalid node(s) requested: {}".format(", ".join(invalid)))
 
 
 @blueprint.route("/", methods=["GET"])
@@ -25,6 +46,7 @@ def get_datasets():
     if not nodes:
         raise UserError("Need to provide target nodes in query param")
     nodes = nodes.split(",")
+    validate_nodes(nodes)
     if os.environ.get("PUBLIC_DATASETS", "false").lower() == "true":
         set_read_access_projects_for_public_endpoint()
     else:
