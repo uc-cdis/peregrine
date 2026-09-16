@@ -106,3 +106,4 @@ tests/resources/keys/*.pem
 
 # graphql schema
 schema.json
+.idea
