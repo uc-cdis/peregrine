@@ -104,3 +104,28 @@ def test_no_nodes_parameter(client, submitter):
     r = client.get("/datasets", headers=submitter)
     assert r.status_code == 400, r.text
     assert r.json["message"] == "Need to provide target nodes in query param"
+
+
+def test_invalid_nodes_parameter(client, submitter):
+    """
+    Node names that are not real node types must be rejected before being
+    interpolated into the GraphQL query, to prevent GraphQL injection via
+    the `nodes` query param.
+    """
+    r = client.get("/datasets?nodes=case,not_a_real_node", headers=submitter)
+    assert r.status_code == 400, r.text
+    assert "not_a_real_node" in r.json["message"]
+
+
+def test_graphql_injection_rejected_public_config(
+    client, submitter, pg_driver_clean, cgci_blgsp, public_dataset_api
+):
+    """
+    On a PUBLIC_DATASETS deployment the anonymous scope covers all projects.
+    A crafted `nodes` value that tries to inject a record-level selection
+    must be rejected rather than returning records for controlled projects.
+    """
+    post_example_entities_together(client, pg_driver_clean, submitter)
+    payload = "x:node(first:1){id project_id submitter_id}}#"
+    r = client.get("/datasets", query_string={"nodes": payload})
+    assert r.status_code == 400, r.text
