@@ -2513,7 +2513,7 @@ type = ["importlib_metadata (>=7.0.2) ; python_version < \"3.10\"", "jaraco.deve
 
 [[package]]
 name = "sheepdog"
-version = "5.2.5"
+version = "5.2.8"
 description = "Gen3 Submission Service"
 optional = false
 python-versions = "^3.13"
@@ -2523,7 +2523,7 @@ develop = false
 
 [package.dependencies]
 authlib = "*"
-authutils = ">=8.0.0"
+authutils = ">=9.0.0"
 boto = ">=2.49.0"
 boto3 = ">=1.40.69"
 cachelib = "^0.13.0"
@@ -2557,8 +2557,8 @@ urllib3 = ">=2.6.3"
 [package.source]
 type = "git"
 url = "https://git@github.com/uc-cdis/sheepdog.git"
-reference = "5.2.6"
-resolved_reference = "a7be1e08e485c9b093211ef613213fa180aea7b9"
+reference = "5.2.8"
+resolved_reference = "1dcf513df6700bfd5a8697bdf7793aef5aa7cf18"
 
 [[package]]
 name = "simplejson"
@@ -2917,4 +2917,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.13,<4.0"
-content-hash = "bd45c2f635ee256ba66298f80b7cfa0b22582516d1d854b067a006c590433ddd"
+content-hash = "77e6a7fcb2cd85fadae2ef67470d31dd05b2d85ad564c79a15ae812534663f73"
