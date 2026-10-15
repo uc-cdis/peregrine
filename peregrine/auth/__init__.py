@@ -9,11 +9,11 @@ or
 """
 
 from authutils.user import current_user
+from authutils.token.validate import current_token
 from cdislogging import get_logger
 from datamodelutils import models
 from gen3authz.client.arborist.errors import ArboristError
 import flask
-
 
 logger = get_logger(__name__)
 
@@ -76,17 +76,32 @@ def resource_path_to_project_ids(resource_path):
 
 def get_read_access_projects():
     """
-    Get all resources the user has read access to and parses the Arborist resource paths into a program.name and a project.code.
+    Get all resources the caller has read access to and parses the Arborist resource paths into a program.name and a project.code.
+
+    Supports both user tokens and ``client_credentials`` tokens. User tokens
+    carry a username (``context.user.name``) and are resolved against Arborist
+    by username. ``client_credentials`` tokens have no user identity but carry
+    the client id in the ``azp`` claim; they are resolved against Arborist by
+    client id.
     """
+    username = current_user.username
+    # client_credentials tokens have no user identity but carry the client id
+    # in the `azp` claim.
+    client_id = (current_token or {}).get("azp")
+
     try:
-        mapping = flask.current_app.auth.auth_mapping(current_user.username)
+        if not username and client_id:
+            mapping = flask.current_app.auth.client_auth_mapping(client_id)
+        else:
+            mapping = flask.current_app.auth.auth_mapping(username)
     except ArboristError as e:
-        # Arborist errored, or this user is unknown to Arborist
-        logger.warn(
-            "Unable to retrieve auth mapping for user `{}`: {}".format(
-                current_user.username, e
-            )
+        # Arborist errored, or this caller is unknown to Arborist
+        caller = (
+            "user `{}`".format(username)
+            if username
+            else "client `{}`".format(client_id)
         )
+        logger.warning("Unable to retrieve auth mapping for {}: {}".format(caller, e))
         mapping = {}
 
     with flask.current_app.db.session_scope():
