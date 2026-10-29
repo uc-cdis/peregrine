@@ -49,4 +49,4 @@ USER gen3
 
 WORKDIR /${appname}
 
-CMD ["/bin/bash", "-c", "/${appname}/dockerrun.bash"]
+CMD ["/bin/bash", "-c", "exec /${appname}/dockerrun.bash"]
